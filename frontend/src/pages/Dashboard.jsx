@@ -8,10 +8,24 @@ import ClaimCard from "../components/ClaimCard";
 export default function Dashboard() {
 
   const navigate = useNavigate();
+  const [userName, setUserName] = React.useState(localStorage.getItem("userName") || "");
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) navigate("/login");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    // optionally fetch latest user info
+    import('../api').then(({ getCurrentUser }) => {
+      getCurrentUser().then(res => {
+        if (res && res.name) {
+          setUserName(res.name);
+          localStorage.setItem("userName", res.name);
+        }
+      }).catch(() => {});
+    });
   }, []);
 
   return (
@@ -19,11 +33,11 @@ export default function Dashboard() {
     <>
       {/* Welcome */}
       <div className="mb-6">
-        {localStorage.getItem("userName") && (
+        {userName && (
           <div className="text-sm text-gray-600">
             Welcome,
             <span className="font-semibold ml-1">
-              {localStorage.getItem("userName")}
+              {userName}
             </span>
           </div>
         )}
