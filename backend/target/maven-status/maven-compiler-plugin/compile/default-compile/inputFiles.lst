@@ -1,0 +1,9 @@
+D:\ai-gig-insurance-platform\backend\src\main\java\com\example\aiinsurance\service\MyUserDetailsService.java
+D:\ai-gig-insurance-platform\backend\src\main\java\com\example\aiinsurance\security\JwtUtil.java
+D:\ai-gig-insurance-platform\backend\src\main\java\com\example\aiinsurance\service\UserService.java
+D:\ai-gig-insurance-platform\backend\src\main\java\com\example\aiinsurance\repository\UserRepository.java
+D:\ai-gig-insurance-platform\backend\src\main\java\com\example\aiinsurance\security\SecurityConfig.java
+D:\ai-gig-insurance-platform\backend\src\main\java\com\example\aiinsurance\controller\AuthController.java
+D:\ai-gig-insurance-platform\backend\src\main\java\com\example\aiinsurance\model\User.java
+D:\ai-gig-insurance-platform\backend\src\main\java\com\example\aiinsurance\AiInsuranceApplication.java
+D:\ai-gig-insurance-platform\backend\src\main\java\com\example\aiinsurance\security\JwtAuthenticationFilter.java

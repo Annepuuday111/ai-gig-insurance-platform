@@ -1,0 +1,9 @@
+com\example\aiinsurance\security\JwtUtil.class
+com\example\aiinsurance\controller\AuthController.class
+com\example\aiinsurance\AiInsuranceApplication.class
+com\example\aiinsurance\service\MyUserDetailsService.class
+com\example\aiinsurance\model\User.class
+com\example\aiinsurance\security\JwtAuthenticationFilter.class
+com\example\aiinsurance\repository\UserRepository.class
+com\example\aiinsurance\security\SecurityConfig.class
+com\example\aiinsurance\service\UserService.class
