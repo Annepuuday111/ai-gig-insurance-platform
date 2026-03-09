@@ -1,13 +1,11 @@
 # Parametric Triggers
 
-| Event      | Condition          | Payout |
-|------------|--------------------|--------|
-| Heavy Rain | Rainfall > 60mm    | ₹400   |
-| Flood      | Flood alert        | ₹700   |
-| Pollution  | AQI > 400          | ₹300   |
-| Curfew     | Government restriction | ₹500 |
-
----
+| Disruption | Condition          | Action          |
+|------------|--------------------|-----------------|
+| Heavy Rain | Rain > 60mm        | Auto payout     |
+| Flood      | Flood alert        | Auto claim      |
+| Pollution  | AQI > 400          | Compensation    |
+| Curfew     | Zone lockdown      | Income payout   |
 
 # Weekly Pricing Model
 
@@ -16,7 +14,3 @@
 | Basic    | ₹20            | ₹300       |
 | Standard | ₹40            | ₹600       |
 | Premium  | ₹60            | ₹1000      |
-
----
-
-These sections define the parametric insurance triggers and the weekly pricing plans required for the gig‑worker insurance system.

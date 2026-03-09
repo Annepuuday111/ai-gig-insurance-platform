@@ -1,21 +1,29 @@
 # Architecture Overview
 
-The system is composed of the following layers, flowing from the worker’s device to the payment settlement:
+The system flows from the delivery worker’s application to the final payment settlement as follows:
 
 ```
-Worker Mobile/Web App
+Delivery Worker App
         ↓
 Frontend (React)
         ↓
 Backend API (Node.js)
         ↓
-AI Risk Engine
+AI Risk Prediction Engine
         ↓
-Parametric Trigger Engine
+Parametric Trigger System
         ↓
-Claim Automation
+Claim Automation Engine
         ↓
-Payment Gateway (Mock)
+Payment Gateway (Mock UPI)
 ```
 
-Each arrow represents a request/response flow where data moves from the UI to the backend services, through the AI‑driven risk assessment and trigger evaluation, culminating in an automated claim and mock payment.
+Each layer handles a specific responsibility:
+- **Frontend (React):** UI for workers and agents.
+- **Backend API (Node.js):** Exposes REST endpoints, handles authentication, and orchestrates services.
+- **AI Risk Prediction Engine:** Uses weather, traffic, pollution, and historical data to assess risk and calculate premiums.
+- **Parametric Trigger System:** Evaluates predefined conditions (e.g., heavy rain > 60 mm) to automatically trigger claims.
+- **Claim Automation Engine:** Generates claim records and initiates payout workflows.
+- **Payment Gateway (Mock UPI):** Simulates instant payouts to workers.
+
+This architecture enables a fully automated, AI‑driven insurance experience for gig workers.
