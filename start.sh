@@ -1,45 +1,72 @@
 #!/usr/bin/env bash
 
-echo "===================================="
-echo "Starting AI Gig Insurance Platform"
-echo "===================================="
+set -e
 
-# Install frontend dependencies
-echo "Installing frontend dependencies..."
-cd frontend
-npm install
+BACKEND_PORT=4000
+FRONTEND_PORT=5173
 
-# Build backend
-echo "Building backend..."
-cd ../backend
-mvn clean install -DskipTests
+echo "🚀 Starting AI Gig Insurance Platform..."
 
-# Start backend
-echo "Starting backend..."
-mvn spring-boot:run &
-BACKEND_PID=$!
+kill_port() {
+PORT=$1
+PID=$(lsof -t -i:$PORT || true)
 
-# Start frontend
-echo "Starting frontend..."
-cd ../frontend
-npm run dev &
-FRONTEND_PID=$!
+if [ ! -z "$PID" ]; then
+echo "⚠ Port $PORT already in use. Killing process $PID..."
+kill -9 $PID
+sleep 2
+else
+echo "✅ Port $PORT is free"
+fi
+}
 
-echo "===================================="
-echo "Backend: http://localhost:4000"
-echo "Frontend: http://localhost:5173"
-echo "===================================="
+kill_port $BACKEND_PORT
+kill_port $FRONTEND_PORT
 
-# Wait few seconds for servers to start
-sleep 5
-
-# Detect OS and open browser
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    xdg-open http://localhost:5173
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-    open http://localhost:5173
-elif [[ "$OSTYPE" == "msys"* ]] || [[ "$OSTYPE" == "cygwin"* ]]; then
-    start http://localhost:5173
+if [ ! -d "backend/target" ]; then
+echo "📦 Building backend..."
+(cd backend && mvn clean install -DskipTests)
+else
+echo "✅ Backend already built"
 fi
 
-wait $BACKEND_PID $FRONTEND_PID
+if [ ! -d "frontend/node_modules" ]; then
+echo "📦 Installing frontend dependencies..."
+(cd frontend && npm install)
+else
+echo "✅ Frontend dependencies already installed"
+fi
+
+echo "🖥 Starting Spring Boot backend..."
+
+(
+cd backend
+mvn spring-boot:run
+) &
+
+BACK_PID=$!
+
+echo "Backend running on port $BACKEND_PORT (PID=$BACK_PID)"
+
+sleep 6
+
+echo "🌐 Starting frontend..."
+
+(
+cd frontend
+npm run dev
+) &
+
+FRONT_PID=$!
+
+echo "Frontend running on port $FRONTEND_PORT (PID=$FRONT_PID)"
+
+echo ""
+echo "✅ Application started successfully!"
+echo "Frontend → [http://localhost:$FRONTEND_PORT](http://localhost:$FRONTEND_PORT)"
+echo "Backend → [http://localhost:$BACKEND_PORT](http://localhost:$BACKEND_PORT)"
+echo ""
+echo "Press Ctrl+C to stop services."
+
+wait $BACK_PID
+wait $FRONT_PID
