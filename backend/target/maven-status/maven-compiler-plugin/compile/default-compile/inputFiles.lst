@@ -1,0 +1,9 @@
+/Users/annepuudaykumar/Desktop/ai-gig-insurance-platform/backend/src/main/java/com/example/aiinsurance/service/UserService.java
+/Users/annepuudaykumar/Desktop/ai-gig-insurance-platform/backend/src/main/java/com/example/aiinsurance/security/JwtAuthenticationFilter.java
+/Users/annepuudaykumar/Desktop/ai-gig-insurance-platform/backend/src/main/java/com/example/aiinsurance/security/JwtUtil.java
+/Users/annepuudaykumar/Desktop/ai-gig-insurance-platform/backend/src/main/java/com/example/aiinsurance/model/User.java
+/Users/annepuudaykumar/Desktop/ai-gig-insurance-platform/backend/src/main/java/com/example/aiinsurance/security/SecurityConfig.java
+/Users/annepuudaykumar/Desktop/ai-gig-insurance-platform/backend/src/main/java/com/example/aiinsurance/service/MyUserDetailsService.java
+/Users/annepuudaykumar/Desktop/ai-gig-insurance-platform/backend/src/main/java/com/example/aiinsurance/controller/AuthController.java
+/Users/annepuudaykumar/Desktop/ai-gig-insurance-platform/backend/src/main/java/com/example/aiinsurance/repository/UserRepository.java
+/Users/annepuudaykumar/Desktop/ai-gig-insurance-platform/backend/src/main/java/com/example/aiinsurance/AiInsuranceApplication.java

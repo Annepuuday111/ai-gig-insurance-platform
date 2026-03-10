@@ -1,48 +1,72 @@
 #!/usr/bin/env bash
-# start.sh - launch backend and frontend services concurrently
-# Run from project root: ./start.sh
 
 set -e
 
-# function to start backend
-start_backend() {
-  echo "Starting backend..."
-  cd backend
-  mvn spring-boot:run
+BACKEND_PORT=4000
+FRONTEND_PORT=5173
+
+echo "🚀 Starting AI Gig Insurance Platform..."
+
+kill_port() {
+PORT=$1
+PID=$(lsof -t -i:$PORT || true)
+
+if [ ! -z "$PID" ]; then
+echo "⚠ Port $PORT already in use. Killing process $PID..."
+kill -9 $PID
+sleep 2
+else
+echo "✅ Port $PORT is free"
+fi
 }
 
-# function to start frontend
-start_frontend() {
-  echo "Starting frontend..."
-  cd frontend
-  npm run dev
-}
+kill_port $BACKEND_PORT
+kill_port $FRONTEND_PORT
 
-# ensure we have dependencies installed
 if [ ! -d "backend/target" ]; then
-  echo "Building backend dependencies..."
-  (cd backend && mvn clean install)
+echo "📦 Building backend..."
+(cd backend && mvn clean install -DskipTests)
+else
+echo "✅ Backend already built"
 fi
 
 if [ ! -d "frontend/node_modules" ]; then
-  echo "Installing frontend dependencies..."
-  (cd frontend && npm install)
+echo "📦 Installing frontend dependencies..."
+(cd frontend && npm install)
+else
+echo "✅ Frontend dependencies already installed"
 fi
 
-# run both in separate background processes
-start_backend &
+echo "🖥 Starting Spring Boot backend..."
+
+(
+cd backend
+mvn spring-boot:run
+) &
+
 BACK_PID=$!
 
-# give backend a moment to come up before starting frontend
-sleep 2
+echo "Backend running on port $BACKEND_PORT (PID=$BACK_PID)"
 
-start_frontend &
+sleep 6
+
+echo "🌐 Starting frontend..."
+
+(
+cd frontend
+npm run dev
+) &
+
 FRONT_PID=$!
 
-echo "backend PID=${BACK_PID}, frontend PID=${FRONT_PID}"
+echo "Frontend running on port $FRONTEND_PORT (PID=$FRONT_PID)"
 
-echo "Press Ctrl+C to stop both services."
+echo ""
+echo "✅ Application started successfully!"
+echo "Frontend → [http://localhost:$FRONTEND_PORT](http://localhost:$FRONTEND_PORT)"
+echo "Backend → [http://localhost:$BACKEND_PORT](http://localhost:$BACKEND_PORT)"
+echo ""
+echo "Press Ctrl+C to stop services."
 
-# wait for background jobs
 wait $BACK_PID
 wait $FRONT_PID
