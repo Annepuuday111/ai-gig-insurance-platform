@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
 import DashboardCard from "../components/DashboardCard";
 import NotificationCard from "../components/NotificationCard";
 import ClaimCard from "../components/ClaimCard";
 import { IconBell, IconChat, IconCard, IconShield, IconMoney } from "../components/Icons";
+import { getCurrentUser, getDashboardSummary } from "../api";
 
 import swiggyBanner from "../../../assets/swiggybanner.png";
 import amazonBanner from "../../../assets/amazon-banner.png";
@@ -42,6 +43,10 @@ const STYLES = `
     from { opacity: 0; transform: scale(1.04); }
     to   { opacity: 1; transform: scale(1); }
   }
+  @keyframes shimmer {
+    0%   { background-position: -400px 0; }
+    100% { background-position:  400px 0; }
+  }
 
   .dash-banner  { animation: bannerIn 0.7s ease both; }
   .dash-card    { animation: scaleIn 0.55s cubic-bezier(.22,.68,0,1.2) 0.15s both; }
@@ -74,42 +79,58 @@ const STYLES = `
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [dashboardData, setDashboardData] = useState({
-    plan: { name: "Standard", premium: 40, coverage: 600, risk: "Moderate" },
+  const [user, setUser]         = useState(null);
+  const [summary, setSummary]   = useState(null);
+  const [loadingSum, setLoadingSum] = useState(true);
+  const [dashboardData] = useState({
     notifications: [
       { title: "Heavy rain detected in your zone", desc: "System initiated claim process", time: "10m ago" },
-      { title: "₹600 payout processed", desc: "Your recent claim was approved", time: "2d ago" },
-      { title: "Weekly premium due", desc: "Payment reminder for this week", time: "1d ago" }
+      { title: "₹600 payout processed",            desc: "Your recent claim was approved", time: "2d ago" },
+      { title: "Weekly premium due",               desc: "Payment reminder for this week", time: "1d ago" },
     ],
     claims: [
       { title: "Heavy Rain Detected", amount: 600, status: "Processing" },
-      { title: "Claim Approved", amount: 600, status: "Approved" }
+      { title: "Claim Approved",      amount: 600, status: "Approved" },
     ],
     chats: 3,
-    lastLogin: "2 hours ago"
+    lastLogin: "2 hours ago",
   });
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/login");
-      return;
-    }
+    if (!token) { navigate("/login"); return; }
 
-    // Fetch user data
-    import('../api').then(({ getCurrentUser }) => {
-      getCurrentUser().then(res => {
-        if (res) {
+    // Fetch user profile
+    getCurrentUser()
+      .then(res => {
+        if (res && res.id) {
           setUser(res);
           localStorage.setItem("userName", res.name);
+        } else {
+          navigate("/login");
         }
-      }).catch(() => navigate("/login"));
-    });
+      })
+      .catch(() => navigate("/login"));
 
-    // In a real app, fetch dashboard data from API
-    // For now, using mock data
+    // Fetch real subscription / payment summary
+    getDashboardSummary()
+      .then(res => {
+        if (res && !res.error) setSummary(res);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingSum(false));
   }, [navigate]);
+
+  // Helper derived values from backend summary
+  const activePlan = summary?.activePlan || null;
+  const planName   = activePlan?.name          || "No Plan";
+  const premium    = activePlan?.weeklyPremium  || 0;
+  const cov        = activePlan?.coverageAmount || 0;
+  const risk       = activePlan?.riskLevel      || "—";
+  const subStatus  = summary?.subscriptionStatus || "NONE";
+  const nextPay    = summary?.nextPaymentDate
+    ? new Date(summary.nextPaymentDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+    : "—";
 
   if (!user) {
     return (
@@ -225,27 +246,71 @@ export default function Dashboard() {
 
         {/* Plan Overview Cards */}
         <div className="dash-section" style={{ marginBottom: 32 }}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            <DashboardCard
-              title="Active Plan"
-              value={dashboardData.plan.name}
-              small={`₹${dashboardData.plan.premium}/week · ₹${dashboardData.plan.coverage} coverage`}
-            />
-            <DashboardCard
-              title="Weekly Premium"
-              value={`₹${dashboardData.plan.premium}`}
-            />
-            <DashboardCard
-              title="Coverage Amount"
-              value={`₹${dashboardData.plan.coverage}`}
-            />
-            <DashboardCard
-              title="Risk Level"
-              value={dashboardData.plan.risk}
-              small="Weather sensitive"
-            />
-          </div>
+          {loadingSum ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16 }}>
+              {[0,1,2,3].map(i => (
+                <div key={i} style={{ height: 90, borderRadius: 16, background: "linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%)", backgroundSize: "800px 100%", animation: "shimmer 1.4s infinite" }} />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+              <DashboardCard
+                title="Active Plan"
+                value={planName}
+                small={planName === "No Plan" ? "No plan yet – buy one!" : `₹${premium}/week · ₹${cov.toLocaleString("en-IN")} coverage`}
+              />
+              <DashboardCard
+                title="Weekly Premium"
+                value={premium > 0 ? `₹${premium}` : "—"}
+                small={subStatus === "TRIAL" ? "🎁 Free Trial" : subStatus === "ACTIVE" ? "🟢 Active" : subStatus}
+              />
+              <DashboardCard
+                title="Coverage Amount"
+                value={cov > 0 ? `₹${cov.toLocaleString("en-IN")}` : "—"}
+              />
+              <DashboardCard
+                title="Next Payment"
+                value={nextPay}
+                small={risk !== "—" ? `${risk} Risk` : "No active plan"}
+              />
+            </div>
+          )}
         </div>
+
+        {/* Recent Payments from backend */}
+        {!loadingSum && summary?.recentPayments?.length > 0 && (
+          <div className="dash-section" style={{ marginBottom: 32 }}>
+            <div className="dash-card" style={{ background: "#fff", borderRadius: 16, overflow: "hidden", boxShadow: "0 8px 32px rgba(15,23,42,0.08)" }}>
+              <div style={{ padding: "20px 24px" }}>
+                <h3 style={{ fontFamily: "Sora,sans-serif", fontSize: 18, fontWeight: 700, color: "#0f172a", marginBottom: 16 }}>💳 Recent Payments</h3>
+                {summary.recentPayments.map((p, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #f1f5f9", fontSize: 14 }}>
+                    <div>
+                      <span style={{ fontWeight: 700, color: "#0f172a" }}>{p.plan} Plan</span>
+                      <span style={{ color: "#94a3b8", marginLeft: 8, fontSize: 12 }}>{p.method.replace("_"," ")} · {new Date(p.date).toLocaleDateString("en-IN")}</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span style={{ fontWeight: 700, color: "#0f172a" }}>{p.amount === 0 ? "Free" : `₹${p.amount}`}</span>
+                      <span style={{ padding: "3px 8px", borderRadius: 8, fontSize: 11, fontWeight: 700, background: p.status === "SUCCESS" ? "#dcfce7" : "#fee2e2", color: p.status === "SUCCESS" ? "#16a34a" : "#dc2626" }}>{p.status}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* No plan CTA */}
+        {!loadingSum && subStatus === "NONE" && (
+          <div className="dash-section" style={{ marginBottom: 32 }}>
+            <div style={{ background: "linear-gradient(135deg,#7c3aed,#a78bfa)", borderRadius: 20, padding: "32px", textAlign: "center", color: "#fff" }}>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>🛡️</div>
+              <h3 style={{ fontFamily: "Sora,sans-serif", fontWeight: 800, fontSize: 22, marginBottom: 8 }}>You Don't Have a Plan Yet</h3>
+              <p style={{ color: "rgba(255,255,255,0.8)", marginBottom: 20 }}>Get covered today — start with a 7-day free trial, no payment required.</p>
+              <button onClick={() => navigate("/plans")} style={{ background: "#fff", color: "#7c3aed", border: "none", borderRadius: 12, padding: "13px 32px", fontFamily: "Sora,sans-serif", fontWeight: 800, fontSize: 15, cursor: "pointer" }}>Browse Plans →</button>
+            </div>
+          </div>
+        )}
 
         {/* Quick Actions */}
         <div className="dash-section" style={{ marginBottom: 32 }}>
