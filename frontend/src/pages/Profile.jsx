@@ -2,6 +2,13 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
 
+import swiggyBanner from "../../../assets/swiggy-banner.png";
+import amazonBanner from "../../../assets/amazon-banner.png";
+import flipkartBanner from "../../../assets/flipkart-banner.png";
+import zeptoBanner from "../../../assets/zepto-banner.png";
+import dunzoBanner from "../../../assets/dunzo-banner.png";
+import zomatoBanner from "../../../assets/zomato-banner.png";
+
 import swiggyLogo from "../../../assets/swiggy.png";
 import amazonLogo from "../../../assets/amazon.png";
 import flipkartLogo from "../../../assets/flipkart.png";
@@ -11,62 +18,62 @@ import dunzoLogo from "../../../assets/dunzo.png";
 const PLATFORMS = ["Zomato", "Swiggy", "Amazon", "Flipkart", "Zepto", "Dunzo"];
 
 const partnerThemes = {
-  Zomato:   { gradient: "linear-gradient(135deg,#ff4d4d,#ff8566)", light: "#fff1f0", accent: "#ff4d4d", logo: "https://brandlogos.net/wp-content/uploads/2025/02/zomato-logo_brandlogos.net_9msh7.png" },
-  Swiggy:   { gradient: "linear-gradient(135deg,#fc8019,#ffb347)", light: "#fff7ed", accent: "#fc8019", logo: swiggyLogo },
-  Amazon:   { gradient: "linear-gradient(135deg,#f59e0b,#fcd34d)", light: "#fffbeb", accent: "#f59e0b", logo: amazonLogo },
-  Flipkart: { gradient: "linear-gradient(135deg,#2874f0,#60a5fa)", light: "#eff6ff", accent: "#2874f0", logo: flipkartLogo },
-  Zepto:    { gradient: "linear-gradient(135deg,#7c3aed,#a78bfa)", light: "#faf5ff", accent: "#7c3aed", logo: zeptoLogo },
-  Dunzo:    { gradient: "linear-gradient(135deg,#16a34a,#4ade80)", light: "#f0fdf4", accent: "#16a34a", logo: dunzoLogo },
+  Zomato: { gradient: "linear-gradient(135deg,#ff4d4d,#ff8566)", light: "#fff1f0", accent: "#ff4d4d", logo: "https://brandlogos.net/wp-content/uploads/2025/02/zomato-logo_brandlogos.net_9msh7.png", banner: zomatoBanner },
+  Swiggy: { gradient: "linear-gradient(135deg,#fc8019,#ffb347)", light: "#fff7ed", accent: "#fc8019", logo: swiggyLogo, banner: swiggyBanner },
+  Amazon: { gradient: "linear-gradient(135deg,#f59e0b,#fcd34d)", light: "#fffbeb", accent: "#f59e0b", logo: amazonLogo, banner: amazonBanner },
+  Flipkart: { gradient: "linear-gradient(135deg,#2874f0,#60a5fa)", light: "#eff6ff", accent: "#2874f0", logo: flipkartLogo, banner: flipkartBanner },
+  Zepto: { gradient: "linear-gradient(135deg,#7c3aed,#a78bfa)", light: "#faf5ff", accent: "#7c3aed", logo: zeptoLogo, banner: zeptoBanner },
+  Dunzo: { gradient: "linear-gradient(135deg,#16a34a,#4ade80)", light: "#f0fdf4", accent: "#16a34a", logo: dunzoLogo, banner: dunzoBanner },
 };
 
-const defaultTheme = { gradient: "linear-gradient(135deg,#16a34a,#4ade80)", light: "#f0fdf4", accent: "#16a34a", logo: null };
+const defaultTheme = { gradient: "linear-gradient(135deg,#16a34a,#4ade80)", light: "#f0fdf4", accent: "#16a34a", logo: null, banner: null };
 
 function IconUser() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
     </svg>
   );
 }
 function IconMail() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+      <rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
     </svg>
   );
 }
 function IconPhone() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="17" r="1" fill="currentColor"/>
+      <rect x="5" y="2" width="14" height="20" rx="2" /><circle cx="12" cy="17" r="1" fill="currentColor" />
     </svg>
   );
 }
 function IconBriefcase() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="12"/>
+      <rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
     </svg>
   );
 }
 function IconEdit() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
     </svg>
   );
 }
 function IconCheck() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12"/>
+      <polyline points="20 6 9 17 4 12" />
     </svg>
   );
 }
 function IconX() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
     </svg>
   );
 }
@@ -85,26 +92,20 @@ const STYLES = `
     from { opacity: 0; transform: scale(0.94); }
     to   { opacity: 1; transform: scale(1); }
   }
-  @keyframes shimmer {
-    0%   { background-position: -400px 0; }
-    100% { background-position: 400px 0; }
-  }
   @keyframes spin { to { transform: rotate(360deg); } }
-  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+  @keyframes bannerIn {
+    from { opacity: 0; transform: scale(1.04); }
+    to   { opacity: 1; transform: scale(1); }
+  }
 
-  .prof-banner  { animation: fadeUp 0.6s cubic-bezier(.22,.68,0,1.2) both; }
-  .prof-card    { animation: scaleIn 0.55s cubic-bezier(.22,.68,0,1.2) 0.1s both; }
+  .prof-banner  { animation: bannerIn 0.7s ease both; }
+  .prof-card    { animation: scaleIn 0.55s cubic-bezier(.22,.68,0,1.2) 0.15s both; }
   .prof-section { animation: fadeUp 0.5s ease 0.2s both; }
 
   .prof-input {
-    width: 100%;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 11px 14px 11px 44px;
-    font-size: 14px;
-    background: #f8fafc;
-    color: #0f172a;
-    outline: none;
+    width: 100%; border: 1.5px solid #e2e8f0; border-radius: 12px;
+    padding: 11px 14px 11px 44px; font-size: 14px; background: #f8fafc;
+    color: #0f172a; outline: none;
     transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
     appearance: none;
   }
@@ -113,11 +114,7 @@ const STYLES = `
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
     background: #fff;
   }
-  .prof-input:disabled {
-    background: #f1f5f9;
-    color: #94a3b8;
-    cursor: not-allowed;
-  }
+  .prof-input:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
   .prof-input::placeholder { color: #94a3b8; }
 
   .info-row {
@@ -127,10 +124,8 @@ const STYLES = `
     transition: background 0.2s, transform 0.2s, border-color 0.2s;
   }
   .info-row:hover {
-    background: #fff;
-    border-color: #e2e8f0;
-    transform: translateX(4px);
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    background: #fff; border-color: #e2e8f0;
+    transform: translateX(4px); box-shadow: 0 2px 12px rgba(0,0,0,0.06);
   }
 
   .p-chip {
@@ -141,9 +136,7 @@ const STYLES = `
   }
   .p-chip:hover { border-color: #86efac; background: #f0fdf4; color: #16a34a; }
   .p-chip.active {
-    border-color: var(--accent);
-    background: var(--accent-light);
-    color: var(--accent);
+    border-color: var(--accent); background: var(--accent-light); color: var(--accent);
     box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 20%, transparent);
   }
 
@@ -164,9 +157,7 @@ const STYLES = `
     padding: 11px 22px; border-radius: 12px;
     font-family: 'Sora', sans-serif; font-weight: 700; font-size: 14px;
     color: #fff; border: none; cursor: pointer;
-    background: var(--gradient);
-    transition: transform 0.2s, box-shadow 0.2s;
-    box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 30%, transparent);
+    background: var(--gradient); transition: transform 0.2s, box-shadow 0.2s;
   }
   .save-btn:hover { transform: translateY(-2px); }
 
@@ -179,35 +170,18 @@ const STYLES = `
   }
   .cancel-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
 
-  .avatar-ring {
-    width: 80px; height: 80px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    background: var(--gradient);
-    box-shadow: 0 4px 20px color-mix(in srgb, var(--accent) 35%, transparent);
-    flex-shrink: 0;
-    position: relative;
-  }
-  .avatar-ring::after {
-    content: '';
-    position: absolute; inset: -3px;
-    border-radius: 50%;
-    border: 2px solid color-mix(in srgb, var(--accent) 30%, transparent);
-    animation: pulse 2.5s ease infinite;
-  }
-
   .toast {
     position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
-    background: #0f172a; color: #fff; padding: 12px 24px; border-radius: 14px;
+    color: #fff; padding: 12px 24px; border-radius: 14px;
     font-size: 13px; font-weight: 600; z-index: 9999;
     box-shadow: 0 8px 32px rgba(0,0,0,0.2);
     animation: fadeUp 0.4s ease both;
     display: flex; align-items: center; gap: 8px;
   }
 
-  .banner-blob {
-    position: absolute; border-radius: 50%; opacity: 0.18; filter: blur(40px);
-    pointer-events: none;
-  }
+  .banner-content { bottom: 110px; }
+@media (max-width: 640px) { .banner-content { bottom: 75px; } }
+
 `;
 
 function FieldIcon({ children }) {
@@ -289,66 +263,102 @@ export default function Profile() {
       <div
         className="prof-banner"
         style={{
-          background: theme.gradient,
           position: "relative",
           overflow: "hidden",
-          padding: "48px 24px 80px",
+          height: "clamp(220px, 30vw, 280px)",
+          ...(theme.banner
+            ? {
+              backgroundImage: `url(${theme.banner})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              backgroundRepeat: "no-repeat",
+            }
+            : { background: theme.gradient }
+          ),
         }}
       >
-        <div className="banner-blob" style={{ width: 300, height: 300, background: "#fff", top: -80, right: -60 }} />
-        <div className="banner-blob" style={{ width: 200, height: 200, background: "#fff", bottom: -60, left: 40 }} />
+        {/* dark overlay */}
+        <div style={{
+          position: "absolute", inset: 0,
+          background: "linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.65) 100%)",
+        }} />
 
-        <div style={{ maxWidth: 720, margin: "0 auto", position: "relative", zIndex: 2, display: "flex", alignItems: "center", gap: 24 }}>
+        {/* banner content — bottom left */}
+        <div className="banner-content" style={{
+          position: "absolute",
+          left: 0, right: 0,
+          zIndex: 2,
+          maxWidth: 720,
+          margin: "0 auto",
+          padding: "0 28px",
+          display: "flex",
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 18,
+        }}>
+          {/* Avatar circle */}
           <div style={{
-            width: 80, height: 80, borderRadius: "50%",
-            background: "rgba(255,255,255,0.25)",
-            backdropFilter: "blur(8px)",
-            border: "2.5px solid rgba(255,255,255,0.5)",
+            width: 72, height: 72, borderRadius: "50%", flexShrink: 0,
+            background: "rgba(255,255,255,0.2)",
+            backdropFilter: "blur(12px)",
+            border: "3px solid rgba(255,255,255,0.7)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            flexShrink: 0,
-            boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
           }}>
-            <span style={{ fontFamily: "Sora,sans-serif", fontWeight: 800, fontSize: 28, color: "#fff" }}>{initials}</span>
+            <span style={{
+              fontFamily: "Sora,sans-serif", fontWeight: 800, fontSize: 24,
+              color: "#fff", textShadow: "0 1px 4px rgba(0,0,0,0.3)",
+            }}>
+              {initials}
+            </span>
           </div>
 
-          <div style={{ flex: 1 }}>
-            <div style={{
-              display: "inline-flex", alignItems: "center", gap: 6,
-              background: "rgba(255,255,255,0.2)", backdropFilter: "blur(6px)",
-              borderRadius: 20, padding: "4px 12px", marginBottom: 8,
-              border: "1px solid rgba(255,255,255,0.3)",
+          {/* Name + Gig Worker badge */}
+          <div style={{
+            display: "flex", flexDirection: "column",
+            alignItems: "flex-start", gap: 7,
+          }}>
+            <h1 style={{
+              fontFamily: "Sora,sans-serif", fontWeight: 800,
+              fontSize: "clamp(20px, 3.5vw, 26px)",
+              color: "#ffffff", margin: 0, lineHeight: 1.15,
+              textShadow: "0 2px 14px rgba(0,0,0,0.5)",
             }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#fff", display: "inline-block" }} />
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#fff", letterSpacing: "0.15em", textTransform: "uppercase" }}>Gig Worker</span>
-            </div>
-            <h1 style={{ fontFamily: "Sora,sans-serif", fontWeight: 800, fontSize: "clamp(22px,4vw,32px)", color: "#fff", margin: 0, lineHeight: 1.2, textShadow: "0 2px 12px rgba(0,0,0,0.15)" }}>
               {user.name}
             </h1>
-            <p style={{ fontSize: 14, color: "rgba(255,255,255,0.8)", marginTop: 4 }}>{user.platform} · {user.email}</p>
+
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              background: "rgba(255,255,255,0.15)",
+              backdropFilter: "blur(8px)",
+              border: "1px solid rgba(255,255,255,0.3)",
+              borderRadius: 20,
+              padding: "4px 12px",
+            }}>
+              <span style={{
+                width: 6, height: 6, borderRadius: "50%",
+                background: "#4ade80", display: "inline-block", flexShrink: 0,
+              }} />
+              <span style={{
+                fontSize: 11, fontWeight: 700,
+                color: "rgba(255,255,255,0.95)",
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+              }}>
+                Gig Worker
+              </span>
+            </div>
           </div>
 
-          {theme.logo && (
-            <div style={{
-              background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)",
-              borderRadius: 16, padding: "10px 14px",
-              border: "1px solid rgba(255,255,255,0.35)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              flexShrink: 0,
-            }}>
-              <img src={theme.logo} alt={user.platform} style={{ height: 32, maxWidth: 80, objectFit: "contain", filter: "brightness(0) invert(1)" }} />
-            </div>
-          )}
         </div>
       </div>
 
-      {/* ── CARD (overlaps banner) ── */}
-      <div style={{ maxWidth: 720, margin: "-40px auto 48px", padding: "0 16px", position: "relative", zIndex: 10 }}>
+      {/* ── CARD ── */}
+      <div style={{ maxWidth: 720, margin: "-32px auto 48px", padding: "0 16px", position: "relative", zIndex: 10 }}>
         <div
           className="prof-card"
           style={{
-            background: "#fff",
-            borderRadius: 24,
-            overflow: "hidden",
+            background: "#fff", borderRadius: 24, overflow: "hidden",
             boxShadow: "0 20px 60px rgba(15,23,42,0.12), 0 4px 16px rgba(0,0,0,0.06)",
           }}
         >
@@ -387,11 +397,7 @@ export default function Profile() {
                   <p style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 10 }}>Platform</p>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 8 }}>
                     {PLATFORMS.map(p => (
-                      <button
-                        key={p} type="button"
-                        className={`p-chip ${form.platform === p ? "active" : ""}`}
-                        onClick={() => setForm(f => ({ ...f, platform: p }))}
-                      >
+                      <button key={p} type="button" className={`p-chip ${form.platform === p ? "active" : ""}`} onClick={() => setForm(f => ({ ...f, platform: p }))}>
                         {p}
                       </button>
                     ))}
@@ -406,8 +412,8 @@ export default function Profile() {
                     {saving ? (
                       <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <svg style={{ width: 14, height: 14, animation: "spin 0.8s linear infinite" }} viewBox="0 0 24 24" fill="none">
-                          <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" strokeWidth="3"/>
-                          <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="3" strokeLinecap="round"/>
+                          <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" strokeWidth="3" />
+                          <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="3" strokeLinecap="round" />
                         </svg>
                         Saving…
                       </span>
@@ -421,16 +427,16 @@ export default function Profile() {
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                     <div style={{
-                      width: 56, height: 56, borderRadius: "50%",
+                      width: 52, height: 52, borderRadius: "50%",
                       background: theme.gradient,
                       display: "flex", alignItems: "center", justifyContent: "center",
                       boxShadow: `0 4px 16px color-mix(in srgb, ${theme.accent} 30%, transparent)`,
                       flexShrink: 0,
                     }}>
-                      <span style={{ fontFamily: "Sora,sans-serif", fontWeight: 800, fontSize: 20, color: "#fff" }}>{initials}</span>
+                      <span style={{ fontFamily: "Sora,sans-serif", fontWeight: 800, fontSize: 18, color: "#fff" }}>{initials}</span>
                     </div>
                     <div>
-                      <h2 style={{ fontFamily: "Sora,sans-serif", fontSize: 18, fontWeight: 800, color: "#0f172a", margin: 0 }}>{user.name}</h2>
+                      <h2 style={{ fontFamily: "Sora,sans-serif", fontSize: 17, fontWeight: 800, color: "#0f172a", margin: 0 }}>{user.name}</h2>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
                         <span style={{
                           fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20,
@@ -442,14 +448,14 @@ export default function Profile() {
                     </div>
                   </div>
                   {theme.logo && (
-                    <img src={theme.logo} alt={user.platform} style={{ height: 28, maxWidth: 72, objectFit: "contain", opacity: 0.85 }} />
+                    <img src={theme.logo} alt={user.platform} style={{ height: 26, maxWidth: 68, objectFit: "contain", opacity: 0.8 }} />
                   )}
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
                   {[
-                    { icon: <IconMail />,      label: "Email",    value: user.email },
-                    { icon: <IconPhone />,     label: "Phone",    value: user.phone },
+                    { icon: <IconMail />, label: "Email", value: user.email },
+                    { icon: <IconPhone />, label: "Phone", value: user.phone },
                     { icon: <IconBriefcase />, label: "Platform", value: user.platform },
                   ].map(row => (
                     <div key={row.label} className="info-row">

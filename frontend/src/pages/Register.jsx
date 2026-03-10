@@ -9,12 +9,12 @@ import bannerLarge from "../../../assets/PlainBackground.png";
 const PLATFORMS = ["Zomato", "Swiggy", "Amazon", "Zepto", "Blinkit"];
 
 const PARTNER_LOGOS = [
-  { src: "https://brandlogos.net/wp-content/uploads/2025/02/zomato-logo_brandlogos.net_9msh7.png", alt: "Zomato", bg: "#FFF1F0" },
-  { src: "https://cdn.prod.website-files.com/600ee75084e3fe0e5731624c/65b6224b00ab2b9163719086_swiggy-logo.svg", alt: "Swiggy", bg: "#FFF7ED" },
-  { src: "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg", alt: "Amazon", bg: "#FFFBEB" },
-  { src: "https://play-lh.googleusercontent.com/0-sXSA0gnPDKi6EeQQCYPsrDx6DqnHELJJ7wFP8bWCpziL4k5kJf8RnOoupdnOFuDm_n=s256-rw", alt: "Flipkart", bg: "#EFF6FF" },
-  { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Zepto_Logo.svg/1280px-Zepto_Logo.svg.png", alt: "Zepto", bg: "#FAF5FF" },
-  { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Dunzo_Logo.svg/960px-Dunzo_Logo.svg.png", alt: "Dunzo", bg: "#F0FDF4" },
+  { src: "https://brandlogos.net/wp-content/uploads/2025/02/zomato-logo_brandlogos.net_9msh7.png", alt: "Zomato", bg: "#FFF1F0", border: "#fca5a5" },
+  { src: "https://cdn.prod.website-files.com/600ee75084e3fe0e5731624c/65b6224b00ab2b9163719086_swiggy-logo.svg", alt: "Swiggy", bg: "#FFF7ED", border: "#fdba74" },
+  { src: "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg", alt: "Amazon", bg: "#FFFBEB", border: "#fcd34d" },
+  { src: "https://play-lh.googleusercontent.com/0-sXSA0gnPDKi6EeQQCYPsrDx6DqnHELJJ7wFP8bWCpziL4k5kJf8RnOoupdnOFuDm_n=s256-rw", alt: "Flipkart", bg: "#EFF6FF", border: "#93c5fd" },
+  { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Zepto_Logo.svg/1280px-Zepto_Logo.svg.png", alt: "Zepto", bg: "#FAF5FF", border: "#c4b5fd" },
+  { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Dunzo_Logo.svg/960px-Dunzo_Logo.svg.png", alt: "Dunzo", bg: "#F0FDF4", border: "#86efac" },
 ];
 
 function IconMail() {
@@ -45,56 +45,31 @@ const STYLES = `
   .mob-banner { animation: bannerIn 0.7s ease both; }
 
   .reg-input {
-    width: 100%;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 11px 14px 11px 44px;
-    font-size: 14px;
-    background: #f8fafc;
-    color: #0f172a;
-    outline: none;
+    width: 100%; border: 1.5px solid #e2e8f0; border-radius: 12px;
+    padding: 11px 14px 11px 44px; font-size: 14px; background: #f8fafc;
+    color: #0f172a; outline: none;
     transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
-    -webkit-appearance: none;
-    appearance: none;
-    box-sizing: border-box;
+    -webkit-appearance: none; appearance: none; box-sizing: border-box;
   }
-  .reg-input:focus {
-    border-color: #16a34a;
-    box-shadow: 0 0 0 3px rgba(22,163,74,0.13);
-    background: #fff;
-  }
+  .reg-input:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,0.13); background: #fff; }
   .reg-input::placeholder { color: #94a3b8; }
 
   .reg-input-password {
-    width: 100%;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 11px 44px 11px 44px;
-    font-size: 14px;
-    background: #f8fafc;
-    color: #0f172a;
-    outline: none;
+    width: 100%; border: 1.5px solid #e2e8f0; border-radius: 12px;
+    padding: 11px 44px 11px 44px; font-size: 14px; background: #f8fafc;
+    color: #0f172a; outline: none;
     transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
-    -webkit-appearance: none;
-    appearance: none;
-    box-sizing: border-box;
+    -webkit-appearance: none; appearance: none; box-sizing: border-box;
   }
-  .reg-input-password:focus {
-    border-color: #16a34a;
-    box-shadow: 0 0 0 3px rgba(22,163,74,0.13);
-    background: #fff;
-  }
+  .reg-input-password:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,0.13); background: #fff; }
   .reg-input-password::placeholder { color: #94a3b8; }
 
   .reg-btn {
-    position: relative; overflow: hidden;
-    width: 100%; padding: 12px; border-radius: 12px;
+    position: relative; overflow: hidden; width: 100%; padding: 12px; border-radius: 12px;
     font-family: 'Sora', sans-serif; font-weight: 700; font-size: 15px;
     color: #fff; background: linear-gradient(135deg, #16a34a, #22c55e);
-    border: none; cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-    box-shadow: 0 4px 16px rgba(22,163,74,0.3);
-    letter-spacing: 0.01em;
+    border: none; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 16px rgba(22,163,74,0.3); letter-spacing: 0.01em;
   }
   .reg-btn:hover  { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(22,163,74,0.4); }
   .reg-btn:active { transform: translateY(0); }
@@ -136,18 +111,58 @@ const STYLES = `
 
   @keyframes spin { to { transform: rotate(360deg); } }
   .pw-bar { height: 3px; border-radius: 99px; transition: width 0.3s, background 0.3s; }
+
+  @keyframes ticker {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  .logo-track {
+    display: flex; gap: 10px;
+    animation: ticker 14s linear infinite;
+    width: max-content;
+  }
+  .logo-track:hover { animation-play-state: paused; }
+  .logo-scroll-wrap {
+    width: 240px;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%);
+  }
 `;
 
 function FieldIcon({ children }) {
   return (
     <span style={{
-      position: "absolute", left: 14, top: "50%",
-      transform: "translateY(-50%)",
-      color: "#94a3b8", display: "flex", alignItems: "center",
-      pointerEvents: "none", zIndex: 1,
+      position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)",
+      color: "#94a3b8", display: "flex", alignItems: "center", pointerEvents: "none", zIndex: 1,
     }}>
       {children}
     </span>
+  );
+}
+
+function LogoScroller() {
+  const doubled = [...PARTNER_LOGOS, ...PARTNER_LOGOS];
+  return (
+    <div>
+      <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 8 }}>
+        Supported Platforms
+      </p>
+      <div className="logo-scroll-wrap">
+        <div className="logo-track">
+          {doubled.map((p, i) => (
+            <div key={i} title={p.alt} style={{
+              width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+              background: p.bg, border: "1.5px solid #e2e8f0",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+            }}>
+              <img src={p.src} alt={p.alt} style={{ maxWidth: 26, maxHeight: 20, objectFit: "contain" }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -202,16 +217,9 @@ function FormBody({ form, setForm, loading, error, submit }) {
             value={form.password}
             onChange={set("password")}
           />
-          <button
-            type="button"
-            onClick={() => setShowPw((v) => !v)}
-            style={{
-              position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)",
-              background: "none", border: "none", cursor: "pointer",
-              color: "#94a3b8", padding: 0, display: "flex", alignItems: "center",
-            }}
-            tabIndex={-1}
-          >
+          <button type="button" onClick={() => setShowPw((v) => !v)}
+            style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: 0, display: "flex", alignItems: "center" }}
+            tabIndex={-1}>
             {showPw ? (
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
@@ -241,11 +249,7 @@ function FormBody({ form, setForm, loading, error, submit }) {
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
           {PLATFORMS.map((p) => (
-            <button
-              key={p} type="button"
-              onClick={() => togglePlatform(p)}
-              className={`p-chip ${form.platform === p ? "active" : ""}`}
-            >
+            <button key={p} type="button" onClick={() => togglePlatform(p)} className={`p-chip ${form.platform === p ? "active" : ""}`}>
               {p}
             </button>
           ))}
@@ -256,12 +260,7 @@ function FormBody({ form, setForm, loading, error, submit }) {
       </div>
 
       {error && (
-        <div style={{
-          display: "flex", alignItems: "center", gap: 8,
-          background: "#fef2f2", border: "1.5px solid #fecaca",
-          borderRadius: 12, padding: "10px 14px",
-          color: "#dc2626", fontSize: 13, fontWeight: 500,
-        }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#fef2f2", border: "1.5px solid #fecaca", borderRadius: 12, padding: "10px 14px", color: "#dc2626", fontSize: 13, fontWeight: 500 }}>
           <span>⚠️</span> {error}
         </div>
       )}
@@ -345,28 +344,11 @@ export default function Register() {
       <Navbar />
 
       <div className="lg:hidden">
-        <div
-          className="mob-banner w-full"
-          style={{
-            backgroundImage: `url(${bannerSmall})`,
-            backgroundSize: "cover", backgroundPosition: "center",
-            height: "clamp(260px, 62vw, 360px)",
-            position: "relative", display: "flex",
-            alignItems: "center", justifyContent: "center",
-          }}
-        >
+        <div className="mob-banner w-full" style={{ backgroundImage: `url(${bannerSmall})`, backgroundSize: "cover", backgroundPosition: "center", height: "clamp(260px, 62vw, 360px)", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.22) 45%, rgba(248,250,252,0.96) 100%)" }} />
           <div style={{ position: "relative", zIndex: 2, textAlign: "center", padding: "0 28px", marginBottom: 48 }}>
-            <span style={{
-              display: "inline-block", background: "rgba(22,163,74,0.90)", color: "#fff",
-              fontSize: 10, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase",
-              padding: "5px 14px", borderRadius: 20, marginBottom: 10, boxShadow: "0 2px 12px rgba(22,163,74,0.4)",
-            }}>AI-Powered Insurance</span>
-            <h1 style={{
-              fontFamily: "Sora, sans-serif", fontSize: "clamp(22px, 6.5vw, 32px)",
-              fontWeight: 800, color: "#fff", lineHeight: 1.25,
-              textShadow: "0 2px 16px rgba(0,0,0,0.45)", margin: 0,
-            }}>Protect your Gig Income</h1>
+            <span style={{ display: "inline-block", background: "rgba(22,163,74,0.90)", color: "#fff", fontSize: 10, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", padding: "5px 14px", borderRadius: 20, marginBottom: 10, boxShadow: "0 2px 12px rgba(22,163,74,0.4)" }}>AI-Powered Insurance</span>
+            <h1 style={{ fontFamily: "Sora, sans-serif", fontSize: "clamp(22px, 6.5vw, 32px)", fontWeight: 800, color: "#fff", lineHeight: 1.25, textShadow: "0 2px 16px rgba(0,0,0,0.45)", margin: 0 }}>Protect your Gig Income</h1>
           </div>
         </div>
 
@@ -382,20 +364,10 @@ export default function Register() {
         </div>
       </div>
 
-      <div
-        className="hidden lg:flex items-center justify-center"
-        style={{
-          backgroundImage: `url(${bannerLarge})`,
-          backgroundSize: "cover", backgroundPosition: "center right",
-          minHeight: "calc(100vh - 64px)", padding: "28px 24px", position: "relative",
-        }}
-      >
+      <div className="hidden lg:flex items-center justify-center" style={{ backgroundImage: `url(${bannerLarge})`, backgroundSize: "cover", backgroundPosition: "center right", minHeight: "calc(100vh - 64px)", padding: "28px 24px", position: "relative" }}>
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(105deg, rgba(248,250,252,0.94) 0%, rgba(248,250,252,0.80) 42%, rgba(248,250,252,0.10) 100%)" }} />
 
-        <div style={{
-          position: "relative", zIndex: 10, width: "100%", maxWidth: 1040,
-          display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, alignItems: "start",
-        }}>
+        <div style={{ position: "relative", zIndex: 10, width: "100%", maxWidth: 1040, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, alignItems: "start" }}>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ display: "flex", gap: 8, marginBottom: -4 }}>
@@ -404,10 +376,7 @@ export default function Register() {
             </div>
 
             <div>
-              <span style={{
-                display: "inline-block", fontSize: 10, fontWeight: 800, letterSpacing: "0.2em", textTransform: "uppercase",
-                padding: "5px 12px", borderRadius: 20, background: "#dcfce7", color: "#15803d", border: "1px solid #bbf7d0", marginBottom: 12,
-              }}>AI-Powered Insurance</span>
+              <span style={{ display: "inline-block", fontSize: 10, fontWeight: 800, letterSpacing: "0.2em", textTransform: "uppercase", padding: "5px 12px", borderRadius: 20, background: "#dcfce7", color: "#15803d", border: "1px solid #bbf7d0", marginBottom: 12 }}>AI-Powered Insurance</span>
               <h1 style={{ fontFamily: "Sora, sans-serif", fontSize: "clamp(26px, 2.6vw, 38px)", fontWeight: 800, color: "#0f172a", lineHeight: 1.15 }}>
                 Secure your<br /><span style={{ color: "#16a34a" }}>Gig Income</span><br />in seconds.
               </h1>
@@ -429,18 +398,7 @@ export default function Register() {
               ))}
             </ul>
 
-            <div>
-              <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 8 }}>Supported Platforms</p>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {PARTNER_LOGOS.map((p) => (
-                  <div key={p.alt} title={p.alt} style={{ width: 40, height: 40, borderRadius: 10, background: p.bg, border: "1.5px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", transition: "transform 0.2s", cursor: "default" }}
-                    onMouseEnter={e => e.currentTarget.style.transform = "scale(1.12)"}
-                    onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
-                    <img src={p.src} alt={p.alt} style={{ maxWidth: 26, maxHeight: 20, objectFit: "contain" }} />
-                  </div>
-                ))}
-              </div>
-            </div>
+            <LogoScroller />
           </div>
 
           <div className="reg-card" style={{ marginLeft: "auto", width: "100%", maxWidth: 420 }}>

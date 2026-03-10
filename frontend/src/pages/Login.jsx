@@ -2,17 +2,17 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { loginUser } from "../api";
-import { IconUser, IconPhone, IconLock } from "../components/Icons";
+import { IconPhone, IconLock } from "../components/Icons";
 import bannerSmall from "../../../assets/Background.png";
 import bannerLarge from "../../../assets/PlainBackground.png";
 
 const PARTNER_LOGOS = [
-  { src: "https://brandlogos.net/wp-content/uploads/2025/02/zomato-logo_brandlogos.net_9msh7.png", alt: "Zomato", bg: "#FFF1F0" },
-  { src: "https://cdn.prod.website-files.com/600ee75084e3fe0e5731624c/65b6224b00ab2b9163719086_swiggy-logo.svg", alt: "Swiggy", bg: "#FFF7ED" },
-  { src: "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg", alt: "Amazon", bg: "#FFFBEB" },
-  { src: "https://play-lh.googleusercontent.com/0-sXSA0gnPDKi6EeQQCYPsrDx6DqnHELJJ7wFP8bWCpziL4k5kJf8RnOoupdnOFuDm_n=s256-rw", alt: "Flipkart", bg: "#EFF6FF" },
-  { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Zepto_Logo.svg/1280px-Zepto_Logo.svg.png", alt: "Zepto", bg: "#FAF5FF" },
-  { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Dunzo_Logo.svg/960px-Dunzo_Logo.svg.png", alt: "Dunzo", bg: "#F0FDF4" },
+  { src: "https://brandlogos.net/wp-content/uploads/2025/02/zomato-logo_brandlogos.net_9msh7.png", alt: "Zomato", bg: "#FFF1F0", border: "#fca5a5" },
+  { src: "https://cdn.prod.website-files.com/600ee75084e3fe0e5731624c/65b6224b00ab2b9163719086_swiggy-logo.svg", alt: "Swiggy", bg: "#FFF7ED", border: "#fdba74" },
+  { src: "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg", alt: "Amazon", bg: "#FFFBEB", border: "#fcd34d" },
+  { src: "https://play-lh.googleusercontent.com/0-sXSA0gnPDKi6EeQQCYPsrDx6DqnHELJJ7wFP8bWCpziL4k5kJf8RnOoupdnOFuDm_n=s256-rw", alt: "Flipkart", bg: "#EFF6FF", border: "#93c5fd" },
+  { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Zepto_Logo.svg/1280px-Zepto_Logo.svg.png", alt: "Zepto", bg: "#FAF5FF", border: "#c4b5fd" },
+  { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Dunzo_Logo.svg/960px-Dunzo_Logo.svg.png", alt: "Dunzo", bg: "#F0FDF4", border: "#86efac" },
 ];
 
 function IconMail() {
@@ -21,6 +21,41 @@ function IconMail() {
       <rect x="2" y="4" width="20" height="16" rx="2" />
       <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
     </svg>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg width="19" height="19" viewBox="0 0 24 24">
+      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+    </svg>
+  );
+}
+
+function FacebookIcon() {
+  return (
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="#1877F2">
+      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+    </svg>
+  );
+}
+
+function InstagramIcon() {
+  return (
+    <span style={{
+      width: 19, height: 19, borderRadius: 5, display: "inline-flex",
+      alignItems: "center", justifyContent: "center", flexShrink: 0,
+      background: "radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%)",
+    }}>
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="6" stroke="#fff" strokeWidth="2.5"/>
+        <circle cx="18" cy="6" r="1.8" fill="#fff"/>
+        <rect x="2" y="2" width="20" height="20" rx="5" stroke="#fff" strokeWidth="2.2" fill="none"/>
+      </svg>
+    </span>
   );
 }
 
@@ -43,56 +78,31 @@ const STYLES = `
   .mob-banner { animation: bannerIn 0.7s ease both; }
 
   .login-input {
-    width: 100%;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 11px 44px 11px 44px;
-    font-size: 14px;
-    background: #f8fafc;
-    color: #0f172a;
-    outline: none;
+    width: 100%; border: 1.5px solid #e2e8f0; border-radius: 12px;
+    padding: 11px 44px 11px 44px; font-size: 14px; background: #f8fafc;
+    color: #0f172a; outline: none;
     transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
-    -webkit-appearance: none;
-    appearance: none;
-    box-sizing: border-box;
+    -webkit-appearance: none; appearance: none; box-sizing: border-box;
   }
-  .login-input:focus {
-    border-color: #16a34a;
-    box-shadow: 0 0 0 3px rgba(22,163,74,0.13);
-    background: #fff;
-  }
+  .login-input:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,0.13); background: #fff; }
   .login-input::placeholder { color: #94a3b8; }
 
   .login-input-single {
-    width: 100%;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 11px 14px 11px 44px;
-    font-size: 14px;
-    background: #f8fafc;
-    color: #0f172a;
-    outline: none;
+    width: 100%; border: 1.5px solid #e2e8f0; border-radius: 12px;
+    padding: 11px 14px 11px 44px; font-size: 14px; background: #f8fafc;
+    color: #0f172a; outline: none;
     transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
-    -webkit-appearance: none;
-    appearance: none;
-    box-sizing: border-box;
+    -webkit-appearance: none; appearance: none; box-sizing: border-box;
   }
-  .login-input-single:focus {
-    border-color: #16a34a;
-    box-shadow: 0 0 0 3px rgba(22,163,74,0.13);
-    background: #fff;
-  }
+  .login-input-single:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,0.13); background: #fff; }
   .login-input-single::placeholder { color: #94a3b8; }
 
   .login-btn {
-    position: relative; overflow: hidden;
-    width: 100%; padding: 12px; border-radius: 12px;
+    position: relative; overflow: hidden; width: 100%; padding: 12px; border-radius: 12px;
     font-family: 'Sora', sans-serif; font-weight: 700; font-size: 15px;
     color: #fff; background: linear-gradient(135deg, #16a34a, #22c55e);
-    border: none; cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-    box-shadow: 0 4px 16px rgba(22,163,74,0.3);
-    letter-spacing: 0.01em;
+    border: none; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 16px rgba(22,163,74,0.3); letter-spacing: 0.01em;
   }
   .login-btn:hover  { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(22,163,74,0.4); }
   .login-btn:active { transform: translateY(0); }
@@ -105,6 +115,19 @@ const STYLES = `
   }
   .login-btn:hover::after { animation: btnShine 0.55s ease forwards; }
   @keyframes btnShine { to { left: 130%; } }
+
+  .social-btn {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    padding: 11px 0; border-radius: 12px; border: 1.5px solid #e2e8f0;
+    background: #fff; cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.18s, background 0.2s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .social-btn:hover {
+    border-color: #cbd5e1; background: #f8fafc;
+    transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+  }
+  .social-btn:active { transform: translateY(0); }
 
   .trust-pill {
     display: inline-flex; align-items: center; gap: 5px;
@@ -126,28 +149,78 @@ const STYLES = `
     font-size: 13px; font-weight: 600; border: none; cursor: pointer;
     transition: all 0.2s ease;
   }
-  .tab-btn.active {
-    background: #fff;
-    color: #15803d;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  }
-  .tab-btn.inactive {
-    background: transparent;
-    color: #94a3b8;
-  }
+  .tab-btn.active { background: #fff; color: #15803d; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .tab-btn.inactive { background: transparent; color: #94a3b8; }
   .tab-btn.inactive:hover { color: #64748b; }
+
+  @keyframes ticker {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  .logo-track {
+    display: flex; gap: 10px;
+    animation: ticker 14s linear infinite;
+    width: max-content;
+  }
+  .logo-track:hover { animation-play-state: paused; }
+  .logo-scroll-wrap {
+    width: 240px;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%);
+  }
 `;
 
 function FieldIcon({ children }) {
   return (
     <span style={{
-      position: "absolute", left: 14, top: "50%",
-      transform: "translateY(-50%)",
-      color: "#94a3b8", display: "flex", alignItems: "center",
-      pointerEvents: "none", zIndex: 1,
+      position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)",
+      color: "#94a3b8", display: "flex", alignItems: "center", pointerEvents: "none", zIndex: 1,
     }}>
       {children}
     </span>
+  );
+}
+
+function SocialButtons() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
+        <span style={{ fontSize: 11, fontWeight: 600, color: "#94a3b8", whiteSpace: "nowrap" }}>or continue with</span>
+        <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
+      </div>
+      <div style={{ display: "flex", gap: 10 }}>
+        <button className="social-btn" type="button" title="Google"><GoogleIcon /></button>
+        <button className="social-btn" type="button" title="Facebook"><FacebookIcon /></button>
+        <button className="social-btn" type="button" title="Instagram"><InstagramIcon /></button>
+      </div>
+    </div>
+  );
+}
+
+function LogoScroller() {
+  const doubled = [...PARTNER_LOGOS, ...PARTNER_LOGOS];
+  return (
+    <div>
+      <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 8 }}>
+        Supported Platforms
+      </p>
+      <div className="logo-scroll-wrap">
+        <div className="logo-track">
+          {doubled.map((p, i) => (
+            <div key={i} title={p.alt} style={{
+              width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+              background: p.bg, border: "1.5px solid #e2e8f0",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+            }}>
+              <img src={p.src} alt={p.alt} style={{ maxWidth: 26, maxHeight: 20, objectFit: "contain" }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -159,15 +232,8 @@ function FormBody({ form, setForm, loading, error, submit, loginMode, setLoginMo
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 
-      <div style={{
-        display: "flex", gap: 4, background: "#f1f5f9",
-        borderRadius: 12, padding: 4,
-      }}>
-        <button
-          type="button"
-          className={`tab-btn ${loginMode === "credentials" ? "active" : "inactive"}`}
-          onClick={() => setLoginMode("credentials")}
-        >
+      <div style={{ display: "flex", gap: 4, background: "#f1f5f9", borderRadius: 12, padding: 4 }}>
+        <button type="button" className={`tab-btn ${loginMode === "credentials" ? "active" : "inactive"}`} onClick={() => setLoginMode("credentials")}>
           <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="2" y="4" width="20" height="16" rx="2" />
@@ -176,11 +242,7 @@ function FormBody({ form, setForm, loading, error, submit, loginMode, setLoginMo
             Email
           </span>
         </button>
-        <button
-          type="button"
-          className={`tab-btn ${loginMode === "mobile" ? "active" : "inactive"}`}
-          onClick={() => setLoginMode("mobile")}
-        >
+        <button type="button" className={`tab-btn ${loginMode === "mobile" ? "active" : "inactive"}`} onClick={() => setLoginMode("mobile")}>
           <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="5" y="2" width="14" height="20" rx="2" />
@@ -194,28 +256,12 @@ function FormBody({ form, setForm, loading, error, submit, loginMode, setLoginMo
       {loginMode === "credentials" ? (
         <div style={{ position: "relative" }}>
           <FieldIcon><IconMail /></FieldIcon>
-          <input
-            className="login-input-single"
-            placeholder="Email Address"
-            type="email"
-            value={form.email}
-            onChange={set("email")}
-            onKeyDown={onKey}
-            autoComplete="email"
-          />
+          <input className="login-input-single" placeholder="Email Address" type="email" value={form.email} onChange={set("email")} onKeyDown={onKey} autoComplete="email" />
         </div>
       ) : (
         <div style={{ position: "relative" }}>
           <FieldIcon><IconPhone /></FieldIcon>
-          <input
-            className="login-input-single"
-            placeholder="Phone Number"
-            type="tel"
-            value={form.phone}
-            onChange={set("phone")}
-            onKeyDown={onKey}
-            autoComplete="tel"
-          />
+          <input className="login-input-single" placeholder="Phone Number" type="tel" value={form.phone} onChange={set("phone")} onKeyDown={onKey} autoComplete="tel" />
         </div>
       )}
 
@@ -230,37 +276,25 @@ function FormBody({ form, setForm, loading, error, submit, loginMode, setLoginMo
           onKeyDown={onKey}
           autoComplete="current-password"
         />
-        <button
-          type="button"
-          onClick={() => setShowPw((v) => !v)}
-          style={{
-            position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)",
-            background: "none", border: "none", cursor: "pointer",
-            color: "#94a3b8", padding: 0, display: "flex", alignItems: "center",
-          }}
-          tabIndex={-1}
-        >
+        <button type="button" onClick={() => setShowPw(v => !v)}
+          style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: 0, display: "flex", alignItems: "center" }}
+          tabIndex={-1}>
           {showPw ? (
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-              <line x1="1" y1="1" x2="23" y2="23" />
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+              <line x1="1" y1="1" x2="23" y2="23"/>
             </svg>
           ) : (
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-              <circle cx="12" cy="12" r="3" />
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
             </svg>
           )}
         </button>
       </div>
 
       {error && (
-        <div style={{
-          display: "flex", alignItems: "center", gap: 8,
-          background: "#fef2f2", border: "1.5px solid #fecaca",
-          borderRadius: 12, padding: "10px 14px",
-          color: "#dc2626", fontSize: 13, fontWeight: 500,
-        }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#fef2f2", border: "1.5px solid #fecaca", borderRadius: 12, padding: "10px 14px", color: "#dc2626", fontSize: 13, fontWeight: 500 }}>
           <span>⚠️</span> {error}
         </div>
       )}
@@ -269,13 +303,15 @@ function FormBody({ form, setForm, loading, error, submit, loginMode, setLoginMo
         {loading ? (
           <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
             <svg style={{ width: 16, height: 16, animation: "spin 0.8s linear infinite" }} viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" strokeWidth="3" />
-              <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="3" strokeLinecap="round" />
+              <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" strokeWidth="3"/>
+              <path d="M12 2a10 10 0 0 1 10 10" stroke="white" strokeWidth="3" strokeLinecap="round"/>
             </svg>
             Logging in…
           </span>
         ) : "Login →"}
       </button>
+
+      <SocialButtons />
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 2 }}>
         <Link to="/forgot" style={{ fontSize: 13, color: "#94a3b8", textDecoration: "none" }}
@@ -291,7 +327,7 @@ function FormBody({ form, setForm, loading, error, submit, loginMode, setLoginMo
       </div>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", paddingTop: 4 }}>
-        {["Secure login", "AI-protected", "Instant access"].map((b) => (
+        {["Secure login", "AI-protected", "Instant access"].map(b => (
           <span key={b} className="trust-pill"><span className="trust-dot" /> {b}</span>
         ))}
       </div>
@@ -348,28 +384,11 @@ export default function Login() {
       <Navbar />
 
       <div className="lg:hidden">
-        <div
-          className="mob-banner w-full"
-          style={{
-            backgroundImage: `url(${bannerSmall})`,
-            backgroundSize: "cover", backgroundPosition: "center",
-            height: "clamp(260px, 62vw, 360px)",
-            position: "relative", display: "flex",
-            alignItems: "center", justifyContent: "center",
-          }}
-        >
+        <div className="mob-banner w-full" style={{ backgroundImage: `url(${bannerSmall})`, backgroundSize: "cover", backgroundPosition: "center", height: "clamp(260px, 62vw, 360px)", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.22) 45%, rgba(248,250,252,0.96) 100%)" }} />
           <div style={{ position: "relative", zIndex: 2, textAlign: "center", padding: "0 28px", marginBottom: 48 }}>
-            <span style={{
-              display: "inline-block", background: "rgba(22,163,74,0.90)", color: "#fff",
-              fontSize: 10, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase",
-              padding: "5px 14px", borderRadius: 20, marginBottom: 10, boxShadow: "0 2px 12px rgba(22,163,74,0.4)",
-            }}>AI-Powered Insurance</span>
-            <h1 style={{
-              fontFamily: "Sora, sans-serif", fontSize: "clamp(22px, 6.5vw, 32px)",
-              fontWeight: 800, color: "#fff", lineHeight: 1.25,
-              textShadow: "0 2px 16px rgba(0,0,0,0.45)", margin: 0,
-            }}>Welcome back 👋</h1>
+            <span style={{ display: "inline-block", background: "rgba(22,163,74,0.90)", color: "#fff", fontSize: 10, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", padding: "5px 14px", borderRadius: 20, marginBottom: 10, boxShadow: "0 2px 12px rgba(22,163,74,0.4)" }}>AI-Powered Insurance</span>
+            <h1 style={{ fontFamily: "Sora, sans-serif", fontSize: "clamp(22px, 6.5vw, 32px)", fontWeight: 800, color: "#fff", lineHeight: 1.25, textShadow: "0 2px 16px rgba(0,0,0,0.45)", margin: 0 }}>Welcome back 👋</h1>
           </div>
         </div>
 
@@ -385,20 +404,10 @@ export default function Login() {
         </div>
       </div>
 
-      <div
-        className="hidden lg:flex items-center justify-center"
-        style={{
-          backgroundImage: `url(${bannerLarge})`,
-          backgroundSize: "cover", backgroundPosition: "center right",
-          minHeight: "calc(100vh - 64px)", padding: "28px 24px", position: "relative",
-        }}
-      >
+      <div className="hidden lg:flex items-center justify-center" style={{ backgroundImage: `url(${bannerLarge})`, backgroundSize: "cover", backgroundPosition: "center right", minHeight: "calc(100vh - 64px)", padding: "28px 24px", position: "relative" }}>
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(105deg, rgba(248,250,252,0.94) 0%, rgba(248,250,252,0.80) 42%, rgba(248,250,252,0.10) 100%)" }} />
 
-        <div style={{
-          position: "relative", zIndex: 10, width: "100%", maxWidth: 1040,
-          display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, alignItems: "start",
-        }}>
+        <div style={{ position: "relative", zIndex: 10, width: "100%", maxWidth: 1040, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, alignItems: "start" }}>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ display: "flex", gap: 8, marginBottom: -4 }}>
@@ -407,10 +416,7 @@ export default function Login() {
             </div>
 
             <div>
-              <span style={{
-                display: "inline-block", fontSize: 10, fontWeight: 800, letterSpacing: "0.2em", textTransform: "uppercase",
-                padding: "5px 12px", borderRadius: 20, background: "#dcfce7", color: "#15803d", border: "1px solid #bbf7d0", marginBottom: 12,
-              }}>AI-Powered Insurance</span>
+              <span style={{ display: "inline-block", fontSize: 10, fontWeight: 800, letterSpacing: "0.2em", textTransform: "uppercase", padding: "5px 12px", borderRadius: 20, background: "#dcfce7", color: "#15803d", border: "1px solid #bbf7d0", marginBottom: 12 }}>AI-Powered Insurance</span>
               <h1 style={{ fontFamily: "Sora, sans-serif", fontSize: "clamp(26px, 2.6vw, 38px)", fontWeight: 800, color: "#0f172a", lineHeight: 1.15 }}>
                 Welcome<br /><span style={{ color: "#16a34a" }}>back.</span>
               </h1>
@@ -424,7 +430,7 @@ export default function Login() {
                 { icon: "🛡️", text: "Your coverage is always active" },
                 { icon: "⚡", text: "Auto-claims — no forms needed" },
                 { icon: "💳", text: "Check your payout status anytime" },
-              ].map((item) => (
+              ].map(item => (
                 <li key={item.text} className="feat-li" style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ width: 32, height: 32, borderRadius: 9, background: "#f0fdf4", border: "1px solid #dcfce7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>{item.icon}</span>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "#334155" }}>{item.text}</span>
@@ -432,18 +438,7 @@ export default function Login() {
               ))}
             </ul>
 
-            <div>
-              <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 8 }}>Supported Platforms</p>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {PARTNER_LOGOS.map((p) => (
-                  <div key={p.alt} title={p.alt} style={{ width: 40, height: 40, borderRadius: 10, background: p.bg, border: "1.5px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", transition: "transform 0.2s", cursor: "default" }}
-                    onMouseEnter={e => e.currentTarget.style.transform = "scale(1.12)"}
-                    onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
-                    <img src={p.src} alt={p.alt} style={{ maxWidth: 26, maxHeight: 20, objectFit: "contain" }} />
-                  </div>
-                ))}
-              </div>
-            </div>
+            <LogoScroller />
           </div>
 
           <div className="login-card" style={{ marginLeft: "auto", width: "100%", maxWidth: 420 }}>
