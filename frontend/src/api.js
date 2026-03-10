@@ -22,6 +22,13 @@ export async function registerUser({ name, email, phone, password, platform }) {
   });
 }
 
+export async function adminChangeCredentials(updates) {
+  return request('/api/auth/admin/change', {
+    method: 'PUT',
+    body: JSON.stringify(updates),
+  });
+}
+
 export async function loginUser({ identifier, password }) {
   return request('/api/auth/login', {
     method: 'POST',
@@ -72,9 +79,55 @@ export async function getDashboardSummary() {
   return request('/api/subscriptions/dashboard', { method: 'GET' });
 }
 
+// ── User queries / chat support ─────────────────────────────────────────────────
+export async function postQuery(question) {
+  return request('/api/queries', { method: 'POST', body: JSON.stringify({ question }) });
+}
+export async function getMyQueries() {
+  return request('/api/queries/my', { method: 'GET' });
+}
+
+// ── Admin endpoints ──────────────────────────────────────────────────────────
+export async function adminListUsers() {
+  return request('/api/admin/users', { method: 'GET' });
+}
+export async function adminDeleteUser(id) {
+  return request(`/api/admin/users/${id}`, { method: 'DELETE' });
+}
+export async function adminUpdateUser(id, updates) {
+  return request(`/api/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(updates) });
+}
+
+export async function adminListPlans() {
+  return request('/api/admin/plans', { method: 'GET' });
+}
+export async function adminUpdatePlan(id, updates) {
+  return request(`/api/admin/plans/${id}`, { method: 'PUT', body: JSON.stringify(updates) });
+}
+
+export async function adminListPayments() {
+  return request('/api/admin/payments', { method: 'GET' });
+}
+export async function adminApprovePayment(id) {
+  return request(`/api/admin/payments/${id}/approve`, { method: 'PUT' });
+}
+
+export async function adminListQueries() {
+  return request('/api/admin/queries', { method: 'GET' });
+}
+export async function adminReplyQuery(id, body) {
+  return request(`/api/admin/queries/${id}/reply`, { method: 'PUT', body: JSON.stringify(body) });
+}
+
 export default {
   registerUser, loginUser, getCurrentUser, updateUser,
   getPlans, getPlanById,
   buyPlan, getMySubscriptions, getPaymentHistory,
   getDashboardSummary,
+  postQuery, getMyQueries,
+  adminChangeCredentials,
+  adminListUsers, adminDeleteUser, adminUpdateUser,
+  adminListPlans, adminUpdatePlan,
+  adminListPayments, adminApprovePayment,
+  adminListQueries, adminReplyQuery,
 };

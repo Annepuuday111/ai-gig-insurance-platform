@@ -55,4 +55,8 @@ public class PlanService {
         return planRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Plan not found: " + id));
     }
+
+    public Plan savePlan(Plan plan) {
+        return planRepository.save(plan);
+    }
 }

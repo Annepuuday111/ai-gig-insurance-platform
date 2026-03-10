@@ -110,6 +110,25 @@ Below are the primary user interface screens for the platform.
 
 ---
 
+## 6.5 Admin Dashboard
+
+An administrator account is built into the system for managing users, plans, payments, and support queries. The default credentials are:
+
+- **Email:** Gigadmin@gmail.com
+- **Password:** gigadmin@123
+
+Admins log in via the **same login page** as regular users using their email and password. If the submitted credentials match an admin account, the application redirects to the admin portal instead of the user dashboard.
+
+Once logged in, the admin may:
+
+- View/list and delete users
+- Review and reply to user queries
+- Adjust plan premiums and details
+- View payments and approve pending payouts
+- Change the admin email/password under Settings
+
+There is no separate admin registration page; credentials can be updated via the Settings panel after login.
+
 ## 7. System Workflow
 
 1. Worker registers on the platform

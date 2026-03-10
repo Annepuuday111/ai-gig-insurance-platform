@@ -1,7 +1,9 @@
 package com.example.aiinsurance.controller;
 
+import com.example.aiinsurance.model.Admin;
 import com.example.aiinsurance.model.User;
 import com.example.aiinsurance.service.UserService;
+import com.example.aiinsurance.service.AdminService;
 import com.example.aiinsurance.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +20,9 @@ public class AuthController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private AdminService adminService;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -60,6 +65,43 @@ public class AuthController {
             String identifier = request.get("identifier");
             String password = request.get("password");
 
+            // if identifier belongs to an admin, authenticate strictly as admin
+            if (identifier != null) {
+                String normalized = identifier.toLowerCase();
+                Optional<com.example.aiinsurance.model.Admin> adminOpt = adminService.findByEmail(normalized);
+                if (adminOpt.isPresent()) {
+                    if (!adminService.authenticate(normalized, password)) {
+                        return ResponseEntity.badRequest().body(Map.of("error", "Invalid credentials"));
+                    }
+                    String token = jwtUtil.generateToken(normalized, true);
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("token", token);
+                    response.put("isAdmin", true);
+                    response.put("email", normalized);
+                    return ResponseEntity.ok(response);
+                }
+                // if email not found, try legacy username migration (local-part)
+                if (normalized.contains("@")) {
+                    String local = normalized.split("@", 2)[0];
+                    Optional<com.example.aiinsurance.model.Admin> legacyOpt = adminService.findByEmail(local);
+                    if (legacyOpt.isPresent()) {
+                        // check password against legacy record
+                        if (adminService.authenticate(local, password)) {
+                            // update the admin record to new email
+                            Admin updated = adminService.changeCredentials(legacyOpt.get().getId(), normalized, null);
+                            String token = jwtUtil.generateToken(normalized, true);
+                            Map<String, Object> response = new HashMap<>();
+                            response.put("token", token);
+                            response.put("isAdmin", true);
+                            response.put("email", normalized);
+                            return ResponseEntity.ok(response);
+                        } else {
+                            return ResponseEntity.badRequest().body(Map.of("error", "Invalid credentials"));
+                        }
+                    }
+                }
+            }
+
             Optional<User> userOpt = userService.findByEmail(identifier);
             if (userOpt.isEmpty()) {
                 userOpt = userService.findByPhone(identifier);
@@ -76,6 +118,7 @@ public class AuthController {
             response.put("token", token);
             response.put("id", user.getId());
             response.put("name", user.getName());
+            response.put("isAdmin", false);
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {

@@ -39,8 +39,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+            boolean isAdmin = jwtUtil.extractIsAdmin(jwt);
             if (jwtUtil.validateToken(jwt)) {
+                UserDetails userDetails;
+                if (isAdmin) {
+                    // create a simple user detail with ADMIN role
+                    userDetails = org.springframework.security.core.userdetails.User
+                            .withUsername(username)
+                            .password("")
+                            .authorities("ROLE_ADMIN")
+                            .build();
+                } else {
+                    userDetails = this.userDetailsService.loadUserByUsername(username);
+                }
                 UsernamePasswordAuthenticationToken authenticationToken =
                     new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

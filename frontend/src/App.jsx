@@ -15,6 +15,7 @@ import Profile from "./pages/Profile";
 import Reports from "./pages/Reports";
 
 import Wireframes from "./pages/Wireframes";
+import AdminDashboard from "./pages/AdminDashboard";
 import MainLayout from "./layouts/MainLayout";
 
 export default function App() {
@@ -42,6 +43,9 @@ export default function App() {
           <Route path="/profile" element={<Profile />} />
 
         </Route>
+
+        {/* Admin area (separate layout) */}
+        <Route path="/admin" element={<AdminDashboard />} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

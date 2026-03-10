@@ -8,6 +8,7 @@ export default function Navbar() {
   const isAuthPage =
     location.pathname === "/login" ||
     location.pathname === "/register";
+  const isAdminPage = location.pathname.startsWith("/admin");
 
   const navLinks = [
     { label: "Home",         href: "/" },
@@ -19,7 +20,7 @@ export default function Navbar() {
     { label: "How It Works", href: "#how" },
   ];
 
-  const visibleLinks = isAuthPage
+  const visibleLinks = (isAuthPage || isAdminPage)
     ? navLinks.filter(l => l.label === "Home")
     : navLinks;
 
@@ -45,7 +46,7 @@ export default function Navbar() {
             ))}
           </nav>
 
-          {!isAuthPage && (
+          {!isAuthPage && !isAdminPage && (
             <Link
               to="/login"
               className="px-5 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 shadow transition"

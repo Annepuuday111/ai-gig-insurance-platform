@@ -361,13 +361,23 @@ export default function Login() {
     try {
       const identifier = loginMode === "credentials" ? form.email.trim().toLowerCase() : form.phone.trim();
       const res = await loginUser({ identifier, password: form.password });
-      if (res?.token) {
+      if (res?.error) {
+        // backend sent an error message in payload
+        setError(res.error);
+      } else if (res?.token) {
         localStorage.setItem("token", res.token);
-        localStorage.setItem("userId", res.id);
-        localStorage.setItem("userName", res.name || "");
-        navigate("/dashboard");
+        if (res.isAdmin) {
+          // admin login
+          localStorage.setItem("isAdmin", "true");
+          navigate("/admin");
+        } else {
+          localStorage.setItem("userId", res.id);
+          localStorage.setItem("userName", res.name || "");
+          navigate("/dashboard");
+        }
       } else {
-        setError(res?.error || "Invalid response from server.");
+        // unexpected response
+        setError("Login failed: no token received.");
       }
     } catch (e) {
       setError(e.message || "Network error. Please try again.");

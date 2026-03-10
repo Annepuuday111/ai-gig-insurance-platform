@@ -8,10 +8,10 @@ import { IconBell, IconChat, IconCard, IconShield, IconMoney } from "../componen
 import { getCurrentUser, getDashboardSummary } from "../api";
 
 import swiggyBanner from "../../../assets/swiggybanner.png";
-import amazonBanner from "../../../assets/amazon-banner.png";
-import flipkartBanner from "../../../assets/flipkart-banner.png";
-import zeptoBanner from "../../../assets/zepto-banner.png";
-import dunzoBanner from "../../../assets/dunzo-banner.png";
+import amazonBanner from "../../../assets/amazonbanner.png";
+import flipkartBanner from "../../../assets/flipkartbanner.png";
+import zeptoBanner from "../../../assets/zeptobanner.png";
+import dunzoBanner from "../../../assets/dunzobanner.png";
 import zomatoBanner from "../../../assets/zomatobanner.png";
 
 const partnerThemes = {

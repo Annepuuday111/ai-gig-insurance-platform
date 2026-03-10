@@ -18,8 +18,14 @@ public class JwtUtil {
     }
 
     public String generateToken(String username) {
+        // default non-admin token
+        return generateToken(username, false);
+    }
+
+    public String generateToken(String username, boolean isAdmin) {
         return Jwts.builder()
                 .setSubject(username)
+                .claim("admin", isAdmin)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
@@ -27,20 +33,26 @@ public class JwtUtil {
     }
 
     public String extractUsername(String token) {
+        return parseClaims(token).getSubject();
+    }
+
+    public boolean extractIsAdmin(String token) {
+        Claims claims = parseClaims(token);
+        Boolean admin = claims.get("admin", Boolean.class);
+        return admin != null && admin;
+    }
+
+    private Claims parseClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+                .getBody();
     }
 
     public boolean validateToken(String token) {
         try {
-            Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
-                .build()
-                .parseClaimsJws(token);
+            parseClaims(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false;

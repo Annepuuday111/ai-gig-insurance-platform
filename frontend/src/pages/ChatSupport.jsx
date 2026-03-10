@@ -1,6 +1,7 @@
 import React, {useState, useEffect} from 'react'
 import { useNavigate } from 'react-router-dom'
 import ChatMessage from '../components/ChatMessage'
+import { postQuery, getMyQueries } from '../api';
 
 export default function ChatSupport(){
 
@@ -9,18 +10,40 @@ export default function ChatSupport(){
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) navigate("/login");
+    else load();
   }, []);
 
-  const [messages, setMessages] = useState([
-    {from:'agent', text:'Hello! How can I help you today?', time:'10:00'},
-    {from:'user', text:'I had a payout processed.', time:'10:02'}
-  ])
-  const [text, setText] = useState('')
-  const send = ()=>{
-    if(!text) return
-    setMessages([...messages, {from:'user', text, time:'now'}])
-    setText('')
+  const [messages, setMessages] = useState([]);
+  const [text, setText] = useState('');
+
+  async function load() {
+    try {
+      const qs = await getMyQueries();
+      // convert to chat messages
+      const msgs = [];
+      qs.forEach(q => {
+        msgs.push({ from: 'user', text: q.question, time: q.createdAt });
+        if (q.answer) {
+          msgs.push({ from: 'agent', text: q.answer, time: q.answeredAt || '' });
+        }
+      });
+      setMessages(msgs);
+    } catch (e) {
+      console.error(e);
+    }
   }
+
+  const send = async ()=>{
+    if(!text) return
+    try {
+      await postQuery(text);
+      setText('');
+      load();
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   return (
     <>
       <h2 className="text-2xl font-semibold mb-4">Chat Support</h2>
