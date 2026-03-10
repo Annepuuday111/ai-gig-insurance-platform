@@ -22,6 +22,10 @@ public class AuthController {
     @Autowired
     private JwtUtil jwtUtil;
 
+    // needed for encoding a new password during profile updates
+    @Autowired
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Map<String, String> request) {
         try {
@@ -105,6 +109,59 @@ public class AuthController {
             response.put("platform", user.getPlatform());
 
             return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<?> updateMe(@RequestHeader("Authorization") String authHeader,
+                                      @RequestBody Map<String, String> updates) {
+        try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(401).body(Map.of("error", "Missing or invalid Authorization header"));
+            }
+            String token = authHeader.substring(7);
+            if (!jwtUtil.validateToken(token)) {
+                return ResponseEntity.status(401).body(Map.of("error", "Invalid token"));
+            }
+
+            String email = jwtUtil.extractUsername(token);
+            Optional<User> userOpt = userService.findByEmail(email);
+            if (userOpt.isEmpty()) {
+                return ResponseEntity.status(404).body(Map.of("error", "User not found"));
+            }
+
+            User user = userOpt.get();
+            // update allowed fields if present in request
+            if (updates.containsKey("name")) {
+                user.setName(updates.get("name"));
+            }
+            if (updates.containsKey("phone")) {
+                String newPhone = updates.get("phone");
+                if (!newPhone.equals(user.getPhone()) && userService.existsByPhone(newPhone)) {
+                    return ResponseEntity.badRequest().body(Map.of("error", "Phone number already in use"));
+                }
+                user.setPhone(newPhone);
+            }
+            if (updates.containsKey("platform")) {
+                user.setPlatform(updates.get("platform"));
+            }
+            if (updates.containsKey("password")) {
+                // encode new password
+                user.setPassword(passwordEncoder.encode(updates.get("password")));
+            }
+
+            User updated = userService.updateUser(user);
+
+            Map<String, Object> res = new HashMap<>();
+            res.put("message", "Profile updated successfully");
+            res.put("id", updated.getId());
+            res.put("name", updated.getName());
+            res.put("email", updated.getEmail());
+            res.put("phone", updated.getPhone());
+            res.put("platform", updated.getPlatform());
+            return ResponseEntity.ok(res);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }

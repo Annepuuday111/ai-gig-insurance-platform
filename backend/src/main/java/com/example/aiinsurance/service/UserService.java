@@ -39,4 +39,14 @@ public class UserService {
     public boolean validatePassword(String rawPassword, String encodedPassword) {
         return passwordEncoder.matches(rawPassword, encodedPassword);
     }
+
+    // check existence by phone (useful when updating profile)
+    public boolean existsByPhone(String phone) {
+        return userRepository.existsByPhone(phone);
+    }
+
+    // update an existing user record (save acts as upsert)
+    public User updateUser(User user) {
+        return userRepository.save(user);
+    }
 }

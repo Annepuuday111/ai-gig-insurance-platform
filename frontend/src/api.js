@@ -35,4 +35,9 @@ export async function getCurrentUser(){
   return await request('/api/auth/me', { method: 'GET' });
 }
 
-export default { registerUser, loginUser, getCurrentUser }
+export async function updateUser(updates) {
+  // updates should be an object with any of name, phone, platform, password
+  return await request('/api/auth/me', { method: 'PUT', body: JSON.stringify(updates) });
+}
+
+export default { registerUser, loginUser, getCurrentUser, updateUser }
