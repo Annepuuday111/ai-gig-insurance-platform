@@ -1,21 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { registerUser } from "../api";
+import { registerUser, getPartners } from "../api";
 import { IconUser, IconPhone, IconLock } from "../components/Icons";
 import bannerSmall from "../../../assets/Background.png";
 import bannerLarge from "../../../assets/PlainBackground.png";
-
-const PLATFORMS = ["Zomato", "Swiggy", "Amazon", "Zepto", "Blinkit"];
-
-const PARTNER_LOGOS = [
-  { src: "https://brandlogos.net/wp-content/uploads/2025/02/zomato-logo_brandlogos.net_9msh7.png", alt: "Zomato", bg: "#FFF1F0", border: "#fca5a5" },
-  { src: "https://cdn.prod.website-files.com/600ee75084e3fe0e5731624c/65b6224b00ab2b9163719086_swiggy-logo.svg", alt: "Swiggy", bg: "#FFF7ED", border: "#fdba74" },
-  { src: "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg", alt: "Amazon", bg: "#FFFBEB", border: "#fcd34d" },
-  { src: "https://play-lh.googleusercontent.com/0-sXSA0gnPDKi6EeQQCYPsrDx6DqnHELJJ7wFP8bWCpziL4k5kJf8RnOoupdnOFuDm_n=s256-rw", alt: "Flipkart", bg: "#EFF6FF", border: "#93c5fd" },
-  { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Zepto_Logo.svg/1280px-Zepto_Logo.svg.png", alt: "Zepto", bg: "#FAF5FF", border: "#c4b5fd" },
-  { src: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Dunzo_Logo.svg/960px-Dunzo_Logo.svg.png", alt: "Dunzo", bg: "#F0FDF4", border: "#86efac" },
-];
 
 function IconMail() {
   return (
@@ -141,8 +130,9 @@ function FieldIcon({ children }) {
   );
 }
 
-function LogoScroller() {
-  const doubled = [...PARTNER_LOGOS, ...PARTNER_LOGOS];
+function LogoScroller({ partners }) {
+  if (!partners || partners.length === 0) return null;
+  const doubled = [...partners, ...partners];
   return (
     <div>
       <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 8 }}>
@@ -151,13 +141,13 @@ function LogoScroller() {
       <div className="logo-scroll-wrap">
         <div className="logo-track">
           {doubled.map((p, i) => (
-            <div key={i} title={p.alt} style={{
+            <div key={i} title={p.name} style={{
               width: 40, height: 40, borderRadius: 10, flexShrink: 0,
-              background: p.bg, border: "1.5px solid #e2e8f0",
+              backgroundColor: p.bgColor, borderColor: p.borderColor, borderStyle: "solid", borderWidth: "1.5px",
               display: "flex", alignItems: "center", justifyContent: "center",
               boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
             }}>
-              <img src={p.src} alt={p.alt} style={{ maxWidth: 26, maxHeight: 20, objectFit: "contain" }} />
+              <img src={p.logoUrl} alt={p.name} style={{ maxWidth: 26, maxHeight: 20, objectFit: "contain" }} />
             </div>
           ))}
         </div>
@@ -183,7 +173,7 @@ function pwStrength(pw) {
   return { score, ...map[score] };
 }
 
-function FormBody({ form, setForm, loading, error, submit }) {
+function FormBody({ form, setForm, loading, error, submit, partners }) {
   const [showPw, setShowPw] = useState(false);
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const togglePlatform = (p) => setForm((f) => ({ ...f, platform: f.platform === p ? "" : p }));
@@ -247,10 +237,10 @@ function FormBody({ form, setForm, loading, error, submit }) {
         <p style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8 }}>
           Your Delivery Platform
         </p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
-          {PLATFORMS.map((p) => (
-            <button key={p} type="button" onClick={() => togglePlatform(p)} className={`p-chip ${form.platform === p ? "active" : ""}`}>
-              {p}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(75px, 1fr))", gap: 8 }}>
+          {partners.map((p) => (
+            <button key={p.name} type="button" onClick={() => togglePlatform(p.name)} className={`p-chip ${form.platform === p.name ? "active" : ""}`}>
+              {p.name}
             </button>
           ))}
         </div>
@@ -293,9 +283,16 @@ function FormBody({ form, setForm, loading, error, submit }) {
 
 export default function Register() {
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", platform: "" });
+  const [partners, setPartners] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    getPartners().then(res => {
+      if (!res.error && Array.isArray(res)) setPartners(res);
+    }).catch(console.error);
+  }, []);
 
   const validate = () => {
     if (!form.name.trim())        return "Full name is required.";
@@ -336,7 +333,7 @@ export default function Register() {
     }
   };
 
-  const formProps = { form, setForm, loading, error, submit };
+  const formProps = { form, setForm, loading, error, submit, partners };
 
   return (
     <div className="reg-root" style={{ minHeight: "100vh", background: "#f8fafc" }}>
@@ -398,7 +395,7 @@ export default function Register() {
               ))}
             </ul>
 
-            <LogoScroller />
+            <LogoScroller partners={partners} />
           </div>
 
           <div className="reg-card" style={{ marginLeft: "auto", width: "100%", maxWidth: 420 }}>

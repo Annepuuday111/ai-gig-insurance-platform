@@ -5,23 +5,7 @@ import DashboardCard from "../components/DashboardCard";
 import NotificationCard from "../components/NotificationCard";
 import ClaimCard from "../components/ClaimCard";
 import { IconBell, IconChat, IconCard, IconShield, IconMoney } from "../components/Icons";
-import { getCurrentUser, getDashboardSummary } from "../api";
-
-import swiggyBanner from "../../../assets/swiggybanner.png";
-import amazonBanner from "../../../assets/amazonbanner.png";
-import flipkartBanner from "../../../assets/flipkartbanner.png";
-import zeptoBanner from "../../../assets/zeptobanner.png";
-import dunzoBanner from "../../../assets/dunzobanner.png";
-import zomatoBanner from "../../../assets/zomatobanner.png";
-
-const partnerThemes = {
-  Zomato: { gradient: "linear-gradient(135deg,#ff4d4d,#ff8566)", light: "#fff1f0", accent: "#ff4d4d", banner: zomatoBanner },
-  Swiggy: { gradient: "linear-gradient(135deg,#fc8019,#ffb347)", light: "#fff7ed", accent: "#fc8019", banner: swiggyBanner },
-  Amazon: { gradient: "linear-gradient(135deg,#f59e0b,#fcd34d)", light: "#fffbeb", accent: "#f59e0b", banner: amazonBanner },
-  Flipkart: { gradient: "linear-gradient(135deg,#2874f0,#60a5fa)", light: "#eff6ff", accent: "#2874f0", banner: flipkartBanner },
-  Zepto: { gradient: "linear-gradient(135deg,#7c3aed,#a78bfa)", light: "#faf5ff", accent: "#7c3aed", banner: zeptoBanner },
-  Dunzo: { gradient: "linear-gradient(135deg,#16a34a,#4ade80)", light: "#f0fdf4", accent: "#16a34a", banner: dunzoBanner },
-};
+import { getCurrentUser, getDashboardSummary, getPartners } from "../api";
 
 const defaultTheme = { gradient: "linear-gradient(135deg,#16a34a,#4ade80)", light: "#f0fdf4", accent: "#16a34a", banner: null };
 
@@ -82,6 +66,7 @@ export default function Dashboard() {
   const [user, setUser]         = useState(null);
   const [summary, setSummary]   = useState(null);
   const [loadingSum, setLoadingSum] = useState(true);
+  const [themeDict, setThemeDict] = useState({});
   const [dashboardData] = useState({
     notifications: [
       { title: "Heavy rain detected in your zone", desc: "System initiated claim process", time: "10m ago" },
@@ -119,6 +104,22 @@ export default function Dashboard() {
       })
       .catch(() => {})
       .finally(() => setLoadingSum(false));
+
+    // Fetch partners
+    getPartners().then(res => {
+      if (!res.error && Array.isArray(res)) {
+        const d = {};
+        res.forEach(p => {
+          d[p.name] = {
+            gradient: `linear-gradient(135deg, ${p.borderColor}, ${p.borderColor}bb)`,
+            light: p.bgColor,
+            accent: p.borderColor,
+            banner: p.dashboardBannerUrl || null 
+          };
+        });
+        setThemeDict(d);
+      }
+    }).catch(() => {});
   }, [navigate]);
 
   // Helper derived values from backend summary
@@ -140,7 +141,7 @@ export default function Dashboard() {
     );
   }
 
-  const theme = partnerThemes[user.platform] || defaultTheme;
+  const theme = themeDict[user.platform] || defaultTheme;
   const initials = user.name ? user.name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?";
 
   return (

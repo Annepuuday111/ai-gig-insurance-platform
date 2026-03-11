@@ -30,7 +30,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/plans", "/api/plans/**").permitAll()
+                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/plans", "/api/plans/**", "/api/partners", "/api/partners/**").permitAll()
                 // changing admin credentials also needs ADMIN
                 .requestMatchers("/api/auth/admin/change").hasRole("ADMIN")
                 // admin API requires ROLE_ADMIN authority

@@ -119,6 +119,19 @@ export async function adminReplyQuery(id, body) {
   return request(`/api/admin/queries/${id}/reply`, { method: 'PUT', body: JSON.stringify(body) });
 }
 
+// ── Partners ──────────────────────────────────────────────────────────────────
+export async function getPartners() {
+  return request('/api/partners', { method: 'GET' });
+}
+
+export async function adminAddPartner(partner) {
+  return request('/api/admin/partners', { method: 'POST', body: JSON.stringify(partner) });
+}
+
+export async function adminDeletePartner(id) {
+  return request(`/api/admin/partners/${id}`, { method: 'DELETE' });
+}
+
 export default {
   registerUser, loginUser, getCurrentUser, updateUser,
   getPlans, getPlanById,
@@ -130,4 +143,5 @@ export default {
   adminListPlans, adminUpdatePlan,
   adminListPayments, adminApprovePayment,
   adminListQueries, adminReplyQuery,
+  getPartners, adminAddPartner, adminDeletePartner,
 };

@@ -10,6 +10,9 @@ import {
   adminListQueries,
   adminReplyQuery,
   adminChangeCredentials,
+  getPartners,
+  adminAddPartner,
+  adminDeletePartner,
 } from "../api";
 import adminBanner from "../../../assets/adminbanner.png";
 import {
@@ -19,6 +22,7 @@ import {
   FaEnvelope, FaPhone, FaTrashAlt, FaReply, FaLock,
   FaUserEdit, FaIdBadge, FaKey, FaSave, FaChevronRight,
   FaBell, FaUserCircle, FaBars, FaTimes,
+  FaPlus, FaGlobe, FaBuilding, FaLink,
 } from "react-icons/fa";
 
 /* ══════════════════════════════════════════
@@ -121,11 +125,12 @@ function InputField({ label, icon, type = "text", value, onChange, placeholder, 
 
 const NAV_ITEMS = [
   { key: "overview", label: "Dashboard", icon: <FaTachometerAlt /> },
-  { key: "users", label: "Users", icon: <FaUsers /> },
+  { key: "users", label: "Active Users", icon: <FaUsers /> },
   { key: "approvals", label: "Insurance Approvals", icon: <FaClipboardCheck /> },
-  { key: "queries", label: "Queries", icon: <FaQuestionCircle /> },
-  { key: "plans", label: "Plans", icon: <FaClipboardList /> },
-  { key: "payments", label: "Payments", icon: <FaMoneyBillWave /> },
+  { key: "queries", label: "Worker Queries", icon: <FaQuestionCircle /> },
+  { key: "plans", label: "Premium Plans", icon: <FaClipboardList /> },
+  { key: "payments", label: "Payments History", icon: <FaMoneyBillWave /> },
+  { key: "partners", label: "Partner Platforms", icon: <FaGlobe /> },
   { key: "settings", label: "Settings", icon: <FaCog /> },
 ];
 
@@ -135,6 +140,7 @@ const PAGE_META = {
   queries: { title: "User Queries", subtitle: "Respond to questions from your users", icon: <FaQuestionCircle />, color: "bg-violet-500" },
   plans: { title: "Plan Management", subtitle: "Edit and update insurance plan pricing", icon: <FaClipboardList />, color: "bg-teal-500" },
   payments: { title: "Payment Records", subtitle: "Track all payment transactions", icon: <FaMoneyBillWave />, color: "bg-emerald-500" },
+  partners: { title: "Partner Platforms", subtitle: "Manage the supported application platforms", icon: <FaGlobe />, color: "bg-indigo-500" },
   settings: { title: "Account Settings", subtitle: "Manage your admin profile and credentials", icon: <FaCog />, color: "bg-slate-500" },
 };
 
@@ -240,7 +246,9 @@ export default function AdminDashboard() {
   const [plans, setPlans] = useState([]);
   const [payments, setPayments] = useState([]);
   const [queries, setQueries] = useState([]);
+  const [partners, setPartners] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [newPartner, setNewPartner] = useState({ name: "", logoUrl: "", dashboardBannerUrl: "", profileBannerUrl: "", bgColor: "#FFFFFF", borderColor: "#E2E8F0" });
   const [adminInfo, setAdminInfo] = useState({ email: "admin@giginsurance.com", username: "Admin" });
   const [settings, setSettings] = useState({ email: "", username: "", password: "", confirmPassword: "" });
   const [message, setMessage] = useState(null);
@@ -258,6 +266,7 @@ export default function AdminDashboard() {
     if (section === "plans") loadPlans();
     if (section === "payments" || section === "approvals") loadPayments();
     if (section === "queries") loadQueries();
+    if (section === "partners") loadPartners();
   }, [section]);
 
   const safeLoad = (fn, setter) => async () => {
@@ -268,15 +277,40 @@ export default function AdminDashboard() {
     } catch (e) { console.error(e); }
   };
 
-  const loadAll = () => { loadUsers(); loadPlans(); loadPayments(); loadQueries(); };
+  const loadAll = () => { loadUsers(); loadPlans(); loadPayments(); loadQueries(); loadPartners(); };
   const loadUsers = safeLoad(adminListUsers, setUsers);
   const loadPlans = safeLoad(adminListPlans, setPlans);
   const loadPayments = safeLoad(adminListPayments, setPayments);
   const loadQueries = safeLoad(adminListQueries, setQueries);
+  const loadPartners = safeLoad(getPartners, setPartners);
 
   const handleDelete = async (id) => { if (!window.confirm("Delete this user?")) return; await adminDeleteUser(id); loadUsers(); };
   const handleApprove = async (id) => { await adminApprovePayment(id); loadPayments(); showMsg("Payment approved!"); };
   const handleReply = async (id, answer) => { await adminReplyQuery(id, { answer }); loadQueries(); showMsg("Reply sent!"); };
+
+  const handlePartnerDelete = async (id) => { if (!window.confirm("Delete this partner?")) return; await adminDeletePartner(id); loadPartners(); showMsg("Partner deleted!"); };
+  
+  const handleFileUpload = (e, field) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewPartner(prev => ({ ...prev, [field]: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handlePartnerAdd = async () => {
+    if (!newPartner.name || !newPartner.logoUrl || !newPartner.profileBannerUrl || !newPartner.dashboardBannerUrl) { 
+      showMsg("Name, Logo, and Banners are required", "error"); 
+      return; 
+    }
+    await adminAddPartner(newPartner);
+    setNewPartner({ name: "", logoUrl: "", dashboardBannerUrl: "", profileBannerUrl: "", bgColor: "#FFFFFF", borderColor: "#E2E8F0" });
+    loadPartners();
+    showMsg("Partner added successfully!");
+  };
 
   const handlePlanChange = (idx, field, value) => {
     const copy = [...plans]; copy[idx][field] = value; setPlans(copy);
@@ -702,6 +736,70 @@ export default function AdminDashboard() {
   );
 
   /* ══════════════════════════════════════
+     SECTION: PARTNERS
+  ══════════════════════════════════════ */
+  const renderPartners = () => (
+    <div className="space-y-6">
+      {/* Add Partner Form */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden p-5 sm:p-6">
+        <div className="flex items-center gap-2 mb-4 pb-4 border-b border-gray-100">
+          <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-500 shrink-0">
+            <FaPlus />
+          </div>
+          <div>
+            <h3 className="font-bold text-gray-800 text-sm">Add New Partner Platform</h3>
+            <p className="text-xs text-gray-400">Add a new delivery platform to support</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <InputField label="Platform Name" icon={<FaBuilding className="text-gray-300" />} value={newPartner.name} onChange={(e) => setNewPartner({ ...newPartner, name: e.target.value })} placeholder="e.g. Zomato" />
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">Logo Image (Upload)</label>
+            <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, "logoUrl")} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 border border-gray-200 rounded-xl" />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">Profile Banner (Upload)</label>
+            <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, "profileBannerUrl")} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 border border-gray-200 rounded-xl" />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">Dashboard Banner (Upload)</label>
+            <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, "dashboardBannerUrl")} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 border border-gray-200 rounded-xl" />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">Bg Color</label>
+            <input type="color" value={newPartner.bgColor} onChange={(e) => setNewPartner({ ...newPartner, bgColor: e.target.value })} className="w-full h-10 rounded-xl cursor-pointer p-1 bg-gray-50 border border-gray-200" />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">Border/Accent Color</label>
+            <input type="color" value={newPartner.borderColor} onChange={(e) => setNewPartner({ ...newPartner, borderColor: e.target.value })} className="w-full h-10 rounded-xl cursor-pointer p-1 bg-gray-50 border border-gray-200" />
+          </div>
+        </div>
+        <div className="mt-4 flex justify-end">
+          <button onClick={handlePartnerAdd} className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-xl font-semibold transition flex items-center gap-2">
+            <FaPlus className="text-xs" /> Add Platform
+          </button>
+        </div>
+      </div>
+
+      {/* Partners List */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        {partners.map(p => (
+          <div key={p.id} className="bg-white rounded-2xl border shadow-sm p-4 flex flex-col items-center hover:shadow-md transition relative group" style={{ borderColor: p.borderColor }}>
+            <button onClick={() => handlePartnerDelete(p.id)} className="absolute top-2 right-2 w-7 h-7 bg-red-50 hover:bg-red-100 text-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow-sm">
+              <FaTrashAlt className="text-[10px]" />
+            </button>
+            <div className="w-16 h-16 flex items-center justify-center mb-3">
+              <img src={p.logoUrl} alt={p.name} className="max-w-[56px] max-h-[56px] object-contain" />
+            </div>
+            <p className="font-bold text-sm text-gray-800 text-center w-full truncate">{p.name}</p>
+          </div>
+        ))}
+        {partners.length === 0 && <div className="col-span-full py-12 text-center text-gray-400 bg-white rounded-2xl border border-gray-100">No partner platforms configured</div>}
+      </div>
+    </div>
+  );
+
+  /* ══════════════════════════════════════
      SECTION: SETTINGS
   ══════════════════════════════════════ */
   const renderSettings = () => (
@@ -872,6 +970,7 @@ export default function AdminDashboard() {
     queries: renderQueries,
     plans: renderPlans,
     payments: renderPayments,
+    partners: renderPartners,
     settings: renderSettings,
   };
 

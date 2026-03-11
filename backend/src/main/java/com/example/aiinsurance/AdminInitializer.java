@@ -1,18 +1,24 @@
 package com.example.aiinsurance;
 
 import com.example.aiinsurance.model.Admin;
+import com.example.aiinsurance.model.Partner;
 import com.example.aiinsurance.service.AdminService;
+import com.example.aiinsurance.repository.PartnerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
+import java.util.List;
 
 @Component
 public class AdminInitializer implements CommandLineRunner {
 
     @Autowired
     private AdminService adminService;
+
+    @Autowired
+    private PartnerRepository partnerRepository;
 
     @Override
     public void run(String... args) throws Exception {
@@ -40,5 +46,17 @@ public class AdminInitializer implements CommandLineRunner {
         System.out.println("Current admins:");
         adminService.getAllAdmins().forEach(a -> System.out.println("  " + a.getId() + " -> " + a.getEmail()));
 
+        // Add default partners if empty
+        if (partnerRepository.count() == 0) {
+            List<Partner> defaults = List.of(
+                new Partner("Zomato", "https://brandlogos.net/wp-content/uploads/2025/02/zomato-logo_brandlogos.net_9msh7.png", null, null, "#FFF1F0", "#fca5a5"),
+                new Partner("Swiggy", "https://cdn.prod.website-files.com/600ee75084e3fe0e5731624c/65b6224b00ab2b9163719086_swiggy-logo.svg", null, null, "#FFF7ED", "#fdba74"),
+                new Partner("Amazon", "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg", null, null, "#FFFBEB", "#fcd34d"),
+                new Partner("Zepto", "https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Zepto_Logo.svg/1280px-Zepto_Logo.svg.png", null, null, "#FAF5FF", "#c4b5fd"),
+                new Partner("Blinkit", "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Dunzo_Logo.svg/960px-Dunzo_Logo.svg.png", null, null, "#F0FDF4", "#86efac")
+            );
+            partnerRepository.saveAll(defaults);
+            System.out.println("Created " + defaults.size() + " default partner platforms");
+        }
     }
 }

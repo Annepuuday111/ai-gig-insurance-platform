@@ -2,29 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
 
-import swiggyBanner from "../../../assets/swiggy-banner.png";
-import amazonBanner from "../../../assets/amazon-banner.png";
-import flipkartBanner from "../../../assets/flipkart-banner.png";
-import zeptoBanner from "../../../assets/zepto-banner.png";
-import dunzoBanner from "../../../assets/dunzo-banner.png";
-import zomatoBanner from "../../../assets/zomato-banner.png";
 
-import swiggyLogo from "../../../assets/swiggy.png";
-import amazonLogo from "../../../assets/amazon.png";
-import flipkartLogo from "../../../assets/flipkart.png";
-import zeptoLogo from "../../../assets/zepto.png";
-import dunzoLogo from "../../../assets/dunzo.png";
-
-const PLATFORMS = ["Zomato", "Swiggy", "Amazon", "Flipkart", "Zepto", "Dunzo"];
-
-const partnerThemes = {
-  Zomato: { gradient: "linear-gradient(135deg,#ff4d4d,#ff8566)", light: "#fff1f0", accent: "#ff4d4d", logo: "https://brandlogos.net/wp-content/uploads/2025/02/zomato-logo_brandlogos.net_9msh7.png", banner: zomatoBanner },
-  Swiggy: { gradient: "linear-gradient(135deg,#fc8019,#ffb347)", light: "#fff7ed", accent: "#fc8019", logo: swiggyLogo, banner: swiggyBanner },
-  Amazon: { gradient: "linear-gradient(135deg,#f59e0b,#fcd34d)", light: "#fffbeb", accent: "#f59e0b", logo: amazonLogo, banner: amazonBanner },
-  Flipkart: { gradient: "linear-gradient(135deg,#2874f0,#60a5fa)", light: "#eff6ff", accent: "#2874f0", logo: flipkartLogo, banner: flipkartBanner },
-  Zepto: { gradient: "linear-gradient(135deg,#7c3aed,#a78bfa)", light: "#faf5ff", accent: "#7c3aed", logo: zeptoLogo, banner: zeptoBanner },
-  Dunzo: { gradient: "linear-gradient(135deg,#16a34a,#4ade80)", light: "#f0fdf4", accent: "#16a34a", logo: dunzoLogo, banner: dunzoBanner },
-};
 
 const defaultTheme = { gradient: "linear-gradient(135deg,#16a34a,#4ade80)", light: "#f0fdf4", accent: "#16a34a", logo: null, banner: null };
 
@@ -202,6 +180,8 @@ export default function Profile() {
   const [form, setForm] = useState({ name: "", phone: "", platform: "" });
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
+  const [themeDict, setThemeDict] = useState({});
+  const [partners, setPartners] = useState([]);
 
   const showToast = (msg, success = true) => {
     setToast({ msg, success });
@@ -211,6 +191,24 @@ export default function Profile() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) { navigate("/login"); return; }
+    
+    api.getPartners().then(res => {
+      if (!res.error && Array.isArray(res)) {
+        setPartners(res);
+        const d = {};
+        res.forEach(p => {
+          d[p.name] = {
+            gradient: `linear-gradient(135deg, ${p.borderColor}, ${p.borderColor}bb)`,
+            light: p.bgColor,
+            accent: p.borderColor,
+            logo: p.logoUrl,
+            banner: p.profileBannerUrl || null 
+          };
+        });
+        setThemeDict(d);
+      }
+    }).catch(() => {});
+
     api.getCurrentUser()
       .then((u) => {
         setUser(u);
@@ -243,7 +241,7 @@ export default function Profile() {
     );
   }
 
-  const theme = partnerThemes[user.platform] || defaultTheme;
+  const theme = themeDict[user.platform] || defaultTheme;
   const initials = user.name ? user.name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : "?";
 
   return (
@@ -395,10 +393,10 @@ export default function Profile() {
 
                 <div>
                   <p style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 10 }}>Platform</p>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 8 }}>
-                    {PLATFORMS.map(p => (
-                      <button key={p} type="button" className={`p-chip ${form.platform === p ? "active" : ""}`} onClick={() => setForm(f => ({ ...f, platform: p }))}>
-                        {p}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(75px, 1fr))", gap: 8 }}>
+                    {partners.map(p => (
+                      <button key={p.name} type="button" className={`p-chip ${form.platform === p.name ? "active" : ""}`} onClick={() => setForm(f => ({ ...f, platform: p.name }))}>
+                        {p.name}
                       </button>
                     ))}
                   </div>
@@ -456,21 +454,28 @@ export default function Profile() {
                   {[
                     { icon: <IconMail />, label: "Email", value: user.email },
                     { icon: <IconPhone />, label: "Phone", value: user.phone },
-                    { icon: <IconBriefcase />, label: "Platform", value: user.platform },
+                    { icon: <IconBriefcase />, label: "Platform", value: user.platform, showLogo: true },
                   ].map(row => (
-                    <div key={row.label} className="info-row">
-                      <div style={{
-                        width: 36, height: 36, borderRadius: 10,
-                        background: theme.light, flexShrink: 0,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        color: theme.accent,
-                      }}>
-                        {row.icon}
+                    <div key={row.label} className="info-row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                        <div style={{
+                          width: 36, height: 36, borderRadius: 10,
+                          background: theme.light, flexShrink: 0,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          color: theme.accent,
+                        }}>
+                          {row.icon}
+                        </div>
+                        <div>
+                          <p style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", margin: 0 }}>{row.label}</p>
+                          <p style={{ fontSize: 14, fontWeight: 600, color: "#0f172a", margin: 0, marginTop: 1 }}>{row.value || "—"}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", margin: 0 }}>{row.label}</p>
-                        <p style={{ fontSize: 14, fontWeight: 600, color: "#0f172a", margin: 0, marginTop: 1 }}>{row.value || "—"}</p>
-                      </div>
+                      {row.showLogo && theme.logo && (
+                        <div style={{ padding: "4px 8px", background: "#fff", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                          <img src={theme.logo} alt={row.value} style={{ height: 24, maxWidth: 64, objectFit: "contain" }} />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
