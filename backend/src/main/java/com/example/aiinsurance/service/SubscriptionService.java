@@ -51,7 +51,7 @@ public class SubscriptionService {
             sub.setStatus(Subscription.Status.ACTIVE);
             sub.setNextPaymentDate(LocalDateTime.now().plusDays(7));
         }
-        sub.setEndDate(LocalDateTime.now().plusDays(365));
+        sub.setEndDate(LocalDateTime.now().plusDays(7));
         Subscription saved = subscriptionRepository.save(sub);
 
         // Record payment

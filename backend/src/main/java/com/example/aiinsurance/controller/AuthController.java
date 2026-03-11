@@ -150,6 +150,9 @@ public class AuthController {
             response.put("email", user.getEmail());
             response.put("phone", user.getPhone());
             response.put("platform", user.getPlatform());
+            response.put("state", user.getState());
+            response.put("district", user.getDistrict());
+            response.put("mandal", user.getMandal());
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -194,6 +197,24 @@ public class AuthController {
                 // encode new password
                 user.setPassword(passwordEncoder.encode(updates.get("password")));
             }
+            if (updates.containsKey("state")) {
+                String val = updates.get("state");
+                if (val != null && !val.trim().isEmpty() && (user.getState() == null || user.getState().trim().isEmpty())) {
+                    user.setState(val);
+                }
+            }
+            if (updates.containsKey("district")) {
+                String val = updates.get("district");
+                if (val != null && !val.trim().isEmpty() && (user.getDistrict() == null || user.getDistrict().trim().isEmpty())) {
+                    user.setDistrict(val);
+                }
+            }
+            if (updates.containsKey("mandal")) {
+                String val = updates.get("mandal");
+                if (val != null && !val.trim().isEmpty() && (user.getMandal() == null || user.getMandal().trim().isEmpty())) {
+                    user.setMandal(val);
+                }
+            }
 
             User updated = userService.updateUser(user);
 
@@ -204,6 +225,9 @@ public class AuthController {
             res.put("email", updated.getEmail());
             res.put("phone", updated.getPhone());
             res.put("platform", updated.getPlatform());
+            res.put("state", updated.getState());
+            res.put("district", updated.getDistrict());
+            res.put("mandal", updated.getMandal());
             return ResponseEntity.ok(res);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

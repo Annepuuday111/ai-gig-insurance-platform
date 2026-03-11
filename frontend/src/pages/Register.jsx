@@ -112,7 +112,8 @@ const STYLES = `
   }
   .logo-track:hover { animation-play-state: paused; }
   .logo-scroll-wrap {
-    width: 240px;
+    width: 100%;
+    max-width: 340px;
     overflow: hidden;
     -webkit-mask-image: linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%);
     mask-image: linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%);
@@ -129,6 +130,53 @@ const STYLES = `
   }
   .reg-select:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,0.13); background: #fff; }
   .reg-select option { color: #0f172a; }
+
+  .platform-scroll {
+    display: flex;
+    overflow-x: auto;
+    gap: 10px;
+    padding: 4px 0 12px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .platform-scroll::-webkit-scrollbar { display: none; }
+  .platform-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+  .platform-item {
+    flex: 0 0 calc((100% - 16px) / 3);
+    scroll-snap-align: start;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 6px 2px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    background: #f8fafc;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 0;
+  }
+  .platform-item:hover { border-color: #86efac; background: #f0fdf4; }
+  .platform-item.active {
+    border-color: #16a34a;
+    background: #fff;
+    box-shadow: 0 4px 10px rgba(22,163,74,0.1);
+    transform: translateY(-1px);
+  }
+  .platform-logo-bg {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  }
+  .platform-name {
+    font-size: 9px; font-weight: 700; color: #334155;
+    text-align: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;
+  }
 `;
 
 function FieldIcon({ children }) {
@@ -149,25 +197,28 @@ function LogoScroller({ partners }) {
       <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 10 }}>
         Supported Platforms
       </p>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        {partners.map((p, i) => (
-          <div key={i} title={p.name} style={{
-            display: "flex", alignItems: "center", gap: 6,
-            background: "#fff", borderRadius: 10,
-            border: `1.5px solid ${p.borderColor || "#e2e8f0"}`,
-            padding: "5px 10px 5px 6px",
-            boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-          }}>
-            <div style={{
-              width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center",
-              background: "#f8fafc", borderRadius: 7, flexShrink: 0,
+      <div className="logo-scroll-wrap">
+        <div className="logo-track">
+          {[...partners, ...partners].map((p, i) => (
+            <div key={i} title={p.name} style={{
+              display: "flex", alignItems: "center", gap: 6,
+              background: "#fff", borderRadius: 10,
+              border: `1.5px solid ${p.borderColor || "#e2e8f0"}`,
+              padding: "5px 10px 5px 6px",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+              flexShrink: 0,
             }}>
-              <img src={p.logoUrl} alt={p.name} style={{ maxWidth: 20, maxHeight: 16, objectFit: "contain" }}
-                onError={e => { e.target.style.display = "none"; }} />
+              <div style={{
+                width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center",
+                background: "#f8fafc", borderRadius: 7, flexShrink: 0,
+              }}>
+                <img src={p.logoUrl} alt={p.name} style={{ maxWidth: 20, maxHeight: 16, objectFit: "contain" }}
+                  onError={e => { e.target.style.display = "none"; }} />
+              </div>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "#374151" }}>{p.name}</span>
             </div>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "#374151" }}>{p.name}</span>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -252,28 +303,25 @@ function FormBody({ form, setForm, loading, error, submit, partners }) {
 
       <div>
         <p style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8 }}>
-          Your Delivery Platform
+          Select Your Service Platform
         </p>
-        <div style={{ position: "relative" }}>
-          <select
-            className="reg-select"
-            value={form.platform}
-            onChange={(e) => setForm(f => ({ ...f, platform: e.target.value }))}
-          >
-            <option value="">Select your platform…</option>
-            {partners.map((p) => (
-              <option key={p.name} value={p.name}>{p.name}</option>
-            ))}
-          </select>
+        <div className="platform-scroll">
+          {partners.map((p) => (
+            <div 
+              key={p.name} 
+              className={`platform-item ${form.platform === p.name ? 'active' : ''}`}
+              onClick={() => togglePlatform(p.name)}
+            >
+              <div className="platform-logo-bg" style={{ borderColor: form.platform === p.name ? p.borderColor : '#f1f5f9' }}>
+                <img src={p.logoUrl} alt={p.name} style={{ maxWidth: 20, maxHeight: 14, objectFit: "contain" }}
+                  onError={e => { e.target.style.display = "none"; }} />
+              </div>
+              <span className="platform-name">{p.name}</span>
+            </div>
+          ))}
         </div>
-        {form.platform && (
-          <p style={{ fontSize: 11, color: "#16a34a", fontWeight: 600, marginTop: 5, display: "flex", alignItems: "center", gap: 4 }}>
-            <span style={{ width: 6, height: 6, background: "#22c55e", borderRadius: "50%", display: "inline-block" }} />
-            {form.platform} selected
-          </p>
-        )}
         {!form.platform && (
-          <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 5 }}>Select the platform you work on</p>
+          <p style={{ fontSize: 11, color: "#94a3b8", marginTop: -4 }}>Scroll to find or select your platform</p>
         )}
       </div>
 

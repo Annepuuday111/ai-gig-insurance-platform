@@ -5,7 +5,7 @@ import DashboardCard from "../components/DashboardCard";
 import NotificationCard from "../components/NotificationCard";
 import ClaimCard from "../components/ClaimCard";
 import { IconBell, IconChat, IconCard, IconShield, IconMoney } from "../components/Icons";
-import { getCurrentUser, getDashboardSummary, getPartners } from "../api";
+import { getCurrentUser, getDashboardSummary, getPartners, getMyNotifications } from "../api";
 
 const defaultTheme = { gradient: "linear-gradient(135deg,#16a34a,#4ade80)", light: "#f0fdf4", accent: "#16a34a", banner: null };
 
@@ -37,7 +37,10 @@ const STYLES = `
   .dash-section { animation: fadeUp 0.5s ease 0.2s both; }
 
   .banner-content { bottom: 110px; }
-  @media (max-width: 640px) { .banner-content { bottom: 75px; } }
+  @media (max-width: 640px) { 
+    .banner-content { bottom: 75px; } 
+    .dash-banner { --banner-pos: 100% center; }
+  }
 
   .quick-action-btn {
     display: flex; flex-direction: column; align-items: center; gap: 8px;
@@ -68,6 +71,7 @@ export default function Dashboard() {
   const [loadingSum, setLoadingSum] = useState(true);
   const [themeDict, setThemeDict] = useState({});
   const [partners, setPartners] = useState([]);
+  const [notifications, setNotifications] = useState([]);
   const [dashboardData] = useState({
     notifications: [
       { title: "Heavy rain detected in your zone", desc: "System initiated claim process", time: "10m ago" },
@@ -79,7 +83,7 @@ export default function Dashboard() {
       { title: "Claim Approved",      amount: 600, status: "Approved" },
     ],
     chats: 3,
-    lastLogin: "2 hours ago",
+    lastLogin: new Date().toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit', hour12: true }),
   });
 
   useEffect(() => {
@@ -105,6 +109,11 @@ export default function Dashboard() {
       })
       .catch(() => {})
       .finally(() => setLoadingSum(false));
+
+    // Fetch Notifications
+    getMyNotifications().then(res => {
+      if (res && Array.isArray(res)) setNotifications(res.slice(0, 3));
+    }).catch(() => {});
 
     // Fetch partners
     getPartners().then(res => {
@@ -170,7 +179,7 @@ export default function Dashboard() {
             ? {
               backgroundImage: `url(${theme.banner})`,
               backgroundSize: "cover",
-              backgroundPosition: "center",
+              backgroundPosition: "var(--banner-pos, center)",
               backgroundRepeat: "no-repeat",
             }
             : { background: theme.gradient }
@@ -275,6 +284,12 @@ export default function Dashboard() {
                 title="Next Payment"
                 value={nextPay}
                 small={risk !== "—" ? `${risk} Risk` : "No active plan"}
+              />
+              <DashboardCard
+                title="Wallet Balance"
+                value={`₹${user.walletBalance || 0}`}
+                small="Available for payout"
+                accent="#6366f1"
               />
             </div>
           )}
@@ -436,14 +451,18 @@ export default function Dashboard() {
                     Recent Notifications
                   </h3>
                   <div className="space-y-3">
-                    {dashboardData.notifications.map((notif, index) => (
-                      <NotificationCard
-                        key={index}
-                        title={notif.title}
-                        desc={notif.desc}
-                        time={notif.time}
-                      />
-                    ))}
+                    {notifications.length === 0 ? (
+                      <p className="text-sm text-slate-400 text-center py-6">No new notifications</p>
+                    ) : (
+                      notifications.map((notif, index) => (
+                        <NotificationCard
+                          key={index}
+                          title={notif.title}
+                          desc={notif.message}
+                          time={new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        />
+                      ))
+                    )}
                   </div>
                 </div>
               </div>

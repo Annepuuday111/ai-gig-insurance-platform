@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
@@ -32,6 +33,24 @@ public class User {
 
     @NotBlank
     private String platform;
+
+    @Column(name = "state")
+    private String state;
+    @Column(name = "district")
+    private String district;
+    @Column(name = "mandal")
+    private String mandal;
+
+    @Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    private LocalDateTime createdAt;
+
+    @Column(nullable = false)
+    private Double walletBalance = 0.0;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 
     // Constructors
     public User() {}
@@ -92,4 +111,35 @@ public class User {
     public void setPlatform(String platform) {
         this.platform = platform;
     }
+
+    public String getState() {
+        return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
+    }
+
+    public String getDistrict() {
+        return district;
+    }
+
+    public void setDistrict(String district) {
+        this.district = district;
+    }
+
+    public String getMandal() {
+        return mandal;
+    }
+
+    public void setMandal(String mandal) {
+        this.mandal = mandal;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public Double getWalletBalance() { return walletBalance; }
+    public void setWalletBalance(Double walletBalance) { this.walletBalance = walletBalance; }
 }

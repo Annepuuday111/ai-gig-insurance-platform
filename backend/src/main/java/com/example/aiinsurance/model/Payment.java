@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 @Table(name = "payments")
 public class Payment {
 
-    public enum Status { PENDING, SUCCESS, FAILED }
+    public enum Status { PENDING, APPROVED, REJECTED, SUCCESS, FAILED }
     public enum Method  { UPI, CARD, WALLET, FREE_TRIAL }
 
     @Id
@@ -43,6 +43,12 @@ public class Payment {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(nullable = false)
+    private boolean isClaimed = false;
+
+    @Column
+    private LocalDateTime claimedAt;
+
     @PrePersist
     protected void onCreate() { this.createdAt = LocalDateTime.now(); }
 
@@ -75,4 +81,10 @@ public class Payment {
     public void setUpiId(String upiId) { this.upiId = upiId; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
+
+    public boolean isClaimed() { return isClaimed; }
+    public void setClaimed(boolean claimed) { isClaimed = claimed; }
+
+    public LocalDateTime getClaimedAt() { return claimedAt; }
+    public void setClaimedAt(LocalDateTime claimedAt) { this.claimedAt = claimedAt; }
 }

@@ -183,8 +183,36 @@ public class AdminController {
             return ResponseEntity.status(404).body(Map.of("error", "Payment not found"));
         }
         Payment p = payOpt.get();
-        p.setStatus(Payment.Status.SUCCESS);
+        if (p.getStatus() != Payment.Status.PENDING) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Only pending payments can be approved"));
+        }
+        p.setStatus(Payment.Status.APPROVED);
         paymentRepository.save(p);
         return ResponseEntity.ok(Map.of("message", "Payment approved", "payment", p));
+    }
+
+    @PutMapping("/admin/payments/{id}/reject")
+    public ResponseEntity<?> rejectPayment(@PathVariable Long id) {
+        Optional<Payment> payOpt = paymentRepository.findById(id);
+        if (payOpt.isEmpty()) {
+            return ResponseEntity.status(404).body(Map.of("error", "Payment not found"));
+        }
+        Payment p = payOpt.get();
+        if (p.getStatus() != Payment.Status.PENDING) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Only pending payments can be rejected"));
+        }
+        p.setStatus(Payment.Status.REJECTED);
+        paymentRepository.save(p);
+        return ResponseEntity.ok(Map.of("message", "Payment rejected", "payment", p));
+    }
+
+    @DeleteMapping("/admin/payments/{id}")
+    public ResponseEntity<?> deletePayment(@PathVariable Long id) {
+        try {
+            paymentRepository.deleteById(id);
+            return ResponseEntity.ok(Map.of("message", "Payment deleted"));
+        } catch (Exception e) {
+            return ResponseEntity.status(404).body(Map.of("error", "Payment not found"));
+        }
     }
 }

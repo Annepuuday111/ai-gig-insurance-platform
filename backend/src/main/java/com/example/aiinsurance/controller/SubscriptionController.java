@@ -116,6 +116,7 @@ public class SubscriptionController {
                 m.put("status",    p.getStatus().name());
                 m.put("reference", p.getGatewayReference());
                 m.put("upiId",     p.getUpiId());
+                m.put("isClaimed", p.isClaimed());
                 m.put("date",      p.getCreatedAt());
                 result.add(m);
             }

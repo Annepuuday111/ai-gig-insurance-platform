@@ -7,12 +7,17 @@ import {
   adminUpdatePlan,
   adminListPayments,
   adminApprovePayment,
+  adminRejectPayment,
+  adminDeletePayment,
   adminListQueries,
   adminReplyQuery,
   adminChangeCredentials,
   getPartners,
   adminAddPartner,
   adminDeletePartner,
+  adminListClaimRequests,
+  adminApproveClaimRequest,
+  adminRejectClaimRequest,
 } from "../api";
 import adminBanner from "../../../assets/adminbanner.png";
 import {
@@ -23,6 +28,7 @@ import {
   FaUserEdit, FaIdBadge, FaKey, FaSave, FaChevronRight,
   FaBell, FaUserCircle, FaBars, FaTimes,
   FaPlus, FaGlobe, FaBuilding, FaLink,
+  FaCloudRain,
 } from "react-icons/fa";
 
 /* ══════════════════════════════════════════
@@ -136,6 +142,43 @@ function InputField({ label, icon, type = "text", value, onChange, placeholder, 
   );
 }
 
+function getUsageStats(date) {
+  if (!date) return { duration: "N/A", totalHours: "0.0" };
+  const start = new Date(date);
+  const now = new Date();
+  const diffMs = Math.max(0, now - start); // Handle slight clock drifts
+  const hours = diffMs / (1000 * 60 * 60);
+  
+  let duration = "";
+  const totalHoursInt = Math.floor(hours);
+  
+  if (totalHoursInt < 24) {
+    if (totalHoursInt < 1) {
+      const mins = Math.floor(diffMs / (1000 * 60));
+      duration = mins < 1 ? "Just joined" : `${mins}m active`;
+    } else {
+      const remMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      duration = `${totalHoursInt}h ${remMins}m active`;
+    }
+  } else {
+    const days = Math.floor(totalHoursInt / 24);
+    const remHours = totalHoursInt % 24;
+    if (days < 7) {
+      duration = `${days}d ${remHours}h active`;
+    } else if (days < 30) {
+      duration = `${days}d active`;
+    } else {
+      const months = Math.floor(days / 30);
+      duration = months < 12 ? `${months}mo active` : `${Math.floor(months / 12)}y active`;
+    }
+  }
+  
+  return { 
+    duration, 
+    totalHours: hours.toFixed(1) 
+  };
+}
+
 /* ══════════════════════════════════════════
    NAV CONFIG
 ══════════════════════════════════════════ */
@@ -147,6 +190,7 @@ const NAV_ITEMS = [
   { key: "queries", label: "Worker Queries", icon: <FaQuestionCircle /> },
   { key: "plans", label: "Premium Plans", icon: <FaClipboardList /> },
   { key: "payments", label: "Payments History", icon: <FaMoneyBillWave /> },
+  { key: "disaster", label: "Disaster Claims", icon: <FaCloudRain /> },
   { key: "partners", label: "Partner Platforms", icon: <FaGlobe /> },
   { key: "settings", label: "Settings", icon: <FaCog /> },
 ];
@@ -157,6 +201,7 @@ const PAGE_META = {
   queries: { title: "User Queries", subtitle: "Respond to questions from your users", icon: <FaQuestionCircle />, color: "bg-violet-500" },
   plans: { title: "Plan Management", subtitle: "Edit and update insurance plan pricing", icon: <FaClipboardList />, color: "bg-teal-500" },
   payments: { title: "Payment Records", subtitle: "Track all payment transactions", icon: <FaMoneyBillWave />, color: "bg-emerald-500" },
+  disaster: { title: "Disaster Claims", subtitle: "Review and approve situation-based requests", icon: <FaCloudRain />, color: "bg-indigo-500" },
   partners: { title: "Partner Platforms", subtitle: "Manage the supported application platforms", icon: <FaGlobe />, color: "bg-indigo-500" },
   settings: { title: "Account Settings", subtitle: "Manage your admin profile and credentials", icon: <FaCog />, color: "bg-slate-500" },
 };
@@ -165,8 +210,8 @@ const PAGE_META = {
    SIDEBAR
 ══════════════════════════════════════════ */
 
-function AdminSidebar({ section, setSection, onLogout, pendingCount, unansweredCount, open, onClose }) {
-  const badges = { approvals: pendingCount, queries: unansweredCount };
+function AdminSidebar({ section, setSection, onLogout, pendingCount, unansweredCount, pendingClaims, open, onClose }) {
+  const badges = { approvals: pendingCount, queries: unansweredCount, disaster: pendingClaims };
 
   const handleNav = (key) => {
     setSection(key);
@@ -262,14 +307,17 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [plans, setPlans] = useState([]);
   const [payments, setPayments] = useState([]);
-  const [queries, setQueries] = useState([]);
-  const [partners, setPartners] = useState([]);
+  const [replies, setReplies]     = useState({});
+  const [queries, setQueries]     = useState([]);
+  const [claimRequests, setClaimRequests] = useState([]);
+  const [partners, setPartners]   = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [newPartner, setNewPartner] = useState({ name: "", logoUrl: "", dashboardBannerUrl: "", profileBannerUrl: "", borderColor: "#E2E8F0" });
   const [adminInfo, setAdminInfo] = useState({ email: "admin@giginsurance.com", username: "Admin" });
   const [settings, setSettings] = useState({ email: "", username: "", password: "", confirmPassword: "" });
   const [message, setMessage] = useState(null);
   const [msgType, setMsgType] = useState("success");
+  const [loading, setLoading] = useState(true);
   
   const carouselRef = useRef(null);
 
@@ -301,6 +349,7 @@ export default function AdminDashboard() {
     if (section === "payments" || section === "approvals") loadPayments();
     if (section === "queries") loadQueries();
     if (section === "partners") loadPartners();
+    if (section === "disaster") loadClaimRequests();
   }, [section]);
 
   const safeLoad = (fn, setter) => async () => {
@@ -311,18 +360,29 @@ export default function AdminDashboard() {
     } catch (e) { console.error(e); }
   };
 
-  const loadAll = () => { loadUsers(); loadPlans(); loadPayments(); loadQueries(); loadPartners(); };
+  const loadAll = async () => {
+    setLoading(true);
+    await Promise.all([loadUsers(), loadPlans(), loadPayments(), loadQueries(), loadPartners(), loadClaimRequests()]);
+    setLoading(false);
+  };
   const loadUsers = safeLoad(adminListUsers, setUsers);
   const loadPlans = safeLoad(adminListPlans, setPlans);
   const loadPayments = safeLoad(adminListPayments, setPayments);
   const loadQueries = safeLoad(adminListQueries, setQueries);
   const loadPartners = safeLoad(getPartners, setPartners);
+  const loadClaimRequests = safeLoad(adminListClaimRequests, setClaimRequests);
 
   const handleDelete = async (id) => { if (!window.confirm("Delete this user?")) return; await adminDeleteUser(id); loadUsers(); };
-  const handleApprove = async (id) => { await adminApprovePayment(id); loadPayments(); showMsg("Payment approved!"); };
+  const handleApprove = async (id) => { await adminApprovePayment(id); await loadPayments(); showMsg("Payment approved!"); };
+  const handleReject = async (id) => { if (!window.confirm("Reject this payment?")) return; await adminRejectPayment(id); await loadPayments(); showMsg("Payment rejected", "error"); };
+
+  const handleApproveClaimReq = async (id) => { await adminApproveClaimRequest(id); loadClaimRequests(); showMsg("Claim request approved!"); };
+  const handleRejectClaimReq = async (id) => { if (!window.confirm("Reject this request?")) return; await adminRejectClaimRequest(id); loadClaimRequests(); showMsg("Claim request rejected", "error"); };
+
   const handleReply = async (id, answer) => { await adminReplyQuery(id, { answer }); loadQueries(); showMsg("Reply sent!"); };
 
   const handlePartnerDelete = async (id) => { if (!window.confirm("Delete this partner?")) return; await adminDeletePartner(id); loadPartners(); showMsg("Partner deleted!"); };
+  const handlePaymentDelete = async (id) => { if (!window.confirm("Delete this payment record?")) return; await adminDeletePayment(id); loadPayments(); showMsg("Payment deleted!"); };
   
   const handleFileUpload = (e, field) => {
     const file = e.target.files[0];
@@ -384,6 +444,7 @@ export default function AdminDashboard() {
 
   const pendingApprovals = payments.filter(p => p.status === "PENDING").length;
   const unansweredQ = queries.filter(q => !q.answer).length;
+  const pendingClaimReqs = claimRequests.filter(c => c.status === "PENDING").length;
 
   /* ══════════════════════════════════════
      SECTION: OVERVIEW
@@ -423,20 +484,23 @@ export default function AdminDashboard() {
               </div>
               <div>
                 <p className="text-gray-300 text-xs">Pending actions</p>
-                <p className="text-2xl font-black text-white leading-none">{pendingApprovals + unansweredQ}</p>
+                <p className="text-2xl font-black text-white leading-none">{pendingApprovals + unansweredQ + pendingClaimReqs}</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-3">
         <StatCard icon={<FaUsers />} label="Total Users" value={users.length} bgColor="bg-blue-50" iconColor="text-blue-500" sub="Registered accounts" />
         <StatCard icon={<FaClipboardList />} label="Active Plans" value={plans.length} bgColor="bg-teal-50" iconColor="text-teal-500" sub="Insurance plans" />
         <StatCard icon={<FaGlobe />} label="Platforms" value={partners.length} bgColor="bg-indigo-50" iconColor="text-indigo-500" sub="Supported partners" />
         <StatCard icon={<FaMoneyBillWave />} label="Total Payments" value={payments.length} bgColor="bg-emerald-50" iconColor="text-emerald-500" sub="All transactions" />
-        <StatCard icon={<FaHourglassHalf />} label="Pending" value={pendingApprovals} bgColor="bg-amber-50" iconColor="text-amber-500" sub="Awaiting approval" />
+      </div>
+      <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6">
+        <StatCard icon={<FaHourglassHalf />} label="Pending" value={pendingApprovals + pendingClaimReqs} bgColor="bg-amber-50" iconColor="text-amber-500" sub="Awaiting approval" />
+        <StatCard icon={<FaCheckCircle />} label="Approved" value={payments.filter(p => p.status === "APPROVED").length + claimRequests.filter(c => c.status === "APPROVED").length} bgColor="bg-green-50" iconColor="text-green-500" sub="Successfully processed" />
+        <StatCard icon={<FaTimesCircle />} label="Rejected" value={payments.filter(p => p.status === "REJECTED").length + claimRequests.filter(c => c.status === "REJECTED").length} bgColor="bg-red-50" iconColor="text-red-500" sub="Declined requests" />
       </div>
 
       {/* Mini tables */}
@@ -484,7 +548,6 @@ export default function AdminDashboard() {
                 <Avatar name={p.user?.email} />
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-gray-700 text-sm truncate">{p.user?.email}</p>
-                  <p className="text-xs text-gray-400">ID: {p.id}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="font-semibold text-gray-700 text-sm">₹{p.amount}</span>
@@ -586,27 +649,54 @@ export default function AdminDashboard() {
         <table className="w-full text-sm min-w-[600px]">
           <thead>
             <tr className="text-gray-400 text-xs uppercase tracking-wide border-b border-gray-100 bg-gray-50/50">
-              <th className="px-4 py-3 text-left font-semibold w-10">#</th>
-              <th className="px-5 sm:px-6 py-3 text-left font-semibold">ID</th>
+              <th className="px-4 py-3 text-left font-semibold w-12">#</th>
               <th className="px-5 sm:px-6 py-3 text-left font-semibold">User</th>
               <th className="px-5 sm:px-6 py-3 text-left font-semibold">Email</th>
               <th className="px-5 sm:px-6 py-3 text-left font-semibold">Phone</th>
+              <th className="px-5 sm:px-6 py-3 text-left font-semibold">Platform</th>
+              <th className="px-5 sm:px-6 py-3 text-left font-semibold whitespace-nowrap">Joined On</th>
+              <th className="px-5 sm:px-6 py-3 text-left font-semibold whitespace-nowrap">Hours Used</th>
+              <th className="px-5 sm:px-6 py-3 text-left font-semibold">Address</th>
               <th className="px-5 sm:px-6 py-3 text-center font-semibold">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {users.map((u, idx) => (
-              <tr key={u.id} className="hover:bg-gray-50/60 transition">
-                <td className="px-4 py-3.5 text-gray-300 text-xs font-medium">{idx + 1}</td>
-                <td className="px-5 sm:px-6 py-3.5 text-left text-gray-400 text-xs font-mono">{u.id}</td>
+            {users.map((u, idx) => {
+              const { duration, totalHours } = getUsageStats(u.createdAt);
+              return (
+                <tr key={u.id} className="hover:bg-gray-50/60 transition">
+                <td className="px-4 py-3.5 text-gray-300 text-xs font-bold">{idx + 1}</td>
                 <td className="px-5 sm:px-6 py-3.5">
-                  <div className="flex items-center gap-2.5">
-                    <Avatar name={u.name} />
-                    <span className="font-medium text-gray-700">{u.name}</span>
-                  </div>
+                    <div className="flex items-center gap-2.5">
+                      <Avatar name={u.name} />
+                      <span className="font-medium text-gray-700">{u.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-5 sm:px-6 py-3.5 text-gray-500">{u.email}</td>
+                  <td className="px-5 sm:px-6 py-3.5 text-gray-500">{u.phone}</td>
+                  <td className="px-5 sm:px-6 py-3.5 italic text-gray-400">{u.platform || "Not set"}</td>
+                  <td className="px-5 sm:px-6 py-3.5">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-gray-700 font-bold text-xs">{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "N/A"}</span>
+                      <span className="w-fit px-1.5 py-0.5 bg-green-50 text-green-600 rounded-md text-[9px] font-black uppercase tracking-tight border border-green-100">{duration}</span>
+                    </div>
+                  </td>
+                  <td className="px-5 sm:px-6 py-3.5">
+                    <div className="flex items-center gap-1.5 bg-amber-50/50 border border-amber-100 rounded-lg px-2 py-1 w-fit">
+                      <FaHourglassHalf className="text-[10px] text-amber-500" />
+                      <span className="text-[11px] text-gray-700 font-bold whitespace-nowrap">{totalHours} <span className="text-gray-400 font-medium">Hrs</span></span>
+                    </div>
+                  </td>
+                  <td className="px-5 sm:px-6 py-3.5 text-xs text-gray-500">
+                  {u.mandal || u.district || u.state ? (
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-semibold text-gray-700">{u.mandal && `${u.mandal}, `}{u.district}</span>
+                      <span className="text-[10px] uppercase tracking-wider">{u.state}</span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-300">No address</span>
+                  )}
                 </td>
-                <td className="px-5 sm:px-6 py-3.5 text-gray-500">{u.email}</td>
-                <td className="px-5 sm:px-6 py-3.5 text-gray-500">{u.phone}</td>
                 <td className="px-5 sm:px-6 py-3.5 text-center">
                   <button
                     onClick={() => handleDelete(u.id)}
@@ -616,8 +706,8 @@ export default function AdminDashboard() {
                   </button>
                 </td>
               </tr>
-            ))}
-            {users.length === 0 && <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-300">No users found</td></tr>}
+            )})}
+            {users.length === 0 && <tr><td colSpan={9} className="px-6 py-12 text-center text-gray-300">No users found</td></tr>}
           </tbody>
         </table>
       </div>
@@ -632,14 +722,14 @@ export default function AdminDashboard() {
     const approved = payments.filter(p => p.status === "APPROVED");
     const rejected = payments.filter(p => p.status === "REJECTED");
     return (
-      <>
-        <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-5">
+      <div className="space-y-5">
+        <div className="grid grid-cols-3 gap-3 sm:gap-4">
           {[
             { label: "Pending", count: pending.length, bg: "bg-amber-50", border: "border-amber-100", icon: <FaHourglassHalf className="text-amber-400" />, num: "text-amber-600", lbl: "text-amber-500" },
             { label: "Approved", count: approved.length, bg: "bg-green-50", border: "border-green-100", icon: <FaCheckCircle className="text-green-500" />, num: "text-green-600", lbl: "text-green-500" },
             { label: "Rejected", count: rejected.length, bg: "bg-red-50", border: "border-red-100", icon: <FaTimesCircle className="text-red-400" />, num: "text-red-500", lbl: "text-red-400" },
           ].map(({ label, count, bg, border, icon, num, lbl }) => (
-            <div key={label} className={`${bg} border ${border} rounded-2xl p-4 sm:p-5`}>
+            <div key={label} className={`${bg} border ${border} rounded-2xl p-4 sm:p-5 flex flex-col justify-center`}>
               <div className="flex items-center gap-2 mb-1">{icon}<p className={`text-xs font-semibold ${lbl} uppercase tracking-wide`}>{label}</p></div>
               <p className={`text-2xl sm:text-3xl font-black ${num}`}>{count}</p>
             </div>
@@ -650,10 +740,12 @@ export default function AdminDashboard() {
             <table className="w-full text-sm min-w-[540px]">
               <thead>
                 <tr className="text-gray-400 text-xs uppercase tracking-wide border-b border-gray-100 bg-gray-50/50">
-                  <th className="px-4 py-3 text-left font-semibold w-10">#</th>
-                  <th className="px-5 sm:px-6 py-3 text-left font-semibold">ID</th>
+                  <th className="px-4 py-3 text-left font-semibold w-12">#</th>
                   <th className="px-5 sm:px-6 py-3 text-left font-semibold">User</th>
-                  <th className="px-5 sm:px-6 py-3 text-left font-semibold">Amount</th>
+                  <th className="px-5 sm:px-6 py-3 text-left font-semibold">Amount Paid</th>
+                  <th className="px-5 sm:px-6 py-3 text-left font-semibold">Coverage</th>
+                  <th className="px-5 sm:px-6 py-3 text-left font-semibold">UPI ID</th>
+                  <th className="px-5 sm:px-6 py-3 text-left font-semibold">Payment Date</th>
                   <th className="px-5 sm:px-6 py-3 text-left font-semibold">Status</th>
                   <th className="px-5 sm:px-6 py-3 text-center font-semibold">Action</th>
                 </tr>
@@ -661,33 +753,51 @@ export default function AdminDashboard() {
               <tbody className="divide-y divide-gray-50">
                 {payments.map((p, idx) => (
                   <tr key={p.id} className="hover:bg-gray-50/60 transition">
-                    <td className="px-4 py-3.5 text-gray-300 text-xs font-medium">{idx + 1}</td>
-                    <td className="px-5 sm:px-6 py-3.5 text-left text-gray-400 text-xs font-mono">{p.id}</td>
-                    <td className="px-5 sm:px-6 py-3.5">
+                  <td className="px-4 py-3.5 text-gray-300 text-xs font-bold">{idx + 1}</td>
+                  <td className="px-5 sm:px-6 py-3.5">
                       <div className="flex items-center gap-2.5">
                         <Avatar name={p.user?.email} />
                         <span className="font-medium text-gray-700 truncate max-w-[160px]">{p.user?.email}</span>
                       </div>
                     </td>
                     <td className="px-5 sm:px-6 py-3.5 font-semibold text-gray-700">₹{p.amount}</td>
+                    <td className="px-5 sm:px-6 py-3.5 font-bold text-indigo-600">₹{p.subscription?.plan?.coverageAmount || 0}</td>
+                    <td className="px-5 sm:px-6 py-3.5">
+                      <span className="text-xs font-bold text-indigo-500">{p.upiId || "N/A"}</span>
+                    </td>
+                    <td className="px-5 sm:px-6 py-3.5">
+                      <span className="text-[10px] text-gray-400 font-medium italic">{p.createdAt ? new Date(p.createdAt).toLocaleString() : "N/A"}</span>
+                    </td>
                     <td className="px-5 sm:px-6 py-3.5"><StatusBadge status={p.status} /></td>
                     <td className="px-5 sm:px-6 py-3.5 text-center">
-                      {p.status === "PENDING" && (
-                        <button onClick={() => handleApprove(p.id)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 text-xs rounded-lg font-medium transition border border-green-200">
-                          <FaCheckCircle className="text-[10px]" /> Approve
+                      <div className="flex items-center justify-center gap-2">
+                        {p.status === "PENDING" ? (
+                          <>
+                            <button onClick={() => handleApprove(p.id)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 text-xs rounded-lg font-medium transition border border-green-200">
+                              <FaCheckCircle className="text-[10px]" /> Approve
+                            </button>
+                            <button onClick={() => handleReject(p.id)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-400 hover:bg-red-100 text-xs rounded-lg font-medium transition border border-red-200">
+                              <FaTimesCircle className="text-[10px]" /> Reject
+                            </button>
+                          </>
+                        ) : (
+                          <span className="text-[10px] uppercase font-bold text-gray-400 flex items-center gap-1 tracking-wider opacity-60">
+                            <FaLock className="text-[8px]" /> Locked
+                          </span>
+                        )}
+                        <button onClick={() => handlePaymentDelete(p.id)} className="w-8 h-8 flex items-center justify-center bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition border border-red-100" title="Delete record">
+                          <FaTrashAlt className="text-xs" />
                         </button>
-                      )}
-                      {p.status === "APPROVED" && <span className="text-xs text-green-500 flex items-center justify-center gap-1"><FaCheckCircle /> Done</span>}
-                      {p.status === "REJECTED" && <span className="text-xs text-red-400 flex items-center justify-center gap-1"><FaTimesCircle /> Rejected</span>}
+                      </div>
                     </td>
                   </tr>
                 ))}
-                {payments.length === 0 && <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-300">No records found</td></tr>}
+                {payments.length === 0 && <tr><td colSpan={8} className="px-6 py-12 text-center text-gray-300">No records found</td></tr>}
               </tbody>
             </table>
           </div>
         </div>
-      </>
+      </div>
     );
   };
 
@@ -705,7 +815,7 @@ export default function AdminDashboard() {
             <div className="flex items-start gap-3">
               <Avatar name={q.user?.email} />
               <div>
-                <p className="font-semibold text-gray-700 text-sm">{q.user?.email || `User #${q.user?.id}`}</p>
+                <p className="font-semibold text-gray-700 text-sm">{q.user?.email || "Anonymous User"}</p>
                 <p className="text-xs text-gray-400 mt-0.5">{new Date(q.createdAt).toLocaleString()}</p>
               </div>
             </div>
@@ -745,7 +855,6 @@ export default function AdminDashboard() {
             </div>
             <div>
               <h3 className="font-bold text-gray-800">{plan.name}</h3>
-              <p className="text-xs text-gray-400">ID: {plan.id}</p>
             </div>
           </div>
           <div className="bg-teal-50 rounded-xl p-4 border border-teal-100 mb-4">
@@ -792,10 +901,12 @@ export default function AdminDashboard() {
         <table className="w-full text-sm min-w-[520px]">
           <thead>
             <tr className="text-gray-400 text-xs uppercase tracking-wide border-b border-gray-100 bg-gray-50/50">
-              <th className="px-4 py-3 text-left font-semibold w-10">#</th>
-              <th className="px-5 sm:px-6 py-3 text-left font-semibold">ID</th>
+              <th className="px-4 py-3 text-left font-semibold w-12">#</th>
               <th className="px-5 sm:px-6 py-3 text-left font-semibold">User</th>
-              <th className="px-5 sm:px-6 py-3 text-left font-semibold">Amount</th>
+              <th className="px-5 sm:px-6 py-3 text-left font-semibold">Amount Paid</th>
+              <th className="px-5 sm:px-6 py-3 text-left font-semibold">Coverage</th>
+              <th className="px-5 sm:px-6 py-3 text-left font-semibold">UPI ID</th>
+              <th className="px-5 sm:px-6 py-3 text-left font-semibold">Payment Date</th>
               <th className="px-5 sm:px-6 py-3 text-left font-semibold">Status</th>
               <th className="px-5 sm:px-6 py-3 text-center font-semibold">Action</th>
             </tr>
@@ -803,8 +914,7 @@ export default function AdminDashboard() {
           <tbody className="divide-y divide-gray-50">
             {payments.map((p, idx) => (
               <tr key={p.id} className="hover:bg-gray-50/60 transition">
-                <td className="px-4 py-3.5 text-gray-300 text-xs font-medium">{idx + 1}</td>
-                <td className="px-5 sm:px-6 py-3.5 text-left text-gray-400 text-xs font-mono">{p.id}</td>
+                <td className="px-4 py-3.5 text-gray-300 text-xs font-bold">{idx + 1}</td>
                 <td className="px-5 sm:px-6 py-3.5">
                   <div className="flex items-center gap-2.5">
                     <Avatar name={p.user?.email} />
@@ -812,18 +922,38 @@ export default function AdminDashboard() {
                   </div>
                 </td>
                 <td className="px-5 sm:px-6 py-3.5 font-semibold text-gray-700">₹{p.amount}</td>
+                <td className="px-5 sm:px-6 py-3.5 font-bold text-indigo-600">₹{p.subscription?.plan?.coverageAmount || 0}</td>
+                <td className="px-5 sm:px-6 py-3.5">
+                  <span className="text-xs font-bold text-indigo-500">{p.upiId || "N/A"}</span>
+                </td>
+                <td className="px-5 sm:px-6 py-3.5">
+                  <span className="text-[10px] text-gray-400 font-medium italic">{p.createdAt ? new Date(p.createdAt).toLocaleString() : "N/A"}</span>
+                </td>
                 <td className="px-5 sm:px-6 py-3.5"><StatusBadge status={p.status} /></td>
                 <td className="px-5 sm:px-6 py-3.5 text-center">
-                  {p.status === "PENDING" && (
-                    <button onClick={() => handleApprove(p.id)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 text-xs rounded-lg font-medium transition border border-green-200">
-                      <FaCheckCircle className="text-[10px]" /> Approve
+                  <div className="flex items-center justify-center gap-2">
+                    {p.status === "PENDING" ? (
+                      <>
+                        <button onClick={() => handleApprove(p.id)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 text-xs rounded-lg font-medium transition border border-green-200">
+                          <FaCheckCircle className="text-[10px]" /> Approve
+                        </button>
+                        <button onClick={() => handleReject(p.id)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-400 hover:bg-red-100 text-xs rounded-lg font-medium transition border border-red-200">
+                          <FaTimesCircle className="text-[10px]" /> Reject
+                        </button>
+                      </>
+                    ) : (
+                      <span className="text-[10px] uppercase font-bold text-gray-400 flex items-center gap-1 tracking-wider opacity-60">
+                        <FaLock className="text-[8px]" /> Locked
+                      </span>
+                    )}
+                    <button onClick={() => handlePaymentDelete(p.id)} className="w-8 h-8 flex items-center justify-center bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition border border-red-100" title="Delete record">
+                      <FaTrashAlt className="text-xs" />
                     </button>
-                  )}
-                  {p.status !== "PENDING" && <span className="text-gray-200">—</span>}
+                  </div>
                 </td>
               </tr>
             ))}
-            {payments.length === 0 && <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-300">No payment records</td></tr>}
+            {payments.length === 0 && <tr><td colSpan={7} className="px-6 py-12 text-center text-gray-300">No payment records</td></tr>}
           </tbody>
         </table>
       </div>
@@ -901,6 +1031,90 @@ export default function AdminDashboard() {
       </div>
     </div>
   );
+
+  /* ══════════════════════════════════════
+     SECTION: DISASTER CLAIMS
+  ══════════════════════════════════════ */
+  const renderDisasterClaims = () => {
+    const pending = claimRequests.filter(c => c.status === "PENDING");
+    const approved = claimRequests.filter(c => c.status === "APPROVED");
+    const rejected = claimRequests.filter(c => c.status === "REJECTED");
+    return (
+      <div className="space-y-5">
+        <div className="grid grid-cols-3 gap-3 sm:gap-4">
+          {[
+            { label: "Pending", count: pending.length, bg: "bg-amber-50", border: "border-amber-100", icon: <FaHourglassHalf className="text-amber-400" />, num: "text-amber-600", lbl: "text-amber-500" },
+            { label: "Approved", count: approved.length, bg: "bg-green-50", border: "border-green-100", icon: <FaCheckCircle className="text-green-500" />, num: "text-green-600", lbl: "text-green-500" },
+            { label: "Rejected", count: rejected.length, bg: "bg-red-50", border: "border-red-100", icon: <FaTimesCircle className="text-red-400" />, num: "text-red-500", lbl: "text-red-400" },
+          ].map(({ label, count, bg, border, icon, num, lbl }) => (
+            <div key={label} className={`${bg} border ${border} rounded-2xl p-4 sm:p-5 flex flex-col justify-center`}>
+              <div className="flex items-center gap-2 mb-1">{icon}<p className={`text-xs font-semibold ${lbl} uppercase tracking-wide`}>{label}</p></div>
+              <p className={`text-2xl sm:text-3xl font-black ${num}`}>{count}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-5 sm:px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+            <p className="text-sm text-gray-500"><span className="font-semibold text-gray-700">{claimRequests.length}</span> situation requests</p>
+          </div>
+          <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[650px]">
+          <thead>
+            <tr className="text-gray-400 text-xs uppercase tracking-wide border-b border-gray-100 bg-gray-50/50">
+              <th className="px-4 py-3 text-left font-semibold w-12">#</th>
+              <th className="px-5 sm:px-6 py-3 text-left font-semibold">User</th>
+              <th className="px-5 sm:px-6 py-3 text-left font-semibold">Situation</th>
+              <th className="px-5 sm:px-6 py-3 text-left font-semibold">Description</th>
+              <th className="px-5 sm:px-6 py-3 text-left font-semibold text-green-600">Coverage</th>
+              <th className="px-5 sm:px-6 py-3 text-left font-semibold">Status</th>
+              <th className="px-5 sm:px-6 py-3 text-center font-semibold">Action</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {claimRequests.map((req, idx) => (
+              <tr key={req.id} className="hover:bg-gray-50/60 transition">
+                <td className="px-4 py-3.5 text-gray-300 text-xs font-bold">{idx + 1}</td>
+                <td className="px-5 sm:px-6 py-3.5">
+                  <div className="flex items-center gap-2.5">
+                    <Avatar name={req.user?.name || req.user?.email} />
+                    <span className="font-medium text-gray-700 truncate max-w-[120px]">{req.user?.name || "User"}</span>
+                  </div>
+                </td>
+                <td className="px-5 sm:px-6 py-3.5">
+                  <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[10px] font-black uppercase">{req.situation}</span>
+                </td>
+                <td className="px-5 sm:px-6 py-3.5 text-gray-400 text-xs max-w-[180px] truncate">{req.description}</td>
+                <td className="px-5 sm:px-6 py-3.5 font-bold text-green-600">₹{req.amount}</td>
+                <td className="px-5 sm:px-6 py-3.5"><StatusBadge status={req.status} /></td>
+                <td className="px-5 sm:px-6 py-3.5 text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    {req.status === "PENDING" ? (
+                      <>
+                        <button onClick={() => handleApproveClaimReq(req.id)} className="px-3 py-1.5 bg-indigo-600 text-white text-xs rounded-lg font-bold hover:bg-indigo-700 transition shadow-sm">
+                          Approve
+                        </button>
+                        <button onClick={() => handleRejectClaimReq(req.id)} className="px-3 py-1.5 bg-white text-red-500 border border-red-100 text-xs rounded-lg font-bold hover:bg-red-50 transition">
+                          Reject
+                        </button>
+                      </>
+                    ) : (
+                      <span className="text-[10px] uppercase font-bold text-gray-300 flex items-center gap-1 italic">
+                        <FaLock className="text-[8px]" /> Processed
+                      </span>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {claimRequests.length === 0 && <tr><td colSpan={7} className="px-6 py-12 text-center text-gray-300">No situation requests found</td></tr>}
+          </tbody>
+        </table>
+        </div>
+      </div>
+      </div>
+    );
+  };
 
   /* ══════════════════════════════════════
      SECTION: SETTINGS
@@ -1073,6 +1287,7 @@ export default function AdminDashboard() {
     queries: renderQueries,
     plans: renderPlans,
     payments: renderPayments,
+    disaster: renderDisasterClaims,
     partners: renderPartners,
     settings: renderSettings,
   };
@@ -1087,6 +1302,7 @@ export default function AdminDashboard() {
         onLogout={logout}
         pendingCount={pendingApprovals}
         unansweredCount={unansweredQ}
+        pendingClaims={pendingClaimReqs}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />

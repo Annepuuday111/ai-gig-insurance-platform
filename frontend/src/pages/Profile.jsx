@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
-
-
+import { LOCATION_DATA } from "../data/locations";
 
 const defaultTheme = { gradient: "linear-gradient(135deg,#16a34a,#4ade80)", light: "#f0fdf4", accent: "#16a34a", logo: null, banner: null };
 
@@ -38,6 +37,14 @@ function IconEdit() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </svg>
+  );
+}
+function IconMapPin() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+      <circle cx="12" cy="10" r="3"></circle>
     </svg>
   );
 }
@@ -100,10 +107,13 @@ const STYLES = `
     padding: 14px 16px; border-radius: 14px;
     background: #f8fafc; border: 1.5px solid #f1f5f9;
     transition: background 0.2s, transform 0.2s, border-color 0.2s;
+    min-width: 0; /* Allow flex children to shrink */
   }
-  .info-row:hover {
-    background: #fff; border-color: #e2e8f0;
-    transform: translateX(4px); box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  .info-row-content { flex: 1; min-width: 0; }
+  .info-row-value { 
+    font-size: 14px; font-weight: 600; color: #0f172a; margin: 0; margin-top: 1px;
+    word-break: break-word; overflow-wrap: break-word;
+    line-height: 1.4;
   }
 
   .p-chip {
@@ -158,7 +168,38 @@ const STYLES = `
   }
 
   .banner-content { bottom: 110px; }
-@media (max-width: 640px) { .banner-content { bottom: 75px; } }
+  .prof-content-container { padding: 28px 28px 32px; }
+
+  @media (max-width: 640px) { 
+    .banner-content { bottom: 75px; gap: 12px; } 
+    .prof-content-container { padding: 20px 16px 24px; }
+    .avatar-circle { width: 60px !important; height: 60px !important; border-width: 2px !important; }
+    .avatar-text { fontSize: 20px !important; }
+    .banner-name { fontSize: 20px !important; }
+  }
+
+  .details-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  @media (min-width: 768px) {
+    .details-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .edit-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  @media (min-width: 768px) {
+    .edit-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
 
 `;
 
@@ -177,7 +218,7 @@ export default function Profile() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name: "", phone: "", platform: "" });
+  const [form, setForm] = useState({ name: "", phone: "", platform: "", state: "", district: "", mandal: "" });
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
   const [themeDict, setThemeDict] = useState({});
@@ -212,7 +253,7 @@ export default function Profile() {
     api.getCurrentUser()
       .then((u) => {
         setUser(u);
-        setForm({ name: u.name || "", phone: u.phone || "", platform: u.platform || "" });
+        setForm({ name: u.name || "", phone: u.phone || "", platform: u.platform || "", state: u.state || "", district: u.district || "", mandal: u.mandal || "" });
       })
       .catch(() => navigate("/login"));
   }, [navigate]);
@@ -221,7 +262,7 @@ export default function Profile() {
     setSaving(true);
     try {
       const res = await api.updateUser(form);
-      const updated = { id: res.id, name: res.name, email: res.email, phone: res.phone, platform: res.platform };
+      const updated = { ...user, ...res };
       setUser(updated);
       localStorage.setItem("userName", updated.name);
       setEditing(false);
@@ -286,7 +327,7 @@ export default function Profile() {
           position: "absolute",
           left: 0, right: 0,
           zIndex: 2,
-          maxWidth: 720,
+          maxWidth: 1000,
           margin: "0 auto",
           padding: "0 28px",
           display: "flex",
@@ -295,7 +336,7 @@ export default function Profile() {
           gap: 18,
         }}>
           {/* Avatar circle */}
-          <div style={{
+          <div className="avatar-circle" style={{
             width: 72, height: 72, borderRadius: "50%", flexShrink: 0,
             background: "rgba(255,255,255,0.2)",
             backdropFilter: "blur(12px)",
@@ -303,7 +344,7 @@ export default function Profile() {
             display: "flex", alignItems: "center", justifyContent: "center",
             boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
           }}>
-            <span style={{
+            <span className="avatar-text" style={{
               fontFamily: "Sora,sans-serif", fontWeight: 800, fontSize: 24,
               color: "#fff", textShadow: "0 1px 4px rgba(0,0,0,0.3)",
             }}>
@@ -316,7 +357,7 @@ export default function Profile() {
             display: "flex", flexDirection: "column",
             alignItems: "flex-start", gap: 7,
           }}>
-            <h1 style={{
+            <h1 className="banner-name" style={{
               fontFamily: "Sora,sans-serif", fontWeight: 800,
               fontSize: "clamp(20px, 3.5vw, 26px)",
               color: "#ffffff", margin: 0, lineHeight: 1.15,
@@ -352,7 +393,7 @@ export default function Profile() {
       </div>
 
       {/* ── CARD ── */}
-      <div style={{ maxWidth: 720, margin: "-32px auto 48px", padding: "0 16px", position: "relative", zIndex: 10 }}>
+      <div style={{ maxWidth: 1000, margin: "-32px auto 48px", padding: "0 16px", position: "relative", zIndex: 10 }}>
         <div
           className="prof-card"
           style={{
@@ -362,7 +403,7 @@ export default function Profile() {
         >
           <div style={{ height: 4, background: theme.gradient }} />
 
-          <div style={{ padding: "28px 28px 32px" }}>
+          <div className="prof-content-container">
 
             {editing ? (
               <div className="prof-section" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -376,28 +417,91 @@ export default function Profile() {
                   </div>
                 </div>
 
-                <div style={{ position: "relative" }}>
-                  <FieldIcon><IconUser /></FieldIcon>
-                  <input className="prof-input" placeholder="Full Name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+                <div className="edit-grid">
+                  <div style={{ position: "relative" }}>
+                    <FieldIcon><IconUser /></FieldIcon>
+                    <input className="prof-input" placeholder="Full Name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+                  </div>
+
+                  <div style={{ position: "relative" }}>
+                    <FieldIcon><IconMail /></FieldIcon>
+                    <input className="prof-input" placeholder="Email" value={user.email} disabled />
+                  </div>
+
+                  <div style={{ position: "relative" }}>
+                    <FieldIcon><IconPhone /></FieldIcon>
+                    <input className="prof-input" placeholder="Phone Number" type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
+                  </div>
+
+                  <div style={{ position: "relative" }}>
+                    <FieldIcon><IconBriefcase /></FieldIcon>
+                    <input className="prof-input" value={form.platform || "No Platform Assigned"} disabled />
+                  </div>
                 </div>
 
-                <div style={{ position: "relative" }}>
-                  <FieldIcon><IconMail /></FieldIcon>
-                  <input className="prof-input" placeholder="Email" value={user.email} disabled />
+                {/* Location Selection */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: -4 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: theme.light, display: "flex", alignItems: "center", justifyContent: "center", color: theme.accent }}>
+                      <IconMapPin />
+                    </div>
+                    <div>
+                      <h3 style={{ fontFamily: "Sora,sans-serif", fontSize: 16, fontWeight: 700, color: "#0f172a", margin: 0 }}>Location Details</h3>
+                      {user.state ? (
+                        <p style={{ fontSize: 12, color: "#eab308", margin: 0, fontWeight: 600 }}>Location is locked and cannot be edited</p>
+                      ) : (
+                        <p style={{ fontSize: 12, color: "#94a3b8", margin: 0 }}>Select your service area</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="edit-grid">
+                    <div style={{ position: "relative" }}>
+                      <FieldIcon><IconMapPin /></FieldIcon>
+                      <select
+                        className="prof-input"
+                        value={form.state}
+                        disabled={!!user.state}
+                        onChange={(e) => setForm((f) => ({ ...f, state: e.target.value, district: "", mandal: "" }))}
+                        style={{ appearance: "auto", cursor: !!user.state ? "not-allowed" : "pointer" }}
+                      >
+                        <option value="">Select State</option>
+                        {Object.keys(LOCATION_DATA).map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+
+                    <div style={{ position: "relative" }}>
+                      <FieldIcon><IconMapPin /></FieldIcon>
+                      <select
+                        className="prof-input"
+                        value={form.district}
+                        disabled={!!user.state || !form.state}
+                        onChange={(e) => setForm((f) => ({ ...f, district: e.target.value, mandal: "" }))}
+                        style={{ appearance: "auto", cursor: (!!user.state || !form.state) ? "not-allowed" : "pointer" }}
+                      >
+                        <option value="">Select District</option>
+                        {form.state && Object.keys(LOCATION_DATA[form.state] || {}).map(d => <option key={d} value={d}>{d}</option>)}
+                      </select>
+                    </div>
+
+                    <div style={{ position: "relative" }}>
+                      <FieldIcon><IconMapPin /></FieldIcon>
+                      <select
+                        className="prof-input"
+                        value={form.mandal}
+                        disabled={!!user.state || !form.district}
+                        onChange={(e) => setForm((f) => ({ ...f, mandal: e.target.value }))}
+                        style={{ appearance: "auto", cursor: (!!user.state || !form.district) ? "not-allowed" : "pointer" }}
+                      >
+                        <option value="">Select Mandal</option>
+                        {form.district && form.state && (LOCATION_DATA[form.state][form.district] || []).map(m => <option key={m} value={m}>{m}</option>)}
+                      </select>
+                    </div>
+                  </div>
                 </div>
 
-                <div style={{ position: "relative" }}>
-                  <FieldIcon><IconPhone /></FieldIcon>
-                  <input className="prof-input" placeholder="Phone Number" type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
-                </div>
-
-                <div style={{ position: "relative" }}>
-                  <FieldIcon><IconBriefcase /></FieldIcon>
-                  <input className="prof-input" value={form.platform || "No Platform Assigned"} disabled />
-                </div>
-
-                <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", paddingTop: 4 }}>
-                  <button className="cancel-btn" onClick={() => { setEditing(false); setForm({ name: user.name, phone: user.phone, platform: user.platform }); }}>
+                <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", paddingTop: 10, flexWrap: "wrap" }}>
+                  <button className="cancel-btn" onClick={() => { setEditing(false); setForm({ name: user.name, phone: user.phone, platform: user.platform, state: user.state || "", district: user.district || "", mandal: user.mandal || "" }); }}>
                     <IconX /> Cancel
                   </button>
                   <button className="save-btn" onClick={handleSave} disabled={saving}>
@@ -444,14 +548,15 @@ export default function Profile() {
                   )}
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+                <div className="details-grid">
                   {[
                     { icon: <IconMail />, label: "Email", value: user.email },
                     { icon: <IconPhone />, label: "Phone", value: user.phone },
                     { icon: <IconBriefcase />, label: "Platform", value: user.platform, showLogo: true },
+                    { icon: <IconMapPin />, label: "Location", value: user.state ? `${user.mandal}, ${user.district}, ${user.state}` : "Not Set" },
                   ].map(row => (
                     <div key={row.label} className="info-row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0, flex: 1 }}>
                         <div style={{
                           width: 36, height: 36, borderRadius: 10,
                           background: theme.light, flexShrink: 0,
@@ -460,13 +565,13 @@ export default function Profile() {
                         }}>
                           {row.icon}
                         </div>
-                        <div>
+                        <div className="info-row-content">
                           <p style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em", margin: 0 }}>{row.label}</p>
-                          <p style={{ fontSize: 14, fontWeight: 600, color: "#0f172a", margin: 0, marginTop: 1 }}>{row.value || "—"}</p>
+                          <p className="info-row-value">{row.value || "—"}</p>
                         </div>
                       </div>
                       {row.showLogo && theme.logo && (
-                        <div style={{ padding: "4px 8px", background: "#fff", borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                        <div style={{ padding: "4px 8px", background: "#fff", borderRadius: 8, border: "1px solid #e2e8f0", flexShrink: 0, marginLeft: 8 }}>
                           <img src={theme.logo} alt={row.value} style={{ height: 24, maxWidth: 64, objectFit: "contain" }} />
                         </div>
                       )}

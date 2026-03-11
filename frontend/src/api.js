@@ -83,6 +83,9 @@ export async function getDashboardSummary() {
 export async function postQuery(question) {
   return request('/api/queries', { method: 'POST', body: JSON.stringify({ question }) });
 }
+export async function claimPayment(id) {
+  return request(`/api/payments/${id}/claim`, { method: 'POST' });
+}
 export async function getMyQueries() {
   return request('/api/queries/my', { method: 'GET' });
 }
@@ -111,6 +114,12 @@ export async function adminListPayments() {
 export async function adminApprovePayment(id) {
   return request(`/api/admin/payments/${id}/approve`, { method: 'PUT' });
 }
+export async function adminRejectPayment(id) {
+  return request(`/api/admin/payments/${id}/reject`, { method: 'PUT' });
+}
+export async function adminDeletePayment(id) {
+  return request(`/api/admin/payments/${id}`, { method: 'DELETE' });
+}
 
 export async function adminListQueries() {
   return request('/api/admin/queries', { method: 'GET' });
@@ -132,6 +141,34 @@ export async function adminDeletePartner(id) {
   return request(`/api/admin/partners/${id}`, { method: 'DELETE' });
 }
 
+// Disaster Claims
+export async function submitClaimRequest(data) {
+  return request('/api/claims/requests', { method: 'POST', body: JSON.stringify(data) });
+}
+export async function getMyClaimRequests() {
+  return request('/api/claims/requests/my', { method: 'GET' });
+}
+export async function claimRequestPayout(id) {
+  return request(`/api/claims/requests/${id}/claim`, { method: 'POST' });
+}
+export async function adminListClaimRequests() {
+  return request('/api/claims/requests/admin/all', { method: 'GET' });
+}
+export async function adminApproveClaimRequest(id) {
+  return request(`/api/claims/requests/admin/${id}/approve`, { method: 'PUT' });
+}
+export async function adminRejectClaimRequest(id) {
+  return request(`/api/claims/requests/admin/${id}/reject`, { method: 'PUT' });
+}
+
+// Notifications
+export async function getMyNotifications() {
+  return request('/api/notifications', { method: 'GET' });
+}
+export async function markNotificationAsRead(id) {
+  return request(`/api/notifications/${id}/read`, { method: 'PUT' });
+}
+
 export default {
   registerUser, loginUser, getCurrentUser, updateUser,
   getPlans, getPlanById,
@@ -141,7 +178,11 @@ export default {
   adminChangeCredentials,
   adminListUsers, adminDeleteUser, adminUpdateUser,
   adminListPlans, adminUpdatePlan,
-  adminListPayments, adminApprovePayment,
+  adminListPayments, adminApprovePayment, adminRejectPayment, adminDeletePayment,
   adminListQueries, adminReplyQuery,
+  claimPayment,
+  submitClaimRequest, getMyClaimRequests, claimRequestPayout,
+  adminListClaimRequests, adminApproveClaimRequest, adminRejectClaimRequest,
+  getMyNotifications, markNotificationAsRead,
   getPartners, adminAddPartner, adminDeletePartner,
 };
