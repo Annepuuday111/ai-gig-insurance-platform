@@ -11,6 +11,7 @@ import {
   adminReplyQuery,
   adminChangeCredentials,
 } from "../api";
+import adminBanner from "../../../assets/adminbanner.png";
 import {
   FaShieldAlt, FaTachometerAlt, FaUsers, FaClipboardCheck,
   FaQuestionCircle, FaClipboardList, FaMoneyBillWave, FaCog,
@@ -321,36 +322,41 @@ export default function AdminDashboard() {
   ══════════════════════════════════════ */
   const renderOverview = () => (
     <>
-      {/* Banner — overview only */}
-      <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl px-6 sm:px-8 py-6 sm:py-8 mb-6 shadow-sm overflow-hidden relative">
-        {/* SVG illustration */}
-        <div className="absolute right-0 top-0 h-full flex items-center pointer-events-none select-none">
-          <svg viewBox="0 0 320 160" className="h-full w-auto opacity-[0.12]" fill="white" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="240" cy="80" r="110" />
-            <rect x="130" y="30" width="130" height="100" rx="14" />
-            <rect x="148" y="52" width="60" height="8" rx="4" fill="rgba(0,0,0,0.3)" />
-            <rect x="148" y="68" width="40" height="8" rx="4" fill="rgba(0,0,0,0.2)" />
-            <rect x="148" y="84" width="80" height="8" rx="4" fill="rgba(0,0,0,0.2)" />
-            <rect x="148" y="100" width="50" height="8" rx="4" fill="rgba(0,0,0,0.2)" />
-            <circle cx="230" cy="40" r="20" fill="white" />
-            <path d="M222 40 l6 7 l11-14" stroke="#22c55e" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-            <circle cx="50" cy="130" r="45" fillOpacity="0.4" />
-            <circle cx="290" cy="150" r="30" fillOpacity="0.3" />
-          </svg>
-        </div>
-        <div className="relative z-10">
-          <p className="text-green-100 text-xs font-semibold uppercase tracking-[0.18em] mb-1.5">Welcome back, Admin</p>
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none mb-2">Admin Dashboard</h1>
-          <p className="text-green-100 text-sm">Here's what's happening on your platform today.</p>
-        </div>
-        <div className="relative z-10 mt-4 sm:mt-0 sm:absolute sm:right-6 sm:top-1/2 sm:-translate-y-1/2">
-          <div className="inline-flex items-center gap-3 bg-white/15 border border-white/20 rounded-xl px-4 py-3">
-            <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center">
-              <FaBell className="text-white text-sm" />
-            </div>
-            <div>
-              <p className="text-green-100 text-xs">Pending actions</p>
-              <p className="text-2xl font-black text-white leading-none">{pendingApprovals + unansweredQ}</p>
+      {/* Banner — overview only, using adminbanner image */}
+      <div className="relative w-full rounded-2xl overflow-hidden mb-6 shadow-sm bg-green-600 h-40 sm:h-48 lg:h-56">
+        {/* Banner image — covers full area, object-cover for all screens */}
+        <img
+          src={adminBanner}
+          alt="Admin Banner"
+          className="absolute inset-0 w-full h-full object-cover object-center"
+          draggable={false}
+        />
+        {/* Dark overlay so text stays readable over any image */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/30 to-transparent" />
+
+        {/* Content */}
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-6 sm:px-8 py-6 sm:py-8">
+          <div>
+            <p className="text-green-200 text-xs font-semibold uppercase tracking-[0.18em] mb-1.5">
+              Welcome back, Admin
+            </p>
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-none mb-2 drop-shadow">
+              Admin Dashboard
+            </h1>
+            <p className="text-gray-200 text-sm">
+              Here's what's happening on your platform today.
+            </p>
+          </div>
+
+          <div className="shrink-0">
+            <div className="inline-flex items-center gap-3 bg-black/30 border border-white/20 rounded-xl px-4 py-3 backdrop-blur-sm">
+              <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center">
+                <FaBell className="text-white text-sm" />
+              </div>
+              <div>
+                <p className="text-gray-300 text-xs">Pending actions</p>
+                <p className="text-2xl font-black text-white leading-none">{pendingApprovals + unansweredQ}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -448,19 +454,22 @@ export default function AdminDashboard() {
         <p className="text-sm text-gray-500"><span className="font-semibold text-gray-700">{users.length}</span> users registered</p>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm min-w-[560px]">
+        <table className="w-full text-sm min-w-[600px]">
           <thead>
             <tr className="text-gray-400 text-xs uppercase tracking-wide border-b border-gray-100 bg-gray-50/50">
+              <th className="px-4 py-3 text-left font-semibold w-10">#</th>
+              <th className="px-5 sm:px-6 py-3 text-left font-semibold">ID</th>
               <th className="px-5 sm:px-6 py-3 text-left font-semibold">User</th>
               <th className="px-5 sm:px-6 py-3 text-left font-semibold">Email</th>
               <th className="px-5 sm:px-6 py-3 text-left font-semibold">Phone</th>
-              <th className="px-5 sm:px-6 py-3 text-left font-semibold">ID</th>
               <th className="px-5 sm:px-6 py-3 text-center font-semibold">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {users.map((u) => (
+            {users.map((u, idx) => (
               <tr key={u.id} className="hover:bg-gray-50/60 transition">
+                <td className="px-4 py-3.5 text-gray-300 text-xs font-medium">{idx + 1}</td>
+                <td className="px-5 sm:px-6 py-3.5 text-left text-gray-400 text-xs font-mono">{u.id}</td>
                 <td className="px-5 sm:px-6 py-3.5">
                   <div className="flex items-center gap-2.5">
                     <Avatar name={u.name} />
@@ -469,7 +478,6 @@ export default function AdminDashboard() {
                 </td>
                 <td className="px-5 sm:px-6 py-3.5 text-gray-500">{u.email}</td>
                 <td className="px-5 sm:px-6 py-3.5 text-gray-500">{u.phone}</td>
-                <td className="px-5 sm:px-6 py-3.5 text-left text-gray-300 text-xs font-mono">{u.id}</td>
                 <td className="px-5 sm:px-6 py-3.5 text-center">
                   <button
                     onClick={() => handleDelete(u.id)}
@@ -480,7 +488,7 @@ export default function AdminDashboard() {
                 </td>
               </tr>
             ))}
-            {users.length === 0 && <tr><td colSpan={5} className="px-6 py-12 text-center text-gray-300">No users found</td></tr>}
+            {users.length === 0 && <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-300">No users found</td></tr>}
           </tbody>
         </table>
       </div>
@@ -513,16 +521,19 @@ export default function AdminDashboard() {
             <table className="w-full text-sm min-w-[540px]">
               <thead>
                 <tr className="text-gray-400 text-xs uppercase tracking-wide border-b border-gray-100 bg-gray-50/50">
+                  <th className="px-4 py-3 text-left font-semibold w-10">#</th>
+                  <th className="px-5 sm:px-6 py-3 text-left font-semibold">ID</th>
                   <th className="px-5 sm:px-6 py-3 text-left font-semibold">User</th>
                   <th className="px-5 sm:px-6 py-3 text-left font-semibold">Amount</th>
                   <th className="px-5 sm:px-6 py-3 text-left font-semibold">Status</th>
-                  <th className="px-5 sm:px-6 py-3 text-left font-semibold">ID</th>
                   <th className="px-5 sm:px-6 py-3 text-center font-semibold">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {payments.map((p) => (
+                {payments.map((p, idx) => (
                   <tr key={p.id} className="hover:bg-gray-50/60 transition">
+                    <td className="px-4 py-3.5 text-gray-300 text-xs font-medium">{idx + 1}</td>
+                    <td className="px-5 sm:px-6 py-3.5 text-left text-gray-400 text-xs font-mono">{p.id}</td>
                     <td className="px-5 sm:px-6 py-3.5">
                       <div className="flex items-center gap-2.5">
                         <Avatar name={p.user?.email} />
@@ -531,7 +542,6 @@ export default function AdminDashboard() {
                     </td>
                     <td className="px-5 sm:px-6 py-3.5 font-semibold text-gray-700">₹{p.amount}</td>
                     <td className="px-5 sm:px-6 py-3.5"><StatusBadge status={p.status} /></td>
-                    <td className="px-5 sm:px-6 py-3.5 text-left text-gray-300 text-xs font-mono">{p.id}</td>
                     <td className="px-5 sm:px-6 py-3.5 text-center">
                       {p.status === "PENDING" && (
                         <button onClick={() => handleApprove(p.id)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 text-xs rounded-lg font-medium transition border border-green-200">
@@ -543,7 +553,7 @@ export default function AdminDashboard() {
                     </td>
                   </tr>
                 ))}
-                {payments.length === 0 && <tr><td colSpan={5} className="px-6 py-12 text-center text-gray-300">No records found</td></tr>}
+                {payments.length === 0 && <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-300">No records found</td></tr>}
               </tbody>
             </table>
           </div>
@@ -653,16 +663,19 @@ export default function AdminDashboard() {
         <table className="w-full text-sm min-w-[520px]">
           <thead>
             <tr className="text-gray-400 text-xs uppercase tracking-wide border-b border-gray-100 bg-gray-50/50">
+              <th className="px-4 py-3 text-left font-semibold w-10">#</th>
+              <th className="px-5 sm:px-6 py-3 text-left font-semibold">ID</th>
               <th className="px-5 sm:px-6 py-3 text-left font-semibold">User</th>
               <th className="px-5 sm:px-6 py-3 text-left font-semibold">Amount</th>
               <th className="px-5 sm:px-6 py-3 text-left font-semibold">Status</th>
-              <th className="px-5 sm:px-6 py-3 text-left font-semibold">ID</th>
               <th className="px-5 sm:px-6 py-3 text-center font-semibold">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {payments.map((p) => (
+            {payments.map((p, idx) => (
               <tr key={p.id} className="hover:bg-gray-50/60 transition">
+                <td className="px-4 py-3.5 text-gray-300 text-xs font-medium">{idx + 1}</td>
+                <td className="px-5 sm:px-6 py-3.5 text-left text-gray-400 text-xs font-mono">{p.id}</td>
                 <td className="px-5 sm:px-6 py-3.5">
                   <div className="flex items-center gap-2.5">
                     <Avatar name={p.user?.email} />
@@ -671,7 +684,6 @@ export default function AdminDashboard() {
                 </td>
                 <td className="px-5 sm:px-6 py-3.5 font-semibold text-gray-700">₹{p.amount}</td>
                 <td className="px-5 sm:px-6 py-3.5"><StatusBadge status={p.status} /></td>
-                <td className="px-5 sm:px-6 py-3.5 text-left text-gray-300 text-xs font-mono">{p.id}</td>
                 <td className="px-5 sm:px-6 py-3.5 text-center">
                   {p.status === "PENDING" && (
                     <button onClick={() => handleApprove(p.id)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 text-xs rounded-lg font-medium transition border border-green-200">
@@ -682,7 +694,7 @@ export default function AdminDashboard() {
                 </td>
               </tr>
             ))}
-            {payments.length === 0 && <tr><td colSpan={5} className="px-6 py-12 text-center text-gray-300">No payment records</td></tr>}
+            {payments.length === 0 && <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-300">No payment records</td></tr>}
           </tbody>
         </table>
       </div>
