@@ -248,7 +248,7 @@ export default function AdminDashboard() {
   const [queries, setQueries] = useState([]);
   const [partners, setPartners] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [newPartner, setNewPartner] = useState({ name: "", logoUrl: "", dashboardBannerUrl: "", profileBannerUrl: "", bgColor: "#FFFFFF", borderColor: "#E2E8F0" });
+  const [newPartner, setNewPartner] = useState({ name: "", logoUrl: "", dashboardBannerUrl: "", profileBannerUrl: "", borderColor: "#E2E8F0" });
   const [adminInfo, setAdminInfo] = useState({ email: "admin@giginsurance.com", username: "Admin" });
   const [settings, setSettings] = useState({ email: "", username: "", password: "", confirmPassword: "" });
   const [message, setMessage] = useState(null);
@@ -307,7 +307,7 @@ export default function AdminDashboard() {
       return; 
     }
     await adminAddPartner(newPartner);
-    setNewPartner({ name: "", logoUrl: "", dashboardBannerUrl: "", profileBannerUrl: "", bgColor: "#FFFFFF", borderColor: "#E2E8F0" });
+    setNewPartner({ name: "", logoUrl: "", dashboardBannerUrl: "", profileBannerUrl: "", borderColor: "#E2E8F0" });
     loadPartners();
     showMsg("Partner added successfully!");
   };
@@ -765,10 +765,7 @@ export default function AdminDashboard() {
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">Dashboard Banner (Upload)</label>
             <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, "dashboardBannerUrl")} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 border border-gray-200 rounded-xl" />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">Bg Color</label>
-            <input type="color" value={newPartner.bgColor} onChange={(e) => setNewPartner({ ...newPartner, bgColor: e.target.value })} className="w-full h-10 rounded-xl cursor-pointer p-1 bg-gray-50 border border-gray-200" />
-          </div>
+
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">Border/Accent Color</label>
             <input type="color" value={newPartner.borderColor} onChange={(e) => setNewPartner({ ...newPartner, borderColor: e.target.value })} className="w-full h-10 rounded-xl cursor-pointer p-1 bg-gray-50 border border-gray-200" />

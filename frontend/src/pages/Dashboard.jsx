@@ -67,6 +67,7 @@ export default function Dashboard() {
   const [summary, setSummary]   = useState(null);
   const [loadingSum, setLoadingSum] = useState(true);
   const [themeDict, setThemeDict] = useState({});
+  const [partners, setPartners] = useState([]);
   const [dashboardData] = useState({
     notifications: [
       { title: "Heavy rain detected in your zone", desc: "System initiated claim process", time: "10m ago" },
@@ -108,12 +109,13 @@ export default function Dashboard() {
     // Fetch partners
     getPartners().then(res => {
       if (!res.error && Array.isArray(res)) {
+        setPartners(res);
         const d = {};
         res.forEach(p => {
           d[p.name] = {
             gradient: `linear-gradient(135deg, ${p.borderColor}, ${p.borderColor}bb)`,
-            light: p.bgColor,
-            accent: p.borderColor,
+            light: p.borderColor ? `${p.borderColor}22` : "#f0fdf4",
+            accent: p.borderColor || "#16a34a",
             banner: p.dashboardBannerUrl || null 
           };
         });
@@ -358,6 +360,77 @@ export default function Dashboard() {
             </button>
           </div>
         </div>
+
+        {/* Supported Platforms */}
+        {partners.length > 0 && (
+          <div className="dash-section" style={{ marginBottom: 32 }}>
+            <div className="dash-card" style={{
+              background: "#fff", borderRadius: 16, overflow: "hidden",
+              boxShadow: "0 8px 32px rgba(15,23,42,0.08)",
+              border: "1.5px solid #f1f5f9",
+            }}>
+              <div style={{ padding: "20px 24px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                  <div>
+                    <h3 style={{ fontFamily: "Sora,sans-serif", fontSize: 18, fontWeight: 700, color: "#0f172a", margin: 0 }}>
+                      🤝 Supported Platforms
+                    </h3>
+                    <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>
+                      We cover gig workers across {partners.length} platform{partners.length !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                  <div style={{
+                    background: "linear-gradient(135deg,#16a34a,#22c55e)",
+                    borderRadius: 12, padding: "8px 16px",
+                    color: "#fff", fontFamily: "Sora,sans-serif",
+                    fontWeight: 800, fontSize: 22, minWidth: 52, textAlign: "center",
+                    boxShadow: "0 4px 14px rgba(22,163,74,0.3)",
+                  }}>
+                    {partners.length}
+                  </div>
+                </div>
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(90px, 1fr))",
+                  gap: 12,
+                }}>
+                  {partners.map(p => (
+                    <div key={p.id} style={{
+                      display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
+                      background: "#f8fafc", borderRadius: 12, padding: "14px 10px",
+                      border: `1.5px solid ${p.borderColor || "#e2e8f0"}`,
+                      transition: "all 0.2s ease",
+                      boxShadow: user?.platform === p.name ? `0 0 0 2px ${p.borderColor || "#16a34a"}, 0 4px 12px rgba(0,0,0,0.08)` : "none",
+                    }}>
+                      <div style={{
+                        width: 48, height: 48, borderRadius: 10,
+                        background: "#fff", border: `1.5px solid ${p.borderColor || "#e2e8f0"}`,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+                      }}>
+                        <img src={p.logoUrl} alt={p.name}
+                          style={{ maxWidth: 34, maxHeight: 28, objectFit: "contain" }}
+                          onError={e => { e.target.style.display = "none"; }}
+                        />
+                      </div>
+                      <span style={{
+                        fontSize: 11, fontWeight: 700, color: "#374151",
+                        textAlign: "center", lineHeight: 1.3,
+                        width: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                      }}>{p.name}</span>
+                      {user?.platform === p.name && (
+                        <span style={{
+                          fontSize: 9, fontWeight: 700, background: p.borderColor || "#16a34a",
+                          color: "#fff", borderRadius: 20, padding: "2px 7px", letterSpacing: "0.05em",
+                        }}>YOU</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Notifications + Claims */}
         <div className="dash-section">

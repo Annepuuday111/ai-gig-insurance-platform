@@ -22,28 +22,24 @@ public class Partner {
     private String profileBannerUrl;
 
     @Column(nullable = false)
-    private String bgColor;
-
-    @Column(nullable = false)
     private String borderColor;
 
     public Partner() {}
 
-    public Partner(String name, String logoUrl, String dashboardBannerUrl, String profileBannerUrl, String bgColor, String borderColor) {
+    public Partner(String name, String logoUrl, String dashboardBannerUrl, String profileBannerUrl, String borderColor) {
         this.name = name;
         this.logoUrl = logoUrl;
         this.dashboardBannerUrl = dashboardBannerUrl;
         this.profileBannerUrl = profileBannerUrl;
-        this.bgColor = bgColor;
         this.borderColor = borderColor;
     }
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-    
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
-    
+
     public String getLogoUrl() { return logoUrl; }
     public void setLogoUrl(String logoUrl) { this.logoUrl = logoUrl; }
 
@@ -52,10 +48,7 @@ public class Partner {
 
     public String getProfileBannerUrl() { return profileBannerUrl; }
     public void setProfileBannerUrl(String profileBannerUrl) { this.profileBannerUrl = profileBannerUrl; }
-    
-    public String getBgColor() { return bgColor; }
-    public void setBgColor(String bgColor) { this.bgColor = bgColor; }
-    
+
     public String getBorderColor() { return borderColor; }
     public void setBorderColor(String borderColor) { this.borderColor = borderColor; }
 }

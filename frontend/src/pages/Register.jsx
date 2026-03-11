@@ -117,6 +117,18 @@ const STYLES = `
     -webkit-mask-image: linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%);
     mask-image: linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%);
   }
+  .reg-select {
+    width: 100%; border: 1.5px solid #e2e8f0; border-radius: 12px;
+    padding: 11px 38px 11px 14px; font-size: 14px; background: #f8fafc;
+    color: #0f172a; outline: none; appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    cursor: pointer; box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  }
+  .reg-select:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,0.13); background: #fff; }
+  .reg-select option { color: #0f172a; }
 `;
 
 function FieldIcon({ children }) {
@@ -132,25 +144,30 @@ function FieldIcon({ children }) {
 
 function LogoScroller({ partners }) {
   if (!partners || partners.length === 0) return null;
-  const doubled = [...partners, ...partners];
   return (
     <div>
-      <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 8 }}>
+      <p style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 10 }}>
         Supported Platforms
       </p>
-      <div className="logo-scroll-wrap">
-        <div className="logo-track">
-          {doubled.map((p, i) => (
-            <div key={i} title={p.name} style={{
-              width: 40, height: 40, borderRadius: 10, flexShrink: 0,
-              backgroundColor: p.bgColor, borderColor: p.borderColor, borderStyle: "solid", borderWidth: "1.5px",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {partners.map((p, i) => (
+          <div key={i} title={p.name} style={{
+            display: "flex", alignItems: "center", gap: 6,
+            background: "#fff", borderRadius: 10,
+            border: `1.5px solid ${p.borderColor || "#e2e8f0"}`,
+            padding: "5px 10px 5px 6px",
+            boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+          }}>
+            <div style={{
+              width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center",
+              background: "#f8fafc", borderRadius: 7, flexShrink: 0,
             }}>
-              <img src={p.logoUrl} alt={p.name} style={{ maxWidth: 26, maxHeight: 20, objectFit: "contain" }} />
+              <img src={p.logoUrl} alt={p.name} style={{ maxWidth: 20, maxHeight: 16, objectFit: "contain" }}
+                onError={e => { e.target.style.display = "none"; }} />
             </div>
-          ))}
-        </div>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#374151" }}>{p.name}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -237,13 +254,24 @@ function FormBody({ form, setForm, loading, error, submit, partners }) {
         <p style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8 }}>
           Your Delivery Platform
         </p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(75px, 1fr))", gap: 8 }}>
-          {partners.map((p) => (
-            <button key={p.name} type="button" onClick={() => togglePlatform(p.name)} className={`p-chip ${form.platform === p.name ? "active" : ""}`}>
-              {p.name}
-            </button>
-          ))}
+        <div style={{ position: "relative" }}>
+          <select
+            className="reg-select"
+            value={form.platform}
+            onChange={(e) => setForm(f => ({ ...f, platform: e.target.value }))}
+          >
+            <option value="">Select your platform…</option>
+            {partners.map((p) => (
+              <option key={p.name} value={p.name}>{p.name}</option>
+            ))}
+          </select>
         </div>
+        {form.platform && (
+          <p style={{ fontSize: 11, color: "#16a34a", fontWeight: 600, marginTop: 5, display: "flex", alignItems: "center", gap: 4 }}>
+            <span style={{ width: 6, height: 6, background: "#22c55e", borderRadius: "50%", display: "inline-block" }} />
+            {form.platform} selected
+          </p>
+        )}
         {!form.platform && (
           <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 5 }}>Select the platform you work on</p>
         )}
