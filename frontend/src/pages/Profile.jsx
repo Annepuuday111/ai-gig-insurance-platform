@@ -391,15 +391,9 @@ export default function Profile() {
                   <input className="prof-input" placeholder="Phone Number" type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
                 </div>
 
-                <div>
-                  <p style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 10 }}>Platform</p>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(75px, 1fr))", gap: 8 }}>
-                    {partners.map(p => (
-                      <button key={p.name} type="button" className={`p-chip ${form.platform === p.name ? "active" : ""}`} onClick={() => setForm(f => ({ ...f, platform: p.name }))}>
-                        {p.name}
-                      </button>
-                    ))}
-                  </div>
+                <div style={{ position: "relative" }}>
+                  <FieldIcon><IconBriefcase /></FieldIcon>
+                  <input className="prof-input" value={form.platform || "No Platform Assigned"} disabled />
                 </div>
 
                 <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", paddingTop: 4 }}>

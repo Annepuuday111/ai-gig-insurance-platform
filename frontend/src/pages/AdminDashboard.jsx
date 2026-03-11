@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   adminListUsers,
@@ -81,6 +81,23 @@ const StatusBadge = ({ status }) => {
     </span>
   );
 };
+
+// Global styles for specific elements
+const globalStyles = `
+  .banner-content { bottom: 110px; }
+  @media (max-width: 640px) { .banner-content { bottom: 75px; } }
+
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
+  .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+`;
+
+// Inject global styles once
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement("style");
+  styleSheet.type = "text/css";
+  styleSheet.innerText = globalStyles;
+  document.head.appendChild(styleSheet);
+}
 
 function Avatar({ name }) {
   const str = name || "?";
@@ -253,6 +270,8 @@ export default function AdminDashboard() {
   const [settings, setSettings] = useState({ email: "", username: "", password: "", confirmPassword: "" });
   const [message, setMessage] = useState(null);
   const [msgType, setMsgType] = useState("success");
+  
+  const carouselRef = useRef(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -260,6 +279,21 @@ export default function AdminDashboard() {
     if (!token || isAdmin !== "true") { navigate("/login"); return; }
     loadAll();
   }, []);
+
+  useEffect(() => {
+    if (section !== "overview" || partners.length <= 1) return;
+    const interval = setInterval(() => {
+      if (carouselRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
+        if (scrollLeft + clientWidth >= scrollWidth - 5) {
+          carouselRef.current.scrollTo({ left: 0, behavior: "smooth" });
+        } else {
+          carouselRef.current.scrollBy({ left: clientWidth, behavior: "smooth" });
+        }
+      }
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [section, partners.length]);
 
   useEffect(() => {
     if (section === "users") loadUsers();
@@ -397,15 +431,16 @@ export default function AdminDashboard() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
         <StatCard icon={<FaUsers />} label="Total Users" value={users.length} bgColor="bg-blue-50" iconColor="text-blue-500" sub="Registered accounts" />
         <StatCard icon={<FaClipboardList />} label="Active Plans" value={plans.length} bgColor="bg-teal-50" iconColor="text-teal-500" sub="Insurance plans" />
+        <StatCard icon={<FaGlobe />} label="Platforms" value={partners.length} bgColor="bg-indigo-50" iconColor="text-indigo-500" sub="Supported partners" />
         <StatCard icon={<FaMoneyBillWave />} label="Total Payments" value={payments.length} bgColor="bg-emerald-50" iconColor="text-emerald-500" sub="All transactions" />
         <StatCard icon={<FaHourglassHalf />} label="Pending" value={pendingApprovals} bgColor="bg-amber-50" iconColor="text-amber-500" sub="Awaiting approval" />
       </div>
 
       {/* Mini tables */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 mb-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5 mb-5">
         {/* Recent users */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
@@ -460,6 +495,66 @@ export default function AdminDashboard() {
               </div>
             ))}
             {pendingApprovals === 0 && <p className="px-5 py-8 text-center text-gray-300 text-sm">All caught up 🎉</p>}
+          </div>
+        </div>
+
+        {/* Top Platforms Breakdown */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+          <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between shrink-0">
+            <h3 className="font-semibold text-gray-700 text-sm flex items-center gap-2">
+              <span className="w-6 h-6 bg-indigo-50 rounded-lg flex items-center justify-center"><FaGlobe className="text-indigo-500 text-xs" /></span>
+              Platform Usage
+            </h3>
+            <button onClick={() => setSection("partners")} className="text-xs text-green-600 hover:text-green-700 flex items-center gap-0.5 font-medium">
+              View all <FaChevronRight className="text-[10px]" />
+            </button>
+          </div>
+          <div className="flex-1 relative bg-gray-50/50 min-h-[380px]">
+            {partners.length > 0 ? (
+              <div ref={carouselRef} className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar h-full absolute inset-0 items-center" style={{ scrollBehavior: "smooth" }}>
+                {partners.map(p => {
+                  const count = users.filter(u => u.platform === p.name).length;
+                  const percent = users.length ? Math.round((count / users.length) * 100) : 0;
+                  return { ...p, count, percent };
+                }).sort((a, b) => b.count - a.count).map((p, i) => (
+                  <div key={p.id} className="w-full h-full shrink-0 snap-center flex flex-col items-center justify-center p-6" style={{ minWidth: "100%" }}>
+                    <div className="w-32 h-32 bg-white rounded-[2rem] p-4 shadow-sm border border-gray-100 flex items-center justify-center shrink-0 mb-6 transition-transform hover:scale-105">
+                      <img src={p.logoUrl} alt={p.name} className="w-full h-full object-contain" onError={e => e.target.style.display="none"} />
+                    </div>
+                    
+                    <div className="text-center w-full max-w-[240px]">
+                      <h4 className="text-gray-800 font-extrabold text-2xl truncate leading-tight mb-3 px-2">{p.name}</h4>
+                      
+                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold shadow-sm mb-6 w-full justify-center" style={{ background: p.borderColor ? `${p.borderColor}15` : '#f1f5f9', color: p.borderColor || '#64748b' }}>
+                        <FaUsers className="text-lg" /> 
+                        <span>{p.count} Active User{p.count !== 1 ? 's' : ''}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="w-full max-w-[280px] bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                      <div className="flex items-center justify-between mb-2 px-1">
+                        <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Usage Share</span>
+                        <span className="text-sm font-black text-gray-700">{p.percent}%</span>
+                      </div>
+                      <div className="w-full bg-gray-100/80 rounded-full h-3 overflow-hidden">
+                        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${p.percent}%`, background: p.borderColor || '#16a34a' }} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="px-5 py-12 text-center text-gray-300 text-sm h-full flex items-center justify-center">No platforms yet</p>
+            )}
+            
+            {/* Scroll Indicator */}
+            {partners.length > 1 && (
+              <div className="absolute bottom-1 left-0 right-0 flex justify-center gap-1.5 pb-2 pointer-events-none">
+                {partners.map((_, i) => (
+                  <div key={i} className="w-1.5 h-1.5 rounded-full bg-gray-300" />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -780,17 +875,28 @@ export default function AdminDashboard() {
 
       {/* Partners List */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-        {partners.map(p => (
-          <div key={p.id} className="bg-white rounded-2xl border shadow-sm p-4 flex flex-col items-center hover:shadow-md transition relative group" style={{ borderColor: p.borderColor }}>
-            <button onClick={() => handlePartnerDelete(p.id)} className="absolute top-2 right-2 w-7 h-7 bg-red-50 hover:bg-red-100 text-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow-sm">
-              <FaTrashAlt className="text-[10px]" />
-            </button>
-            <div className="w-16 h-16 flex items-center justify-center mb-3">
-              <img src={p.logoUrl} alt={p.name} className="max-w-[56px] max-h-[56px] object-contain" />
+        {partners.map(p => {
+          const activeUsersCount = users.filter(u => u.platform === p.name).length;
+          return (
+            <div key={p.id} className="bg-white rounded-2xl border shadow-sm p-4 flex flex-col items-center justify-between hover:shadow-md transition relative group" style={{ borderColor: p.borderColor }}>
+              <button onClick={() => handlePartnerDelete(p.id)} className="absolute top-2 right-2 w-7 h-7 bg-red-50 hover:bg-red-100 text-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow-sm">
+                <FaTrashAlt className="text-[10px]" />
+              </button>
+              <div className="w-16 h-16 flex items-center justify-center mb-2 mt-2">
+                <img src={p.logoUrl} alt={p.name} className="max-w-[56px] max-h-[56px] object-contain" />
+              </div>
+              <div className="text-center w-full mt-auto">
+                <p className="font-bold text-sm text-gray-800 w-full truncate leading-tight">{p.name}</p>
+                <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg" style={{ background: p.borderColor ? `${p.borderColor}15` : '#f1f5f9' }}>
+                  <FaUsers className="text-[10px]" style={{ color: p.borderColor || '#64748b' }} />
+                  <span className="text-xs font-bold" style={{ color: p.borderColor || '#64748b' }}>
+                    {activeUsersCount} Active {activeUsersCount === 1 ? 'User' : 'Users'}
+                  </span>
+                </div>
+              </div>
             </div>
-            <p className="font-bold text-sm text-gray-800 text-center w-full truncate">{p.name}</p>
-          </div>
-        ))}
+          );
+        })}
         {partners.length === 0 && <div className="col-span-full py-12 text-center text-gray-400 bg-white rounded-2xl border border-gray-100">No partner platforms configured</div>}
       </div>
     </div>

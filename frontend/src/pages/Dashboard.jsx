@@ -361,8 +361,8 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Supported Platforms */}
-        {partners.length > 0 && (
+        {/* Your Platform */}
+        {partners.length > 0 && user?.platform && (
           <div className="dash-section" style={{ marginBottom: 32 }}>
             <div className="dash-card" style={{
               background: "#fff", borderRadius: 16, overflow: "hidden",
@@ -373,20 +373,11 @@ export default function Dashboard() {
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                   <div>
                     <h3 style={{ fontFamily: "Sora,sans-serif", fontSize: 18, fontWeight: 700, color: "#0f172a", margin: 0 }}>
-                      🤝 Supported Platforms
+                      🤝 Your Platform
                     </h3>
                     <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>
-                      We cover gig workers across {partners.length} platform{partners.length !== 1 ? "s" : ""}
+                      You are covered for gigs completed on this platform
                     </p>
-                  </div>
-                  <div style={{
-                    background: "linear-gradient(135deg,#16a34a,#22c55e)",
-                    borderRadius: 12, padding: "8px 16px",
-                    color: "#fff", fontFamily: "Sora,sans-serif",
-                    fontWeight: 800, fontSize: 22, minWidth: 52, textAlign: "center",
-                    boxShadow: "0 4px 14px rgba(22,163,74,0.3)",
-                  }}>
-                    {partners.length}
                   </div>
                 </div>
                 <div style={{
@@ -394,13 +385,13 @@ export default function Dashboard() {
                   gridTemplateColumns: "repeat(auto-fill, minmax(90px, 1fr))",
                   gap: 12,
                 }}>
-                  {partners.map(p => (
+                  {partners.filter(p => p.name === user?.platform).map(p => (
                     <div key={p.id} style={{
                       display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
                       background: "#f8fafc", borderRadius: 12, padding: "14px 10px",
                       border: `1.5px solid ${p.borderColor || "#e2e8f0"}`,
                       transition: "all 0.2s ease",
-                      boxShadow: user?.platform === p.name ? `0 0 0 2px ${p.borderColor || "#16a34a"}, 0 4px 12px rgba(0,0,0,0.08)` : "none",
+                      boxShadow: `0 0 0 2px ${p.borderColor || "#16a34a"}, 0 4px 12px rgba(0,0,0,0.08)`,
                     }}>
                       <div style={{
                         width: 48, height: 48, borderRadius: 10,
@@ -418,12 +409,6 @@ export default function Dashboard() {
                         textAlign: "center", lineHeight: 1.3,
                         width: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                       }}>{p.name}</span>
-                      {user?.platform === p.name && (
-                        <span style={{
-                          fontSize: 9, fontWeight: 700, background: p.borderColor || "#16a34a",
-                          color: "#fff", borderRadius: 20, padding: "2px 7px", letterSpacing: "0.05em",
-                        }}>YOU</span>
-                      )}
                     </div>
                   ))}
                 </div>
