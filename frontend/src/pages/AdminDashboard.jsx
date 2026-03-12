@@ -150,10 +150,10 @@ function getUsageStats(date) {
   const now = new Date();
   const diffMs = Math.max(0, now - start); // Handle slight clock drifts
   const hours = diffMs / (1000 * 60 * 60);
-  
+
   let duration = "";
   const totalHoursInt = Math.floor(hours);
-  
+
   if (totalHoursInt < 24) {
     if (totalHoursInt < 1) {
       const mins = Math.floor(diffMs / (1000 * 60));
@@ -174,10 +174,10 @@ function getUsageStats(date) {
       duration = months < 12 ? `${months}mo active` : `${Math.floor(months / 12)}y active`;
     }
   }
-  
-  return { 
-    duration, 
-    totalHours: hours.toFixed(1) 
+
+  return {
+    duration,
+    totalHours: hours.toFixed(1)
   };
 }
 
@@ -186,28 +186,52 @@ function getUsageStats(date) {
 ══════════════════════════════════════════ */
 
 const NAV_ITEMS = [
-  { key: "overview",  label: "Dashboard",         icon: <FaTachometerAlt /> },
-  { key: "users",     label: "Active Users",       icon: <FaUsers /> },
-  { key: "approvals", label: "Insurance Approvals", icon: <FaClipboardCheck /> },
-  { key: "queries",   label: "Worker Queries",     icon: <FaQuestionCircle /> },
-  { key: "plans",     label: "Premium Plans",      icon: <FaClipboardList /> },
-  { key: "payments",  label: "Payments History",   icon: <FaMoneyBillWave /> },
-  { key: "wallet",    label: "Admin Wallet",       icon: <FaWallet /> },
-  { key: "disaster",  label: "Disaster Claims",    icon: <FaCloudRain /> },
-  { key: "partners",  label: "Partner Platforms",  icon: <FaGlobe /> },
-  { key: "settings",  label: "Settings",           icon: <FaCog /> },
+  {
+    group: "OVERVIEW", items: [
+      { key: "overview", label: "Dashboard", icon: <FaTachometerAlt /> },
+    ]
+  },
+  {
+    group: "USER MANAGEMENT", items: [
+      { key: "users", label: "Users", icon: <FaUsers /> },
+      { key: "partners", label: "Partner Platforms", icon: <FaGlobe /> },
+    ]
+  },
+  {
+    group: "INSURANCE MANAGEMENT", items: [
+      { key: "approvals", label: "Insurance Requests", icon: <FaClipboardCheck /> },
+      { key: "plans", label: "Premium Plans", icon: <FaClipboardList /> },
+      { key: "disaster", label: "Claim Requests", icon: <FaCloudRain /> },
+    ]
+  },
+  {
+    group: "FINANCIAL MANAGEMENT", items: [
+      { key: "wallet", label: "Admin Wallet", icon: <FaWallet /> },
+      { key: "payments", label: "Transactions", icon: <FaMoneyBillWave /> },
+    ]
+  },
+  {
+    group: "SUPPORT & COMMUNICATION", items: [
+      { key: "queries", label: "Worker Support", icon: <FaQuestionCircle /> },
+    ]
+  },
+  {
+    group: "SYSTEM", items: [
+      { key: "settings", label: "Settings", icon: <FaCog /> },
+    ]
+  },
 ];
 
 const PAGE_META = {
-  users:     { title: "User Management",      subtitle: "View and manage all registered users",               icon: <FaUsers />,          color: "bg-blue-500" },
-  approvals: { title: "Insurance Approvals",  subtitle: "Review and approve insurance payment requests",       icon: <FaClipboardCheck />, color: "bg-amber-500" },
-  queries:   { title: "User Queries",         subtitle: "Respond to questions from your users",               icon: <FaQuestionCircle />, color: "bg-violet-500" },
-  plans:     { title: "Plan Management",      subtitle: "Edit and update insurance plan pricing",              icon: <FaClipboardList />,  color: "bg-teal-500" },
-  payments:  { title: "Payment Records",      subtitle: "Track all payment transactions",                      icon: <FaMoneyBillWave />,  color: "bg-emerald-500" },
-  wallet:    { title: "Admin Wallet",         subtitle: "Insurance fund balance and transaction ledger",        icon: <FaWallet />,         color: "bg-indigo-600" },
-  disaster:  { title: "Disaster Claims",      subtitle: "Review and approve situation-based requests",         icon: <FaCloudRain />,      color: "bg-indigo-500" },
-  partners:  { title: "Partner Platforms",   subtitle: "Manage the supported application platforms",          icon: <FaGlobe />,          color: "bg-indigo-500" },
-  settings:  { title: "Account Settings",    subtitle: "Manage your admin profile and credentials",           icon: <FaCog />,            color: "bg-slate-500" },
+  users: { title: "User Management", subtitle: "View and manage all registered users", icon: <FaUsers />, color: "bg-blue-500" },
+  approvals: { title: "Insurance Approvals", subtitle: "Review and approve insurance payment requests", icon: <FaClipboardCheck />, color: "bg-amber-500" },
+  queries: { title: "User Queries", subtitle: "Respond to questions from your users", icon: <FaQuestionCircle />, color: "bg-violet-500" },
+  plans: { title: "Plan Management", subtitle: "Edit and update insurance plan pricing", icon: <FaClipboardList />, color: "bg-teal-500" },
+  payments: { title: "Payment Records", subtitle: "Track all payment transactions", icon: <FaMoneyBillWave />, color: "bg-emerald-500" },
+  wallet: { title: "Admin Wallet", subtitle: "Insurance fund balance and transaction ledger", icon: <FaWallet />, color: "bg-indigo-600" },
+  disaster: { title: "Disaster Claims", subtitle: "Review and approve situation-based requests", icon: <FaCloudRain />, color: "bg-indigo-500" },
+  partners: { title: "Partner Platforms", subtitle: "Manage the supported application platforms", icon: <FaGlobe />, color: "bg-indigo-500" },
+  settings: { title: "Account Settings", subtitle: "Manage your admin profile and credentials", icon: <FaCog />, color: "bg-slate-500" },
 };
 
 /* ══════════════════════════════════════════
@@ -259,26 +283,35 @@ function AdminSidebar({ section, setSection, onLogout, pendingCount, unansweredC
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-          {NAV_ITEMS.map(({ key, label, icon }) => (
-            <button
-              key={key}
-              onClick={() => handleNav(key)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all font-medium
-                ${section === key
-                  ? "bg-green-500 text-white shadow-sm"
-                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
-                }`}
-            >
-              <span className="text-base shrink-0">{icon}</span>
-              <span className="flex-1 text-left">{label}</span>
-              {badges[key] > 0 && (
-                <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold min-w-[20px] text-center
-                  ${section === key ? "bg-white/25 text-white" : "bg-red-100 text-red-500"}`}>
-                  {badges[key]}
-                </span>
-              )}
-            </button>
+        <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto no-scrollbar">
+          {NAV_ITEMS.map((group) => (
+            <div key={group.group}>
+              <h3 className="px-3 mb-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">{group.group}</h3>
+              <div className="space-y-0.5">
+                {group.items.map(({ key, label, icon }) => (
+                  <button
+                    key={key}
+                    onClick={() => handleNav(key)}
+                    className={`group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all font-medium
+                      ${section === key
+                        ? "bg-green-500 text-white shadow-md shadow-green-100"
+                        : "text-gray-500 hover:bg-gray-50 hover:text-green-600"
+                      }`}
+                  >
+                    <span className={`text-base shrink-0 transition-transform duration-200 ${section === key ? "" : "group-hover:scale-110"}`}>
+                      {icon}
+                    </span>
+                    <span className="flex-1 text-left whitespace-nowrap">{label}</span>
+                    {badges[key] > 0 && (
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold min-w-[18px] text-center
+                        ${section === key ? "bg-white/25 text-white" : "bg-red-500 text-white"}`}>
+                        {badges[key]}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 
@@ -311,10 +344,10 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [plans, setPlans] = useState([]);
   const [payments, setPayments] = useState([]);
-  const [replies, setReplies]     = useState({});
-  const [queries, setQueries]     = useState([]);
+  const [replies, setReplies] = useState({});
+  const [queries, setQueries] = useState([]);
   const [claimRequests, setClaimRequests] = useState([]);
-  const [partners, setPartners]   = useState([]);
+  const [partners, setPartners] = useState([]);
   const [adminWallet, setAdminWallet] = useState({ walletBalance: 0, transactions: [], totalCredits: 0, totalDebits: 0 });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [newPartner, setNewPartner] = useState({ name: "", logoUrl: "", dashboardBannerUrl: "", profileBannerUrl: "", borderColor: "#E2E8F0" });
@@ -323,7 +356,7 @@ export default function AdminDashboard() {
   const [message, setMessage] = useState(null);
   const [msgType, setMsgType] = useState("success");
   const [loading, setLoading] = useState(true);
-  
+
   const carouselRef = useRef(null);
 
   useEffect(() => {
@@ -385,13 +418,13 @@ export default function AdminDashboard() {
   };
 
   const handleDelete = async (id) => { if (!window.confirm("Delete this user?")) return; await adminDeleteUser(id); loadUsers(); };
-  const handleApprove = async (id) => { 
+  const handleApprove = async (id) => {
     try {
       const res = await adminApprovePayment(id);
       if (res?.error) throw new Error(res.error);
-      await loadPayments(); 
-      showMsg("Payment approved!"); 
-    } catch(err) {
+      await loadPayments();
+      showMsg("Payment approved!");
+    } catch (err) {
       showMsg(err.message || "Failed to approve payment", "error");
     }
   };
@@ -404,7 +437,7 @@ export default function AdminDashboard() {
 
   const handlePartnerDelete = async (id) => { if (!window.confirm("Delete this partner?")) return; await adminDeletePartner(id); loadPartners(); showMsg("Partner deleted!"); };
   const handlePaymentDelete = async (id) => { if (!window.confirm("Delete this payment record?")) return; await adminDeletePayment(id); loadPayments(); showMsg("Payment deleted!"); };
-  
+
   const handleFileUpload = (e, field) => {
     const file = e.target.files[0];
     if (file) {
@@ -417,9 +450,9 @@ export default function AdminDashboard() {
   };
 
   const handlePartnerAdd = async () => {
-    if (!newPartner.name || !newPartner.logoUrl || !newPartner.profileBannerUrl || !newPartner.dashboardBannerUrl) { 
-      showMsg("Name, Logo, and Banners are required", "error"); 
-      return; 
+    if (!newPartner.name || !newPartner.logoUrl || !newPartner.profileBannerUrl || !newPartner.dashboardBannerUrl) {
+      showMsg("Name, Logo, and Banners are required", "error");
+      return;
     }
     await adminAddPartner(newPartner);
     setNewPartner({ name: "", logoUrl: "", dashboardBannerUrl: "", profileBannerUrl: "", borderColor: "#E2E8F0" });
@@ -431,7 +464,7 @@ export default function AdminDashboard() {
     const copy = [...plans]; copy[idx][field] = value; setPlans(copy);
   };
   const handleSavePlan = async (id, plan) => {
-    await adminUpdatePlan(id, { weeklyPremium: plan.weeklyPremium, coverageAmount: plan.coverageAmount }); 
+    await adminUpdatePlan(id, { weeklyPremium: plan.weeklyPremium, coverageAmount: plan.coverageAmount });
     showMsg("Plan updated successfully!"); loadPlans();
   };
 
@@ -605,18 +638,18 @@ export default function AdminDashboard() {
                 }).sort((a, b) => b.count - a.count).map((p, i) => (
                   <div key={p.id} className="w-full h-full shrink-0 snap-center flex flex-col items-center justify-center p-6" style={{ minWidth: "100%" }}>
                     <div className="w-32 h-32 bg-white rounded-[2rem] p-4 shadow-sm border border-gray-100 flex items-center justify-center shrink-0 mb-6 transition-transform hover:scale-105">
-                      <img src={p.logoUrl} alt={p.name} className="w-full h-full object-contain" onError={e => e.target.style.display="none"} />
+                      <img src={p.logoUrl} alt={p.name} className="w-full h-full object-contain" onError={e => e.target.style.display = "none"} />
                     </div>
-                    
+
                     <div className="text-center w-full max-w-[240px]">
                       <h4 className="text-gray-800 font-extrabold text-2xl truncate leading-tight mb-3 px-2">{p.name}</h4>
-                      
+
                       <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold shadow-sm mb-6 w-full justify-center" style={{ background: p.borderColor ? `${p.borderColor}15` : '#f1f5f9', color: p.borderColor || '#64748b' }}>
-                        <FaUsers className="text-lg" /> 
+                        <FaUsers className="text-lg" />
                         <span>{p.count} Active User{p.count !== 1 ? 's' : ''}</span>
                       </div>
                     </div>
-                    
+
                     <div className="w-full max-w-[280px] bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
                       <div className="flex items-center justify-between mb-2 px-1">
                         <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Usage Share</span>
@@ -632,7 +665,7 @@ export default function AdminDashboard() {
             ) : (
               <p className="px-5 py-12 text-center text-gray-300 text-sm h-full flex items-center justify-center">No platforms yet</p>
             )}
-            
+
             {/* Scroll Indicator */}
             {partners.length > 1 && (
               <div className="absolute bottom-1 left-0 right-0 flex justify-center gap-1.5 pb-2 pointer-events-none">
@@ -688,8 +721,8 @@ export default function AdminDashboard() {
               const { duration, totalHours } = getUsageStats(u.createdAt);
               return (
                 <tr key={u.id} className="hover:bg-gray-50/60 transition">
-                <td className="px-4 py-3.5 text-gray-300 text-xs font-bold">{idx + 1}</td>
-                <td className="px-5 sm:px-6 py-3.5">
+                  <td className="px-4 py-3.5 text-gray-300 text-xs font-bold">{idx + 1}</td>
+                  <td className="px-5 sm:px-6 py-3.5">
                     <div className="flex items-center gap-2.5">
                       <Avatar name={u.name} />
                       <span className="font-medium text-gray-700">{u.name}</span>
@@ -711,25 +744,26 @@ export default function AdminDashboard() {
                     </div>
                   </td>
                   <td className="px-5 sm:px-6 py-3.5 text-xs text-gray-500">
-                  {u.mandal || u.district || u.state ? (
-                    <div className="flex flex-col gap-0.5">
-                      <span className="font-semibold text-gray-700">{u.mandal && `${u.mandal}, `}{u.district}</span>
-                      <span className="text-[10px] uppercase tracking-wider">{u.state}</span>
-                    </div>
-                  ) : (
-                    <span className="text-gray-300">No address</span>
-                  )}
-                </td>
-                <td className="px-5 sm:px-6 py-3.5 text-center">
-                  <button
-                    onClick={() => handleDelete(u.id)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-500 rounded-lg text-xs font-medium transition border border-red-100"
-                  >
-                    <FaTrashAlt className="text-[10px]" /> Delete
-                  </button>
-                </td>
-              </tr>
-            )})}
+                    {u.mandal || u.district || u.state ? (
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-semibold text-gray-700">{u.mandal && `${u.mandal}, `}{u.district}</span>
+                        <span className="text-[10px] uppercase tracking-wider">{u.state}</span>
+                      </div>
+                    ) : (
+                      <span className="text-gray-300">No address</span>
+                    )}
+                  </td>
+                  <td className="px-5 sm:px-6 py-3.5 text-center">
+                    <button
+                      onClick={() => handleDelete(u.id)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-500 rounded-lg text-xs font-medium transition border border-red-100"
+                    >
+                      <FaTrashAlt className="text-[10px]" /> Delete
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
             {users.length === 0 && <tr><td colSpan={9} className="px-6 py-12 text-center text-gray-300">No users found</td></tr>}
           </tbody>
         </table>
@@ -776,8 +810,8 @@ export default function AdminDashboard() {
               <tbody className="divide-y divide-gray-50">
                 {payments.map((p, idx) => (
                   <tr key={p.id} className="hover:bg-gray-50/60 transition">
-                  <td className="px-4 py-3.5 text-gray-300 text-xs font-bold">{idx + 1}</td>
-                  <td className="px-5 sm:px-6 py-3.5">
+                    <td className="px-4 py-3.5 text-gray-300 text-xs font-bold">{idx + 1}</td>
+                    <td className="px-5 sm:px-6 py-3.5">
                       <div className="flex items-center gap-2.5">
                         <Avatar name={p.user?.email} />
                         <span className="font-medium text-gray-700 truncate max-w-[160px]">{p.user?.email}</span>
@@ -871,9 +905,9 @@ export default function AdminDashboard() {
   const renderPlans = () => {
     const PLAN_THEMES = {
       Starter: { icon: <FaSeedling />, color: "text-sky-500", bg: "bg-sky-50", border: "border-sky-100", accent: "bg-sky-500" },
-      Smart:   { icon: <FaLightbulb />, color: "text-violet-500", bg: "bg-violet-50", border: "border-violet-100", accent: "bg-violet-500" },
-      Pro:     { icon: <FaRocket />, color: "text-emerald-500", bg: "bg-emerald-50", border: "border-emerald-100", accent: "bg-emerald-500" },
-      Max:     { icon: <FaCrown />, color: "text-amber-500", bg: "bg-amber-50", border: "border-amber-100", accent: "bg-amber-500" },
+      Smart: { icon: <FaLightbulb />, color: "text-violet-500", bg: "bg-violet-50", border: "border-violet-100", accent: "bg-violet-500" },
+      Pro: { icon: <FaRocket />, color: "text-emerald-500", bg: "bg-emerald-50", border: "border-emerald-100", accent: "bg-emerald-500" },
+      Max: { icon: <FaCrown />, color: "text-amber-500", bg: "bg-amber-50", border: "border-amber-100", accent: "bg-amber-500" },
     };
 
     return (
@@ -889,7 +923,7 @@ export default function AdminDashboard() {
                   </div>
                   <h3 className="font-bold text-gray-800 text-sm whitespace-nowrap">{plan.name}</h3>
                 </div>
-                
+
                 <div className={`${theme.bg} rounded-xl p-3 border ${theme.border} mb-4`}>
                   <p className={`text-[10px] ${theme.color} font-semibold uppercase tracking-wide mb-1`}>Weekly Premium</p>
                   <p className={`text-xl font-black ${theme.color}`}>₹{plan.weeklyPremium}</p>
@@ -922,7 +956,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               </div>
-              
+
               <button
                 onClick={() => handleSavePlan(plan.id, plan)}
                 className={`w-full mt-5 px-3 py-2 ${theme.accent} hover:opacity-90 text-white text-xs rounded-lg font-semibold transition flex items-center justify-center gap-1.5 shadow-sm`}
@@ -1109,59 +1143,59 @@ export default function AdminDashboard() {
             <p className="text-sm text-gray-500"><span className="font-semibold text-gray-700">{claimRequests.length}</span> situation requests</p>
           </div>
           <div className="overflow-x-auto">
-        <table className="w-full text-sm min-w-[650px]">
-          <thead>
-            <tr className="text-gray-400 text-xs uppercase tracking-wide border-b border-gray-100 bg-gray-50/50">
-              <th className="px-4 py-3 text-left font-semibold w-12">#</th>
-              <th className="px-5 sm:px-6 py-3 text-left font-semibold">User</th>
-              <th className="px-5 sm:px-6 py-3 text-left font-semibold">Situation</th>
-              <th className="px-5 sm:px-6 py-3 text-left font-semibold">Description</th>
-              <th className="px-5 sm:px-6 py-3 text-left font-semibold text-green-600">Coverage</th>
-              <th className="px-5 sm:px-6 py-3 text-left font-semibold">Status</th>
-              <th className="px-5 sm:px-6 py-3 text-center font-semibold">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {claimRequests.map((req, idx) => (
-              <tr key={req.id} className="hover:bg-gray-50/60 transition">
-                <td className="px-4 py-3.5 text-gray-300 text-xs font-bold">{idx + 1}</td>
-                <td className="px-5 sm:px-6 py-3.5">
-                  <div className="flex items-center gap-2.5">
-                    <Avatar name={req.user?.name || req.user?.email} />
-                    <span className="font-medium text-gray-700 truncate max-w-[120px]">{req.user?.name || "User"}</span>
-                  </div>
-                </td>
-                <td className="px-5 sm:px-6 py-3.5">
-                  <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[10px] font-black uppercase">{req.situation}</span>
-                </td>
-                <td className="px-5 sm:px-6 py-3.5 text-gray-400 text-xs max-w-[180px] truncate">{req.description}</td>
-                <td className="px-5 sm:px-6 py-3.5 font-bold text-green-600">₹{req.amount}</td>
-                <td className="px-5 sm:px-6 py-3.5"><StatusBadge status={req.status} /></td>
-                <td className="px-5 sm:px-6 py-3.5 text-center">
-                  <div className="flex items-center justify-center gap-2">
-                    {req.status === "PENDING" ? (
-                      <>
-                        <button onClick={() => handleApproveClaimReq(req.id)} className="px-3 py-1.5 bg-indigo-600 text-white text-xs rounded-lg font-bold hover:bg-indigo-700 transition shadow-sm">
-                          Approve
-                        </button>
-                        <button onClick={() => handleRejectClaimReq(req.id)} className="px-3 py-1.5 bg-white text-red-500 border border-red-100 text-xs rounded-lg font-bold hover:bg-red-50 transition">
-                          Reject
-                        </button>
-                      </>
-                    ) : (
-                      <span className="text-[10px] uppercase font-bold text-gray-300 flex items-center gap-1 italic">
-                        <FaLock className="text-[8px]" /> Processed
-                      </span>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {claimRequests.length === 0 && <tr><td colSpan={7} className="px-6 py-12 text-center text-gray-300">No situation requests found</td></tr>}
-          </tbody>
-        </table>
+            <table className="w-full text-sm min-w-[650px]">
+              <thead>
+                <tr className="text-gray-400 text-xs uppercase tracking-wide border-b border-gray-100 bg-gray-50/50">
+                  <th className="px-4 py-3 text-left font-semibold w-12">#</th>
+                  <th className="px-5 sm:px-6 py-3 text-left font-semibold">User</th>
+                  <th className="px-5 sm:px-6 py-3 text-left font-semibold">Situation</th>
+                  <th className="px-5 sm:px-6 py-3 text-left font-semibold">Description</th>
+                  <th className="px-5 sm:px-6 py-3 text-left font-semibold text-green-600">Coverage</th>
+                  <th className="px-5 sm:px-6 py-3 text-left font-semibold">Status</th>
+                  <th className="px-5 sm:px-6 py-3 text-center font-semibold">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {claimRequests.map((req, idx) => (
+                  <tr key={req.id} className="hover:bg-gray-50/60 transition">
+                    <td className="px-4 py-3.5 text-gray-300 text-xs font-bold">{idx + 1}</td>
+                    <td className="px-5 sm:px-6 py-3.5">
+                      <div className="flex items-center gap-2.5">
+                        <Avatar name={req.user?.name || req.user?.email} />
+                        <span className="font-medium text-gray-700 truncate max-w-[120px]">{req.user?.name || "User"}</span>
+                      </div>
+                    </td>
+                    <td className="px-5 sm:px-6 py-3.5">
+                      <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[10px] font-black uppercase">{req.situation}</span>
+                    </td>
+                    <td className="px-5 sm:px-6 py-3.5 text-gray-400 text-xs max-w-[180px] truncate">{req.description}</td>
+                    <td className="px-5 sm:px-6 py-3.5 font-bold text-green-600">₹{req.amount}</td>
+                    <td className="px-5 sm:px-6 py-3.5"><StatusBadge status={req.status} /></td>
+                    <td className="px-5 sm:px-6 py-3.5 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        {req.status === "PENDING" ? (
+                          <>
+                            <button onClick={() => handleApproveClaimReq(req.id)} className="px-3 py-1.5 bg-indigo-600 text-white text-xs rounded-lg font-bold hover:bg-indigo-700 transition shadow-sm">
+                              Approve
+                            </button>
+                            <button onClick={() => handleRejectClaimReq(req.id)} className="px-3 py-1.5 bg-white text-red-500 border border-red-100 text-xs rounded-lg font-bold hover:bg-red-50 transition">
+                              Reject
+                            </button>
+                          </>
+                        ) : (
+                          <span className="text-[10px] uppercase font-bold text-gray-300 flex items-center gap-1 italic">
+                            <FaLock className="text-[8px]" /> Processed
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {claimRequests.length === 0 && <tr><td colSpan={7} className="px-6 py-12 text-center text-gray-300">No situation requests found</td></tr>}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
       </div>
     );
   };
@@ -1170,16 +1204,16 @@ export default function AdminDashboard() {
      SECTION: ADMIN WALLET
   ══════════════════════════════════════ */
   const renderWallet = () => {
-    const balance   = adminWallet.walletBalance  || 0;
-    const txns      = adminWallet.transactions   || [];
+    const balance = adminWallet.walletBalance || 0;
+    const txns = adminWallet.transactions || [];
 
     // Calculate Weekly Cycle Stats (Last 7 Days)
     const now = new Date();
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    
+
     let weeklyCredits = 0;
     let weeklyDebits = 0;
-    
+
     txns.forEach(t => {
       const tDate = new Date(t.date);
       if (tDate >= oneWeekAgo) {
@@ -1301,7 +1335,7 @@ export default function AdminDashboard() {
                     const upiId = txn.upiId || "—";
                     const method = txn.method || "—";
                     const cycleStatus = txn.cycleStatus || "Unknown";
-                    
+
                     // For UI display: both credit/debit have premium and coverage available in the txn map
                     const premiumAmount = isCredit ? txn.amount : (txn.premiumAmount || 0);
                     const coverageAmount = txn.coverageAmount || 0;
@@ -1336,7 +1370,7 @@ export default function AdminDashboard() {
                           </span>
                         </td>
                         <td className="px-5 py-3.5">
-                           <div className="flex flex-col">
+                          <div className="flex flex-col">
                             <span className="text-gray-700 font-semibold text-xs">{method}</span>
                             {method === "UPI" && (
                               <span className="text-gray-500 text-[10px] truncate max-w-[120px]">{upiId}</span>
@@ -1345,9 +1379,9 @@ export default function AdminDashboard() {
                         </td>
                         <td className="px-5 py-3.5">
                           <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border
-                            ${cycleStatus === 'On Going' 
-                              ? "bg-indigo-50 text-indigo-600 border-indigo-200" 
-                              : cycleStatus === 'Completed' 
+                            ${cycleStatus === 'On Going'
+                              ? "bg-indigo-50 text-indigo-600 border-indigo-200"
+                              : cycleStatus === 'Completed'
                                 ? "bg-slate-100 text-slate-500 border-slate-200"
                                 : "bg-gray-50 text-gray-500 border-gray-200"
                             }`}>
