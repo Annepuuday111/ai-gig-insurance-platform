@@ -18,6 +18,7 @@ import {
   adminListClaimRequests,
   adminApproveClaimRequest,
   adminRejectClaimRequest,
+  adminGetWallet,
 } from "../api";
 import adminBanner from "../../../assets/adminbanner.png";
 import {
@@ -28,7 +29,7 @@ import {
   FaUserEdit, FaIdBadge, FaKey, FaSave, FaChevronRight,
   FaBell, FaUserCircle, FaBars, FaTimes,
   FaPlus, FaGlobe, FaBuilding, FaLink,
-  FaCloudRain,
+  FaCloudRain, FaWallet, FaArrowUp, FaArrowDown,
 } from "react-icons/fa";
 
 /* ══════════════════════════════════════════
@@ -184,26 +185,28 @@ function getUsageStats(date) {
 ══════════════════════════════════════════ */
 
 const NAV_ITEMS = [
-  { key: "overview", label: "Dashboard", icon: <FaTachometerAlt /> },
-  { key: "users", label: "Active Users", icon: <FaUsers /> },
+  { key: "overview",  label: "Dashboard",         icon: <FaTachometerAlt /> },
+  { key: "users",     label: "Active Users",       icon: <FaUsers /> },
   { key: "approvals", label: "Insurance Approvals", icon: <FaClipboardCheck /> },
-  { key: "queries", label: "Worker Queries", icon: <FaQuestionCircle /> },
-  { key: "plans", label: "Premium Plans", icon: <FaClipboardList /> },
-  { key: "payments", label: "Payments History", icon: <FaMoneyBillWave /> },
-  { key: "disaster", label: "Disaster Claims", icon: <FaCloudRain /> },
-  { key: "partners", label: "Partner Platforms", icon: <FaGlobe /> },
-  { key: "settings", label: "Settings", icon: <FaCog /> },
+  { key: "queries",   label: "Worker Queries",     icon: <FaQuestionCircle /> },
+  { key: "plans",     label: "Premium Plans",      icon: <FaClipboardList /> },
+  { key: "payments",  label: "Payments History",   icon: <FaMoneyBillWave /> },
+  { key: "wallet",    label: "Admin Wallet",       icon: <FaWallet /> },
+  { key: "disaster",  label: "Disaster Claims",    icon: <FaCloudRain /> },
+  { key: "partners",  label: "Partner Platforms",  icon: <FaGlobe /> },
+  { key: "settings",  label: "Settings",           icon: <FaCog /> },
 ];
 
 const PAGE_META = {
-  users: { title: "User Management", subtitle: "View and manage all registered users", icon: <FaUsers />, color: "bg-blue-500" },
-  approvals: { title: "Insurance Approvals", subtitle: "Review and approve insurance payment requests", icon: <FaClipboardCheck />, color: "bg-amber-500" },
-  queries: { title: "User Queries", subtitle: "Respond to questions from your users", icon: <FaQuestionCircle />, color: "bg-violet-500" },
-  plans: { title: "Plan Management", subtitle: "Edit and update insurance plan pricing", icon: <FaClipboardList />, color: "bg-teal-500" },
-  payments: { title: "Payment Records", subtitle: "Track all payment transactions", icon: <FaMoneyBillWave />, color: "bg-emerald-500" },
-  disaster: { title: "Disaster Claims", subtitle: "Review and approve situation-based requests", icon: <FaCloudRain />, color: "bg-indigo-500" },
-  partners: { title: "Partner Platforms", subtitle: "Manage the supported application platforms", icon: <FaGlobe />, color: "bg-indigo-500" },
-  settings: { title: "Account Settings", subtitle: "Manage your admin profile and credentials", icon: <FaCog />, color: "bg-slate-500" },
+  users:     { title: "User Management",      subtitle: "View and manage all registered users",               icon: <FaUsers />,          color: "bg-blue-500" },
+  approvals: { title: "Insurance Approvals",  subtitle: "Review and approve insurance payment requests",       icon: <FaClipboardCheck />, color: "bg-amber-500" },
+  queries:   { title: "User Queries",         subtitle: "Respond to questions from your users",               icon: <FaQuestionCircle />, color: "bg-violet-500" },
+  plans:     { title: "Plan Management",      subtitle: "Edit and update insurance plan pricing",              icon: <FaClipboardList />,  color: "bg-teal-500" },
+  payments:  { title: "Payment Records",      subtitle: "Track all payment transactions",                      icon: <FaMoneyBillWave />,  color: "bg-emerald-500" },
+  wallet:    { title: "Admin Wallet",         subtitle: "Insurance fund balance and transaction ledger",        icon: <FaWallet />,         color: "bg-indigo-600" },
+  disaster:  { title: "Disaster Claims",      subtitle: "Review and approve situation-based requests",         icon: <FaCloudRain />,      color: "bg-indigo-500" },
+  partners:  { title: "Partner Platforms",   subtitle: "Manage the supported application platforms",          icon: <FaGlobe />,          color: "bg-indigo-500" },
+  settings:  { title: "Account Settings",    subtitle: "Manage your admin profile and credentials",           icon: <FaCog />,            color: "bg-slate-500" },
 };
 
 /* ══════════════════════════════════════════
@@ -311,6 +314,7 @@ export default function AdminDashboard() {
   const [queries, setQueries]     = useState([]);
   const [claimRequests, setClaimRequests] = useState([]);
   const [partners, setPartners]   = useState([]);
+  const [adminWallet, setAdminWallet] = useState({ walletBalance: 0, transactions: [], totalCredits: 0, totalDebits: 0 });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [newPartner, setNewPartner] = useState({ name: "", logoUrl: "", dashboardBannerUrl: "", profileBannerUrl: "", borderColor: "#E2E8F0" });
   const [adminInfo, setAdminInfo] = useState({ email: "admin@giginsurance.com", username: "Admin" });
@@ -350,6 +354,7 @@ export default function AdminDashboard() {
     if (section === "queries") loadQueries();
     if (section === "partners") loadPartners();
     if (section === "disaster") loadClaimRequests();
+    if (section === "wallet") loadWallet();
   }, [section]);
 
   const safeLoad = (fn, setter) => async () => {
@@ -362,7 +367,7 @@ export default function AdminDashboard() {
 
   const loadAll = async () => {
     setLoading(true);
-    await Promise.all([loadUsers(), loadPlans(), loadPayments(), loadQueries(), loadPartners(), loadClaimRequests()]);
+    await Promise.all([loadUsers(), loadPlans(), loadPayments(), loadQueries(), loadPartners(), loadClaimRequests(), loadWallet()]);
     setLoading(false);
   };
   const loadUsers = safeLoad(adminListUsers, setUsers);
@@ -371,9 +376,24 @@ export default function AdminDashboard() {
   const loadQueries = safeLoad(adminListQueries, setQueries);
   const loadPartners = safeLoad(getPartners, setPartners);
   const loadClaimRequests = safeLoad(adminListClaimRequests, setClaimRequests);
+  const loadWallet = async () => {
+    try {
+      const res = await adminGetWallet();
+      if (res && !res.error) setAdminWallet(res);
+    } catch (e) { console.error(e); }
+  };
 
   const handleDelete = async (id) => { if (!window.confirm("Delete this user?")) return; await adminDeleteUser(id); loadUsers(); };
-  const handleApprove = async (id) => { await adminApprovePayment(id); await loadPayments(); showMsg("Payment approved!"); };
+  const handleApprove = async (id) => { 
+    try {
+      const res = await adminApprovePayment(id);
+      if (res?.error) throw new Error(res.error);
+      await loadPayments(); 
+      showMsg("Payment approved!"); 
+    } catch(err) {
+      showMsg(err.message || "Failed to approve payment", "error");
+    }
+  };
   const handleReject = async (id) => { if (!window.confirm("Reject this payment?")) return; await adminRejectPayment(id); await loadPayments(); showMsg("Payment rejected", "error"); };
 
   const handleApproveClaimReq = async (id) => { await adminApproveClaimRequest(id); loadClaimRequests(); showMsg("Claim request approved!"); };
@@ -495,12 +515,13 @@ export default function AdminDashboard() {
         <StatCard icon={<FaUsers />} label="Total Users" value={users.length} bgColor="bg-blue-50" iconColor="text-blue-500" sub="Registered accounts" />
         <StatCard icon={<FaClipboardList />} label="Active Plans" value={plans.length} bgColor="bg-teal-50" iconColor="text-teal-500" sub="Insurance plans" />
         <StatCard icon={<FaGlobe />} label="Platforms" value={partners.length} bgColor="bg-indigo-50" iconColor="text-indigo-500" sub="Supported partners" />
-        <StatCard icon={<FaMoneyBillWave />} label="Total Payments" value={payments.length} bgColor="bg-emerald-50" iconColor="text-emerald-500" sub="All transactions" />
+        <StatCard icon={<FaWallet />} label="Total Funds" value={`₹${(adminWallet.walletBalance || 0).toLocaleString("en-IN")}`} bgColor="bg-emerald-50" iconColor="text-emerald-500" sub="Combined admin wallet" />
       </div>
-      <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
         <StatCard icon={<FaHourglassHalf />} label="Pending" value={pendingApprovals + pendingClaimReqs} bgColor="bg-amber-50" iconColor="text-amber-500" sub="Awaiting approval" />
         <StatCard icon={<FaCheckCircle />} label="Approved" value={payments.filter(p => p.status === "APPROVED").length + claimRequests.filter(c => c.status === "APPROVED").length} bgColor="bg-green-50" iconColor="text-green-500" sub="Successfully processed" />
         <StatCard icon={<FaTimesCircle />} label="Rejected" value={payments.filter(p => p.status === "REJECTED").length + claimRequests.filter(c => c.status === "REJECTED").length} bgColor="bg-red-50" iconColor="text-red-500" sub="Declined requests" />
+        <StatCard icon={<FaMoneyBillWave />} label="Transactions" value={payments.length} bgColor="bg-slate-50" iconColor="text-slate-500" sub="Total records" />
       </div>
 
       {/* Mini tables */}
@@ -1117,6 +1138,211 @@ export default function AdminDashboard() {
   };
 
   /* ══════════════════════════════════════
+     SECTION: ADMIN WALLET
+  ══════════════════════════════════════ */
+  const renderWallet = () => {
+    const balance   = adminWallet.walletBalance  || 0;
+    const txns      = adminWallet.transactions   || [];
+
+    // Calculate Weekly Cycle Stats (Last 7 Days)
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    let weeklyCredits = 0;
+    let weeklyDebits = 0;
+    
+    txns.forEach(t => {
+      const tDate = new Date(t.date);
+      if (tDate >= oneWeekAgo) {
+        if (t.type === "CREDIT") weeklyCredits += t.amount || 0;
+        if (t.type === "DEBIT") weeklyDebits += t.amount || 0;
+      }
+    });
+
+    return (
+      <div className="space-y-6">
+        {/* Wallet Hero Card */}
+        <div className="relative overflow-hidden rounded-2xl shadow-lg" style={{ background: "linear-gradient(135deg, #4338ca 0%, #6366f1 50%, #818cf8 100%)" }}>
+          {/* decorative circles */}
+          <div className="absolute -right-10 -top-10 w-48 h-48 rounded-full opacity-20" style={{ background: "rgba(255,255,255,0.3)" }} />
+          <div className="absolute -right-4 top-16 w-24 h-24 rounded-full opacity-10" style={{ background: "rgba(255,255,255,0.5)" }} />
+          <div className="absolute left-0 bottom-0 w-32 h-32 rounded-full opacity-10" style={{ background: "rgba(255,255,255,0.2)", transform: "translate(-40%,40%)" }} />
+
+          <div className="relative z-10 px-6 sm:px-8 py-6 sm:py-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                  <FaWallet className="text-white text-sm" />
+                </div>
+                <p className="text-indigo-200 text-xs font-semibold uppercase tracking-widest">Insurance Fund</p>
+              </div>
+              <p className="text-white/70 text-sm mb-1">Admin Wallet Balance</p>
+              <p className="text-4xl sm:text-5xl font-black text-white tracking-tight">
+                ₹{balance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <p className="text-indigo-200 text-xs mt-2">Total accumulated insurance fund</p>
+            </div>
+
+            <div className="flex flex-row sm:flex-col gap-3">
+              <div className="flex-1 sm:flex-none bg-white/15 border border-white/20 backdrop-blur-sm rounded-xl px-4 py-3 text-center min-w-[130px]">
+                <div className="flex items-center justify-center gap-1.5 mb-1">
+                  <FaArrowUp className="text-green-300 text-xs" />
+                  <p className="text-xs text-indigo-200 font-semibold uppercase tracking-wide">Weekly Premiums</p>
+                </div>
+                <p className="text-xl font-black text-white">₹{weeklyCredits.toLocaleString("en-IN")}</p>
+                <p className="text-[10px] text-indigo-300 mt-0.5">Collected this week</p>
+              </div>
+              <div className="flex-1 sm:flex-none bg-white/15 border border-white/20 backdrop-blur-sm rounded-xl px-4 py-3 text-center min-w-[130px]">
+                <div className="flex items-center justify-center gap-1.5 mb-1">
+                  <FaArrowDown className="text-red-300 text-xs" />
+                  <p className="text-xs text-indigo-200 font-semibold uppercase tracking-wide">Weekly Payouts</p>
+                </div>
+                <p className="text-xl font-black text-white">₹{weeklyDebits.toLocaleString("en-IN")}</p>
+                <p className="text-[10px] text-indigo-300 mt-0.5">Paid out this week</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Summary mini cards */}
+        <div className="grid grid-cols-3 gap-3 sm:gap-4">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5">
+            <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold mb-1">Net Balance</p>
+            <p className="text-2xl font-black text-indigo-600">₹{balance.toLocaleString("en-IN")}</p>
+            <p className="text-xs text-gray-400 mt-1">Credits − Debits</p>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5">
+            <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold mb-1">Transactions</p>
+            <p className="text-2xl font-black text-gray-800">{txns.length}</p>
+            <p className="text-xs text-gray-400 mt-1">Total entries</p>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5">
+            <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold mb-1">Claims Paid</p>
+            <p className="text-2xl font-black text-red-500">{txns.filter(t => t.type === "DEBIT").length}</p>
+            <p className="text-xs text-gray-400 mt-1">Coverage payouts</p>
+          </div>
+        </div>
+
+        {/* Transaction Ledger */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-5 sm:px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600 text-xs">
+                <FaMoneyBillWave />
+              </div>
+              <div>
+                <p className="font-semibold text-gray-700 text-sm">Transaction Ledger</p>
+                <p className="text-xs text-gray-400">{txns.length} total entries</p>
+              </div>
+            </div>
+            <button onClick={loadWallet} className="text-xs text-indigo-600 hover:text-indigo-700 font-medium px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition">
+              Refresh
+            </button>
+          </div>
+
+          {txns.length === 0 ? (
+            <div className="px-6 py-16 text-center">
+              <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <FaWallet className="text-indigo-400 text-2xl" />
+              </div>
+              <p className="text-gray-400 text-sm font-medium">No transactions yet</p>
+              <p className="text-gray-300 text-xs mt-1">Premiums will appear here once payments are approved</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[900px]">
+                <thead>
+                  <tr className="text-gray-400 text-xs uppercase tracking-wide border-b border-gray-100 bg-gray-50/50">
+                    <th className="px-4 py-3 text-left font-semibold w-12">#</th>
+                    <th className="px-5 py-3 text-left font-semibold">Type</th>
+                    <th className="px-5 py-3 text-left font-semibold">User</th>
+                    <th className="px-5 py-3 text-right font-semibold">Premium</th>
+                    <th className="px-5 py-3 text-right font-semibold">Coverage</th>
+                    <th className="px-5 py-3 text-left font-semibold">Payment / UPI</th>
+                    <th className="px-5 py-3 text-left font-semibold">Cycle Status</th>
+                    <th className="px-5 py-3 text-left font-semibold">Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {txns.map((txn, idx) => {
+                    const isCredit = txn.type === "CREDIT";
+                    // Fallbacks in case old records lack these fields
+                    const userEmail = txn.userEmail || "—";
+                    const userName = txn.userName || "—";
+                    const upiId = txn.upiId || "—";
+                    const method = txn.method || "—";
+                    const cycleStatus = txn.cycleStatus || "Unknown";
+                    
+                    // For UI display: both credit/debit have premium and coverage available in the txn map
+                    const premiumAmount = isCredit ? txn.amount : (txn.premiumAmount || 0);
+                    const coverageAmount = txn.coverageAmount || 0;
+
+                    return (
+                      <tr key={txn.id} className="hover:bg-gray-50/60 transition">
+                        <td className="px-4 py-3.5 text-gray-300 text-xs font-bold">{idx + 1}</td>
+                        <td className="px-5 py-3.5">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border uppercase tracking-widest
+                            ${isCredit
+                              ? "bg-green-50 text-green-600 border-green-200"
+                              : "bg-red-50 text-red-500 border-red-200"
+                            }`}>
+                            {isCredit ? <FaArrowUp className="text-[8px]" /> : <FaArrowDown className="text-[8px]" />}
+                            {isCredit ? "PREMIUM (CREDIT)" : "CLAIM (DEBIT)"}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <div className="flex flex-col">
+                            <span className="text-gray-800 font-bold text-xs">{userName}</span>
+                            <span className="text-gray-500 text-[10px] truncate max-w-[150px]">{userEmail}</span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5 text-right">
+                          <span className="font-bold text-gray-700 text-sm">
+                            ₹{Number(premiumAmount).toLocaleString("en-IN")}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5 text-right">
+                          <span className={`font-black text-sm ${!isCredit ? 'text-red-500' : 'text-indigo-600'}`}>
+                            ₹{Number(coverageAmount).toLocaleString("en-IN")}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5">
+                           <div className="flex flex-col">
+                            <span className="text-gray-700 font-semibold text-xs">{method}</span>
+                            {method === "UPI" && (
+                              <span className="text-gray-500 text-[10px] truncate max-w-[120px]">{upiId}</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border
+                            ${cycleStatus === 'On Going' 
+                              ? "bg-indigo-50 text-indigo-600 border-indigo-200" 
+                              : cycleStatus === 'Completed' 
+                                ? "bg-slate-100 text-slate-500 border-slate-200"
+                                : "bg-gray-50 text-gray-500 border-gray-200"
+                            }`}>
+                            {cycleStatus}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <span className="text-[10px] text-gray-500 font-medium whitespace-nowrap">
+                            {txn.date ? new Date(txn.date).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  /* ══════════════════════════════════════
      SECTION: SETTINGS
   ══════════════════════════════════════ */
   const renderSettings = () => (
@@ -1287,6 +1513,7 @@ export default function AdminDashboard() {
     queries: renderQueries,
     plans: renderPlans,
     payments: renderPayments,
+    wallet: renderWallet,
     disaster: renderDisasterClaims,
     partners: renderPartners,
     settings: renderSettings,

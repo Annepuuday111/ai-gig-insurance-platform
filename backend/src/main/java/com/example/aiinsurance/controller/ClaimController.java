@@ -1,8 +1,14 @@
 package com.example.aiinsurance.controller;
 
+import com.example.aiinsurance.model.Admin;
+import com.example.aiinsurance.model.Notification;
 import com.example.aiinsurance.model.Payment;
+import com.example.aiinsurance.model.Subscription;
 import com.example.aiinsurance.model.User;
+import com.example.aiinsurance.repository.AdminRepository;
+import com.example.aiinsurance.repository.NotificationRepository;
 import com.example.aiinsurance.repository.PaymentRepository;
+import com.example.aiinsurance.repository.SubscriptionRepository;
 import com.example.aiinsurance.service.UserService;
 import com.example.aiinsurance.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -27,8 +34,31 @@ public class ClaimController {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Autowired
+    private AdminRepository adminRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired
+    private SubscriptionRepository subscriptionRepository;
+
+    /**
+     * POST /api/payments/{id}/claim
+     *
+     * When the user clicks "Claim" on an approved insurance payment:
+     * 1. Validates ownership + approved + unclaimed
+     * 2. Credits the COVERAGE AMOUNT (not premium) to User Wallet
+     * 3. Deducts the COVERAGE AMOUNT from Admin Wallet (insurance fund)
+     * 4. Marks the payment as CLAIMED (new status)
+     * 5. Marks the subscription as EXPIRED (policy used)
+     * 6. Sends success notification to user
+     */
     @PostMapping("/{id}/claim")
-    public ResponseEntity<?> claimPayment(@RequestHeader("Authorization") String authHeader, @PathVariable Long id) {
+    public ResponseEntity<?> claimPayment(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long id) {
+
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return ResponseEntity.status(401).body(Map.of("error", "Missing Authorization header"));
         }
@@ -53,17 +83,67 @@ public class ClaimController {
             return ResponseEntity.badRequest().body(Map.of("error", "This payment has already been claimed"));
         }
 
+        // Get coverage amount from plan
+        double coverageAmount = 0.0;
+        if (p.getSubscription() != null && p.getSubscription().getPlan() != null) {
+            coverageAmount = p.getSubscription().getPlan().getCoverageAmount();
+        } else {
+            // Fallback: use premium amount if no plan linked
+            coverageAmount = p.getAmount();
+        }
+
         User user = p.getUser();
-        user.setWalletBalance(user.getWalletBalance() + p.getAmount());
-        
+
+        // 1. Credit COVERAGE AMOUNT to User Wallet
+        user.setWalletBalance(user.getWalletBalance() + coverageAmount);
+        userService.updateUser(user);
+
+        // 2. Deduct COVERAGE AMOUNT from Admin Wallet (insurance fund)
+        try {
+            List<Admin> admins = adminRepository.findAll();
+            if (!admins.isEmpty()) {
+                Admin admin = admins.get(0);
+                double newAdminBalance = admin.getWalletBalance() - coverageAmount;
+                admin.setWalletBalance(Math.max(0.0, newAdminBalance)); // floor at 0
+                adminRepository.save(admin);
+            }
+        } catch (Exception e) {
+            System.err.println("Warning: Could not deduct from admin wallet: " + e.getMessage());
+        }
+
+        // 3. Mark payment as CLAIMED
+        p.setStatus(Payment.Status.CLAIMED);
         p.setClaimed(true);
         p.setClaimedAt(LocalDateTime.now());
-        
-        userService.updateUser(user);
         paymentRepository.save(p);
 
+        // 4. Mark subscription as EXPIRED (policy used up)
+        try {
+            if (p.getSubscription() != null) {
+                Subscription sub = p.getSubscription();
+                sub.setStatus(Subscription.Status.EXPIRED);
+                subscriptionRepository.save(sub);
+            }
+        } catch (Exception e) {
+            System.err.println("Warning: Could not expire subscription: " + e.getMessage());
+        }
+
+        // 5. Send success notification to user
+        try {
+            Notification n = new Notification();
+            n.setUser(user);
+            n.setTitle("💰 Claim Successful!");
+            n.setMessage("₹" + (long) coverageAmount + " has been credited to your wallet. " +
+                    "Your insurance policy is now expired. Purchase a new plan for future coverage.");
+            n.setType("SUCCESS");
+            notificationRepository.save(n);
+        } catch (Exception e) {
+            System.err.println("Warning: Could not send claim notification: " + e.getMessage());
+        }
+
         return ResponseEntity.ok(Map.of(
-            "message", "Amount claimed successfully",
+            "message", "Coverage claimed successfully",
+            "coverageAmount", coverageAmount,
             "newBalance", user.getWalletBalance()
         ));
     }

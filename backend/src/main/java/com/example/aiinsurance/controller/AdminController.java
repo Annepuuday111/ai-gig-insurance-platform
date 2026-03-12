@@ -1,9 +1,12 @@
 package com.example.aiinsurance.controller;
 
 import com.example.aiinsurance.model.Admin;
+import com.example.aiinsurance.model.Notification;
 import com.example.aiinsurance.model.Payment;
 import com.example.aiinsurance.model.Plan;
 import com.example.aiinsurance.model.User;
+import com.example.aiinsurance.repository.AdminRepository;
+import com.example.aiinsurance.repository.NotificationRepository;
 import com.example.aiinsurance.service.AdminService;
 import com.example.aiinsurance.service.PlanService;
 import com.example.aiinsurance.service.UserService;
@@ -14,7 +17,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -43,13 +48,27 @@ public class AdminController {
     private PaymentRepository paymentRepository;
 
     @Autowired
+    private AdminRepository adminRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired
     private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
+    // ─── helpers ─────────────────────────────────────────────────────────────
+
+    /** Fetch (or lazily create) the single admin record to use as the insurance fund wallet. */
+    private Admin getAdminWallet() {
+        List<Admin> admins = adminRepository.findAll();
+        if (admins.isEmpty()) {
+            throw new RuntimeException("No admin record found");
+        }
+        return admins.get(0);
+    }
 
     // ------------ authentication ----------------
 
-    /**
-     * allow admin to change their own email/password. requires admin auth
-     */
     @PutMapping("/auth/admin/change")
     public ResponseEntity<?> changeCredentials(@RequestHeader("Authorization") String authHeader,
                                                @RequestBody Map<String, String> updates) {
@@ -79,7 +98,6 @@ public class AdminController {
             Map<String, Object> resp = new HashMap<>();
             resp.put("message", "Credentials updated");
             resp.put("email", saved.getEmail());
-            // generate fresh token in case email changed
             String newToken = jwtUtil.generateToken(saved.getEmail(), true);
             resp.put("token", newToken);
             return ResponseEntity.ok(resp);
@@ -162,7 +180,6 @@ public class AdminController {
             if (updates.containsKey("coverageAmount")) {
                 plan.setCoverageAmount(Double.valueOf(updates.get("coverageAmount").toString()));
             }
-            // apply other fields if needed
             Plan saved = planService.savePlan(plan);
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
@@ -176,6 +193,13 @@ public class AdminController {
         return paymentRepository.findAll();
     }
 
+    /**
+     * Approve a payment:
+     * 1. Sets status → APPROVED
+     * 2. Credits the premium amount to Admin Wallet (insurance fund)
+     * 3. Activates the subscription (status → ACTIVE)
+     * 4. Sends an "Insurance Active" notification to the user
+     */
     @PutMapping("/admin/payments/{id}/approve")
     public ResponseEntity<?> approvePayment(@PathVariable Long id) {
         Optional<Payment> payOpt = paymentRepository.findById(id);
@@ -186,9 +210,57 @@ public class AdminController {
         if (p.getStatus() != Payment.Status.PENDING) {
             return ResponseEntity.badRequest().body(Map.of("error", "Only pending payments can be approved"));
         }
+
+        // Before approving, check if Admin Wallet has sufficient funds to cover the potential claim
+        double coverageAmount = 0.0;
+        if (p.getSubscription() != null && p.getSubscription().getPlan() != null) {
+            coverageAmount = p.getSubscription().getPlan().getCoverageAmount();
+        } else {
+            coverageAmount = p.getAmount(); // fallback
+        }
+
+        try {
+            Admin admin = getAdminWallet();
+            if (admin.getWalletBalance() < coverageAmount) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Insufficient funds in Admin Wallet to cover this policy (Requires ₹" + coverageAmount + ")"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Could not verify admin wallet balance."));
+        }
+
+        // 1. Approve the payment
         p.setStatus(Payment.Status.APPROVED);
         paymentRepository.save(p);
-        return ResponseEntity.ok(Map.of("message", "Payment approved", "payment", p));
+
+        // 2. Admin Wallet was already credited when the payment was created (in SubscriptionService)
+
+        // 3. Activate the subscription
+        try {
+            com.example.aiinsurance.model.Subscription sub = p.getSubscription();
+            if (sub != null) {
+                sub.setStatus(com.example.aiinsurance.model.Subscription.Status.ACTIVE);
+                // Inject subscription repo
+            }
+        } catch (Exception e) {
+            System.err.println("Warning: Could not activate subscription: " + e.getMessage());
+        }
+
+        // 4. Notify user that insurance is now ACTIVE
+        try {
+            User user = p.getUser();
+
+            Notification n = new Notification();
+            n.setUser(user);
+            n.setTitle("🛡️ Insurance Policy Activated!");
+            n.setMessage("Your insurance policy is now ACTIVE! You are covered for ₹" +
+                    (long) coverageAmount + ". You can now file a claim directly from your dashboard.");
+            n.setType("SUCCESS");
+            notificationRepository.save(n);
+        } catch (Exception e) {
+            System.err.println("Warning: Could not send activation notification: " + e.getMessage());
+        }
+
+        return ResponseEntity.ok(Map.of("message", "Payment approved and policy activated", "payment", p));
     }
 
     @PutMapping("/admin/payments/{id}/reject")
@@ -203,6 +275,19 @@ public class AdminController {
         }
         p.setStatus(Payment.Status.REJECTED);
         paymentRepository.save(p);
+
+        // Notify user of rejection
+        try {
+            Notification n = new Notification();
+            n.setUser(p.getUser());
+            n.setTitle("Payment Rejected");
+            n.setMessage("Your insurance payment was rejected. Please contact support or try again with correct payment details.");
+            n.setType("DANGER");
+            notificationRepository.save(n);
+        } catch (Exception e) {
+            System.err.println("Warning: Could not send rejection notification: " + e.getMessage());
+        }
+
         return ResponseEntity.ok(Map.of("message", "Payment rejected", "payment", p));
     }
 
@@ -213,6 +298,105 @@ public class AdminController {
             return ResponseEntity.ok(Map.of("message", "Payment deleted"));
         } catch (Exception e) {
             return ResponseEntity.status(404).body(Map.of("error", "Payment not found"));
+        }
+    }
+
+    // ------------ Admin Wallet (Insurance Fund) ----------------
+
+    /**
+     * GET /api/admin/wallet
+     * Returns Admin Wallet balance + full transaction history:
+     *   - CREDIT entries: each APPROVED payment (premium collected)
+     *   - DEBIT entries:  each CLAIMED payment (coverage paid out to user)
+     */
+    @GetMapping("/admin/wallet")
+    public ResponseEntity<?> getAdminWalletInfo() {
+        try {
+            Admin admin = getAdminWallet();
+
+            // Build transaction history from payments
+            List<Payment> allPayments = paymentRepository.findAll();
+            List<Map<String, Object>> transactions = new ArrayList<>();
+
+            for (Payment p : allPayments) {
+                double coverageAmount = 0.0;
+                String planName = "Insurance Plan";
+                if (p.getSubscription() != null && p.getSubscription().getPlan() != null) {
+                    coverageAmount = p.getSubscription().getPlan().getCoverageAmount();
+                    planName = p.getSubscription().getPlan().getName() + " Plan";
+                }
+
+                // Determine cycle status. If payment is APPROVED (not claimed), policy is "On Going". If CLAIMED or subscription EXPIRED, it's "Completed"
+                String cycleStatus = "Unknown";
+                if (p.getStatus() == Payment.Status.APPROVED) {
+                    cycleStatus = "On Going";
+                } else if (p.getStatus() == Payment.Status.CLAIMED || p.getStatus() == Payment.Status.REJECTED || p.getStatus() == Payment.Status.FAILED) {
+                    cycleStatus = "Completed";
+                } else if (p.getStatus() == Payment.Status.SUCCESS || p.getStatus() == Payment.Status.PENDING) {
+                    cycleStatus = "Pending Approval";
+                }
+
+                String upiId = p.getUpiId() != null && !p.getUpiId().isBlank() ? p.getUpiId() : "—";
+                String method = p.getMethod() != null ? p.getMethod().name() : "—";
+
+                // CREDIT: premium collected (APPROVED or CLAIMED or SUCCESS/PENDING payments)
+                if (p.getStatus() == Payment.Status.APPROVED || p.getStatus() == Payment.Status.CLAIMED || p.getStatus() == Payment.Status.SUCCESS || p.getStatus() == Payment.Status.PENDING) {
+                    Map<String, Object> credit = new LinkedHashMap<>();
+                    credit.put("id", "pay-" + p.getId());
+                    credit.put("type", "CREDIT");
+                    credit.put("description", "Premium collected – " + planName);
+                    credit.put("amount", p.getAmount()); // Premium amount
+                    credit.put("coverageAmount", coverageAmount);
+                    credit.put("userEmail", p.getUser() != null ? p.getUser().getEmail() : "—");
+                    credit.put("userName", p.getUser() != null ? p.getUser().getName() : "—");
+                    credit.put("date", p.getCreatedAt() != null ? p.getCreatedAt().toString() : null);
+                    credit.put("status", "CREDIT");
+                    credit.put("upiId", upiId);
+                    credit.put("method", method);
+                    credit.put("cycleStatus", cycleStatus);
+                    transactions.add(credit);
+                }
+
+                // DEBIT: coverage paid out (CLAIMED status)
+                if (p.getStatus() == Payment.Status.CLAIMED) {
+                    Map<String, Object> debit = new LinkedHashMap<>();
+                    debit.put("id", "claim-" + p.getId());
+                    debit.put("type", "DEBIT");
+                    debit.put("description", "Coverage payout – " + planName);
+                    debit.put("amount", coverageAmount); // Coverage amount
+                    // For debit, we swap things around: premium is tracked here for history, but main amount is coverage
+                    // To keep UI uniform, we can just supply both
+                    debit.put("premiumAmount", p.getAmount());
+                    debit.put("coverageAmount", coverageAmount);
+                    debit.put("userEmail", p.getUser() != null ? p.getUser().getEmail() : "—");
+                    debit.put("userName", p.getUser() != null ? p.getUser().getName() : "—");
+                    debit.put("date", p.getClaimedAt() != null ? p.getClaimedAt().toString() : p.getCreatedAt().toString());
+                    debit.put("status", "DEBIT");
+                    debit.put("upiId", upiId);
+                    debit.put("method", method);
+                    debit.put("cycleStatus", cycleStatus);
+                    transactions.add(debit);
+                }
+            }
+
+            // Sort by date descending (most recent first) - simple string sort works for ISO dates
+            transactions.sort((a, b) -> {
+                String da = (String) a.get("date");
+                String db = (String) b.get("date");
+                if (da == null) return 1;
+                if (db == null) return -1;
+                return db.compareTo(da);
+            });
+
+            Map<String, Object> resp = new LinkedHashMap<>();
+            resp.put("walletBalance", admin.getWalletBalance());
+            resp.put("transactions", transactions);
+            resp.put("totalCredits", transactions.stream().filter(t -> "CREDIT".equals(t.get("type"))).mapToDouble(t -> (double) t.get("amount")).sum());
+            resp.put("totalDebits", transactions.stream().filter(t -> "DEBIT".equals(t.get("type"))).mapToDouble(t -> (double) t.get("amount")).sum());
+
+            return ResponseEntity.ok(resp);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Could not fetch wallet: " + e.getMessage()));
         }
     }
 }

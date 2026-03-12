@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 @Table(name = "payments")
 public class Payment {
 
-    public enum Status { PENDING, APPROVED, REJECTED, SUCCESS, FAILED }
+    public enum Status { PENDING, APPROVED, REJECTED, SUCCESS, FAILED, CLAIMED }
     public enum Method  { UPI, CARD, WALLET, FREE_TRIAL }
 
     @Id

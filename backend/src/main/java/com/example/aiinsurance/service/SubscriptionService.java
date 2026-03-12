@@ -16,6 +16,15 @@ public class SubscriptionService {
     @Autowired private SubscriptionRepository subscriptionRepository;
     @Autowired private PaymentRepository       paymentRepository;
     @Autowired private PlanRepository          planRepository;
+    @Autowired private AdminRepository         adminRepository;
+
+    private Admin getAdminWallet() {
+        List<Admin> admins = adminRepository.findAll();
+        if (admins.isEmpty()) {
+            throw new RuntimeException("No admin record found");
+        }
+        return admins.get(0);
+    }
 
     /**
      * Subscribe a user to a plan.
@@ -64,6 +73,17 @@ public class SubscriptionService {
         payment.setGatewayReference(txnReference);
         payment.setUpiId(upiId);
         paymentRepository.save(payment);
+
+        // Credit the admin wallet immediately upon premium collection
+        if (payment.getAmount() > 0) {
+            try {
+                Admin admin = getAdminWallet();
+                admin.setWalletBalance(admin.getWalletBalance() + payment.getAmount());
+                adminRepository.save(admin);
+            } catch (Exception e) {
+                 System.err.println("Warning: Could not update admin wallet: " + e.getMessage());
+            }
+        }
 
         // Build response
         Map<String, Object> resp = new LinkedHashMap<>();

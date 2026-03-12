@@ -17,7 +17,7 @@ export default function Claims() {
   const loadData = async () => {
     setLoading(true);
     const [pRes, rRes] = await Promise.all([getPaymentHistory(), getMyClaimRequests()]);
-    if (pRes && Array.isArray(pRes)) setPayments(pRes.filter(p => ["APPROVED", "REJECTED", "SUCCESS"].includes(p.status)));
+    if (pRes && Array.isArray(pRes)) setPayments(pRes.filter(p => ["APPROVED", "REJECTED", "SUCCESS", "CLAIMED"].includes(p.status)));
     if (rRes && Array.isArray(rRes)) setRequests(rRes);
     setLoading(false);
   };
@@ -170,16 +170,20 @@ export default function Claims() {
                   <p className="text-sm text-slate-400">No insurance history available</p>
                 </div>
               ) : (
-                payments.map((p) => (
-                  <ClaimCard
-                    key={p.id}
-                    title={`${p.plan} Insurance Payout`}
-                    amount={p.amount}
-                    status={p.status}
-                    isClaimed={p.isClaimed}
-                    onClaim={() => handleClaim(p.id, 'payment')}
-                  />
-                ))
+                payments.map((p) => {
+                  const planName = p.subscription?.plan?.name || 'Insurance';
+                  const coverageAmount = p.subscription?.plan?.coverageAmount || p.amount;
+                  return (
+                    <ClaimCard
+                      key={p.id}
+                      title={`${planName} Plan Active`}
+                      amount={coverageAmount}
+                      status={p.status}
+                      isClaimed={p.isClaimed || p.status === 'CLAIMED'}
+                      onClaim={() => handleClaim(p.id, 'payment')}
+                    />
+                  );
+                })
               )}
             </div>
           </section>

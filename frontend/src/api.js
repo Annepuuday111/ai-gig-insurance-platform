@@ -141,7 +141,11 @@ export async function adminDeletePartner(id) {
   return request(`/api/admin/partners/${id}`, { method: 'DELETE' });
 }
 
-// Disaster Claims
+// Admin Wallet
+export async function adminGetWallet() {
+  return request('/api/admin/wallet', { method: 'GET' });
+}
+
 export async function submitClaimRequest(data) {
   return request('/api/claims/requests', { method: 'POST', body: JSON.stringify(data) });
 }
@@ -183,6 +187,7 @@ export default {
   claimPayment,
   submitClaimRequest, getMyClaimRequests, claimRequestPayout,
   adminListClaimRequests, adminApproveClaimRequest, adminRejectClaimRequest,
+  adminGetWallet,
   getMyNotifications, markNotificationAsRead,
   getPartners, adminAddPartner, adminDeletePartner,
 };
