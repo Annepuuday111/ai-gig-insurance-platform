@@ -10,7 +10,8 @@ import {
   FaChartBar,
   FaUser,
   FaSignOutAlt,
-  FaCommentDots
+  FaCommentDots,
+  FaBell
 } from "react-icons/fa";
 
 const defaultTheme = { accent: "#16a34a", light: "#f0fdf4", gradient: "linear-gradient(135deg,#16a34a,#4ade80)" };
@@ -18,6 +19,7 @@ const defaultTheme = { accent: "#16a34a", light: "#f0fdf4", gradient: "linear-gr
 export default function Sidebar() {
   const navigate = useNavigate();
   const [theme, setTheme] = useState(defaultTheme);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const fetchTheme = async () => {
@@ -39,6 +41,19 @@ export default function Sidebar() {
       } catch (err) { }
     };
     fetchTheme();
+
+    const fetchNotifications = async () => {
+      try {
+        const res = await api.getMyNotifications();
+        if (Array.isArray(res)) {
+          setUnreadCount(res.filter(n => !n.read).length);
+        }
+      } catch (e) {}
+    }
+    fetchNotifications();
+    // Poll notifications every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const logout = () => {
@@ -96,6 +111,13 @@ export default function Sidebar() {
 
         <NavLink to="/profile" className={({ isActive }) => isActive ? activeItem : menuItem}>
           <FaUser /> Profile
+        </NavLink>
+
+        <NavLink to="/notifications" className={({ isActive }) => isActive ? activeItem : menuItem}>
+          <div className="flex items-center justify-between w-full">
+            <span className="flex items-center gap-3"><FaBell /> Notifications</span>
+            {unreadCount > 0 && <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{unreadCount}</span>}
+          </div>
         </NavLink>
 
         <NavLink to="/chat" className={({ isActive }) => isActive ? activeItem : menuItem}>

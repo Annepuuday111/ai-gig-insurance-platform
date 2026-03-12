@@ -8,11 +8,13 @@ import com.example.aiinsurance.model.User;
 import com.example.aiinsurance.repository.AdminRepository;
 import com.example.aiinsurance.repository.NotificationRepository;
 import com.example.aiinsurance.repository.PaymentRepository;
+import com.example.aiinsurance.repository.ClaimRequestRepository;
 import com.example.aiinsurance.repository.SubscriptionRepository;
 import com.example.aiinsurance.service.UserService;
 import com.example.aiinsurance.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -23,6 +25,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/payments")
 @CrossOrigin(origins = "http://localhost:5174")
+@Transactional
 public class ClaimController {
 
     @Autowired
@@ -42,6 +45,9 @@ public class ClaimController {
 
     @Autowired
     private SubscriptionRepository subscriptionRepository;
+
+    @Autowired
+    private ClaimRequestRepository claimRequestRepository;
 
     /**
      * POST /api/payments/{id}/claim
@@ -83,6 +89,21 @@ public class ClaimController {
             return ResponseEntity.badRequest().body(Map.of("error", "This payment has already been claimed"));
         }
 
+        // Limit to 1 claim per week (across disaster and regular claims)
+        java.time.LocalDateTime oneWeekAgo = java.time.LocalDateTime.now().minusDays(7);
+        boolean recentlyClaimedPayment = paymentRepository.findAll().stream()
+                .anyMatch(pay -> pay.getUser().getId().equals(p.getUser().getId()) 
+                              && pay.isClaimed() 
+                              && pay.getClaimedAt() != null 
+                              && pay.getClaimedAt().isAfter(oneWeekAgo));
+        
+        boolean recentlyClaimedDisaster = claimRequestRepository.findByUser(p.getUser()).stream()
+                .anyMatch(r -> r.isClaimed() && r.getCreatedAt().isAfter(oneWeekAgo));
+
+        if (recentlyClaimedPayment || recentlyClaimedDisaster) {
+             return ResponseEntity.badRequest().body(Map.of("error", "You can only claim one payout per week. Please wait until next week."));
+        }
+
         // Get coverage amount from plan
         double coverageAmount = 0.0;
         if (p.getSubscription() != null && p.getSubscription().getPlan() != null) {
@@ -92,11 +113,13 @@ public class ClaimController {
             coverageAmount = p.getAmount();
         }
 
-        User user = p.getUser();
+        User managedUser = p.getUser();
 
         // 1. Credit COVERAGE AMOUNT to User Wallet
-        user.setWalletBalance(user.getWalletBalance() + coverageAmount);
-        userService.updateUser(user);
+        // Re-fetch user to ensure we have the latest managed entity and balance
+        managedUser = userService.findById(managedUser.getId()).orElse(managedUser);
+        managedUser.setWalletBalance(managedUser.getWalletBalance() + coverageAmount);
+        userService.updateUser(managedUser);
 
         // 2. Deduct COVERAGE AMOUNT from Admin Wallet (insurance fund)
         try {
@@ -131,7 +154,7 @@ public class ClaimController {
         // 5. Send success notification to user
         try {
             Notification n = new Notification();
-            n.setUser(user);
+            n.setUser(managedUser);
             n.setTitle("💰 Claim Successful!");
             n.setMessage("₹" + (long) coverageAmount + " has been credited to your wallet. " +
                     "Your insurance policy is now expired. Purchase a new plan for future coverage.");
@@ -144,7 +167,7 @@ public class ClaimController {
         return ResponseEntity.ok(Map.of(
             "message", "Coverage claimed successfully",
             "coverageAmount", coverageAmount,
-            "newBalance", user.getWalletBalance()
+            "newBalance", managedUser.getWalletBalance()
         ));
     }
 }

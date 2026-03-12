@@ -52,6 +52,7 @@ public class AuthController {
             response.put("id", savedUser.getId());
             response.put("name", savedUser.getName());
             response.put("email", savedUser.getEmail());
+            response.put("walletBalance", savedUser.getWalletBalance());
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -119,6 +120,7 @@ public class AuthController {
             response.put("id", user.getId());
             response.put("name", user.getName());
             response.put("isAdmin", false);
+            response.put("walletBalance", user.getWalletBalance());
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -153,6 +155,7 @@ public class AuthController {
             response.put("state", user.getState());
             response.put("district", user.getDistrict());
             response.put("mandal", user.getMandal());
+            response.put("walletBalance", user.getWalletBalance());
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -228,6 +231,7 @@ public class AuthController {
             res.put("state", updated.getState());
             res.put("district", updated.getDistrict());
             res.put("mandal", updated.getMandal());
+            res.put("walletBalance", updated.getWalletBalance());
             return ResponseEntity.ok(res);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

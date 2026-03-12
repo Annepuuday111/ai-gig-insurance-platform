@@ -441,7 +441,7 @@ export default function Plans() {
             >×</button>
 
             <div style={{ fontSize: 42, marginBottom: 12 }}>
-              {(PLAN_META[selected.plan.name] || PLAN_META.Basic).icon}
+              {(PLAN_META[selected.plan.name] || PLAN_META.Starter).icon}
             </div>
 
             <h2 style={{
@@ -484,7 +484,7 @@ export default function Plans() {
             <button
               className="plan-btn"
               style={{
-                background: (PLAN_META[selected.plan.name] || PLAN_META.Basic).gradient,
+                background: (PLAN_META[selected.plan.name] || PLAN_META.Starter).gradient,
                 color: "#fff",
               }}
               onClick={handleProceedToPayment}

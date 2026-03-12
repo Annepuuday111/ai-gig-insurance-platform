@@ -554,6 +554,7 @@ export default function Profile() {
                     { icon: <IconPhone />, label: "Phone", value: user.phone },
                     { icon: <IconBriefcase />, label: "Platform", value: user.platform, showLogo: true },
                     { icon: <IconMapPin />, label: "Location", value: user.state ? `${user.mandal}, ${user.district}, ${user.state}` : "Not Set" },
+                    { icon: <span className="text-lg font-bold">₹</span>, label: "Wallet Balance", value: `₹${(user.walletBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` },
                   ].map(row => (
                     <div key={row.label} className="info-row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0, flex: 1 }}>

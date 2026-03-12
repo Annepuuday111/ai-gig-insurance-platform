@@ -76,9 +76,10 @@ const STYLES = `
 `;
 
 const PLAN_GRADIENTS = {
-  Basic:    "linear-gradient(135deg, #0ea5e9, #38bdf8)",
-  Standard: "linear-gradient(135deg, #7c3aed, #a78bfa)",
-  Premium:  "linear-gradient(135deg, #f59e0b, #fbbf24)",
+  Starter: "linear-gradient(135deg, #0ea5e9, #38bdf8)",
+  Smart:   "linear-gradient(135deg, #7c3aed, #a78bfa)",
+  Pro:     "linear-gradient(135deg, #10b981, #34d399)",
+  Max:     "linear-gradient(135deg, #f59e0b, #fbbf24)",
 };
 
 const METHODS = [
@@ -92,13 +93,13 @@ export default function Payment() {
   const { state } = useLocation();
 
   const planId    = state?.planId   || null;
-  const plan      = state?.plan     || "Standard";
+  const plan      = state?.plan     || "Starter";
   const price     = state?.price    || 40;
   const coverage  = state?.coverage || 6000;
   const trialDays = state?.trialDays || 7;
   const mode      = state?.mode     || "paid";  // "paid" | "trial"
   const features  = state?.features || [];
-  const gradient  = PLAN_GRADIENTS[plan] || PLAN_GRADIENTS.Standard;
+  const gradient  = PLAN_GRADIENTS[plan] || PLAN_GRADIENTS.Starter;
 
   const [method,      setMethod]      = useState(mode === "trial" ? "FREE_TRIAL" : "UPI");
   const [upiId,       setUpiId]       = useState("");

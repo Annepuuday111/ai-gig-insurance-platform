@@ -1,13 +1,16 @@
 package com.example.aiinsurance.controller;
 
 import com.example.aiinsurance.model.*;
+import com.example.aiinsurance.repository.AdminRepository;
 import com.example.aiinsurance.repository.ClaimRequestRepository;
+import com.example.aiinsurance.repository.PaymentRepository;
 import com.example.aiinsurance.repository.NotificationRepository;
 import com.example.aiinsurance.repository.SubscriptionRepository;
 import com.example.aiinsurance.security.JwtUtil;
 import com.example.aiinsurance.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -16,13 +19,16 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/claims/requests")
 @CrossOrigin(origins = "http://localhost:5174")
+@Transactional
 public class ClaimRequestController {
 
     @Autowired private ClaimRequestRepository claimRequestRepository;
     @Autowired private NotificationRepository   notificationRepository;
     @Autowired private SubscriptionRepository   subscriptionRepository;
+    @Autowired private AdminRepository          adminRepository;
     @Autowired private UserService              userService;
     @Autowired private JwtUtil                  jwtUtil;
+    @Autowired private PaymentRepository        paymentRepository;
 
     @PostMapping
     public ResponseEntity<?> submitRequest(@RequestHeader("Authorization") String authHeader, @RequestBody Map<String, String> body) {
@@ -33,6 +39,14 @@ public class ClaimRequestController {
         Optional<Subscription> latestSub = subscriptionRepository.findTopByUserOrderByCreatedAtDesc(user);
         if (latestSub.isEmpty() || latestSub.get().getStatus() == Subscription.Status.EXPIRED) {
             return ResponseEntity.badRequest().body(Map.of("error", "No active subscription found to file a claim"));
+        }
+
+        // Check 1 claim per week rule
+        java.time.LocalDateTime oneWeekAgo = java.time.LocalDateTime.now().minusDays(7);
+        boolean hasRecentClaim = claimRequestRepository.findByUser(user).stream()
+                .anyMatch(r -> r.getCreatedAt().isAfter(oneWeekAgo));
+        if (hasRecentClaim) {
+             return ResponseEntity.badRequest().body(Map.of("error", "You have already filed a claim request within the last 7 days."));
         }
 
         ClaimRequest req = new ClaimRequest();
@@ -112,9 +126,39 @@ public class ClaimRequestController {
             return ResponseEntity.badRequest().body(Map.of("error", "Already claimed"));
         }
 
+        // Limit to 1 claim payout per week (across disaster and regular claims)
+        java.time.LocalDateTime oneWeekAgo = java.time.LocalDateTime.now().minusDays(7);
+        boolean recentlyClaimedDisaster = claimRequestRepository.findByUser(user).stream()
+                .anyMatch(r -> r.isClaimed() && r.getCreatedAt().isAfter(oneWeekAgo));
+        
+        boolean recentlyClaimedPayment = paymentRepository.findAll().stream()
+                .anyMatch(pay -> pay.getUser().getId().equals(user.getId()) 
+                              && pay.isClaimed() 
+                              && pay.getClaimedAt() != null 
+                              && pay.getClaimedAt().isAfter(oneWeekAgo));
+
+        if (recentlyClaimedDisaster || recentlyClaimedPayment) {
+             return ResponseEntity.badRequest().body(Map.of("error", "You can only claim one payout per week. Please wait until next week."));
+        }
+
         // 1. Add to wallet
-        user.setWalletBalance(user.getWalletBalance() + req.getAmount());
-        userService.updateUser(user);
+        // Re-fetch user to ensure we have the latest managed entity and balance
+        User managedUser = userService.findById(user.getId()).orElse(user);
+        managedUser.setWalletBalance(managedUser.getWalletBalance() + req.getAmount());
+        userService.updateUser(managedUser);
+
+        // Deduct from Admin Wallet
+        try {
+            java.util.List<Admin> admins = adminRepository.findAll();
+            if (!admins.isEmpty()) {
+                Admin admin = admins.get(0);
+                double newAdminBalance = admin.getWalletBalance() - req.getAmount();
+                admin.setWalletBalance(Math.max(0.0, newAdminBalance));
+                adminRepository.save(admin);
+            }
+        } catch (Exception e) {
+            System.err.println("Warning: Could not deduct from admin wallet: " + e.getMessage());
+        }
 
         // 2. Mark request as claimed
         req.setClaimed(true);
@@ -127,12 +171,12 @@ public class ClaimRequestController {
 
         // Notify User
         Notification n = new Notification();
-        n.setUser(user);
+        n.setUser(managedUser);
         n.setTitle("Payout Successful!");
         n.setMessage("₹" + req.getAmount() + " has been added to your wallet. Your current plan has expired; please purchase a new one for future coverage.");
         n.setType("SUCCESS");
         notificationRepository.save(n);
 
-        return ResponseEntity.ok(Map.of("message", "Payout claimed successfully", "newBalance", user.getWalletBalance()));
+        return ResponseEntity.ok(Map.of("message", "Payout claimed successfully", "newBalance", managedUser.getWalletBalance()));
     }
 }

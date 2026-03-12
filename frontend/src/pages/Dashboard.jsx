@@ -85,6 +85,7 @@ export default function Dashboard() {
     chats: 3,
     lastLogin: new Date().toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit', hour12: true }),
   });
+  const [dashboardClaims, setDashboardClaims] = useState([]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -114,6 +115,13 @@ export default function Dashboard() {
     getMyNotifications().then(res => {
       if (res && Array.isArray(res)) setNotifications(res.slice(0, 3));
     }).catch(() => {});
+
+    // Fetch Claims
+    import("../api").then(api => {
+      api.getMyClaimRequests().then(res => {
+        if (res && Array.isArray(res)) setDashboardClaims(res);
+      }).catch(() => {});
+    });
 
     // Fetch partners
     getPartners().then(res => {
@@ -265,31 +273,34 @@ export default function Dashboard() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-              <DashboardCard
-                title="Active Plan"
-                value={planName}
-                small={planName === "No Plan" ? "No plan yet – buy one!" : `₹${premium}/week · ₹${cov.toLocaleString("en-IN")} coverage`}
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
               <DashboardCard
                 title="Weekly Premium"
                 value={premium > 0 ? `₹${premium}` : "—"}
                 small={subStatus === "TRIAL" ? "🎁 Free Trial" : subStatus === "ACTIVE" ? "🟢 Active" : subStatus}
+                icon={<IconShield className="w-5 h-5" />}
+                accent="#6366f1"
               />
               <DashboardCard
                 title="Coverage Amount"
                 value={cov > 0 ? `₹${cov.toLocaleString("en-IN")}` : "—"}
+                small="Policy Coverage"
+                icon={<IconCard className="w-5 h-5" />}
+                accent="#ec4899"
               />
               <DashboardCard
                 title="Next Payment"
                 value={nextPay}
                 small={risk !== "—" ? `${risk} Risk` : "No active plan"}
+                icon={<IconBell className="w-5 h-5" />}
+                accent="#f59e0b"
               />
               <DashboardCard
                 title="Wallet Balance"
-                value={`₹${user.walletBalance || 0}`}
+                value={`₹${(user.walletBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 small="Available for payout"
-                accent="#6366f1"
+                icon={<IconMoney className="w-5 h-5" />}
+                accent="#10b981"
               />
             </div>
           )}
@@ -454,12 +465,13 @@ export default function Dashboard() {
                     {notifications.length === 0 ? (
                       <p className="text-sm text-slate-400 text-center py-6">No new notifications</p>
                     ) : (
-                      notifications.map((notif, index) => (
+                      notifications.slice(0, 5).map((notif, index) => (
                         <NotificationCard
                           key={index}
                           title={notif.title}
                           desc={notif.message}
                           time={new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          read={notif.read}
                         />
                       ))
                     )}
@@ -484,14 +496,25 @@ export default function Dashboard() {
                     Claim Status
                   </h3>
                   <div className="space-y-3">
-                    {dashboardData.claims.map((claim, index) => (
-                      <ClaimCard
-                        key={index}
-                        title={claim.title}
-                        amount={claim.amount}
-                        status={claim.status}
-                      />
-                    ))}
+                    {dashboardClaims.length === 0 ? (
+                      <p className="text-sm text-slate-400 text-center py-6">No recent claims</p>
+                    ) : (
+                      dashboardClaims.slice(0, 3).map((claim, index) => (
+                        <div key={index} className="flex justify-between items-center p-3 rounded-md hover:bg-slate-50 border border-slate-100 mb-2">
+                          <div>
+                            <div className="text-sm font-bold text-slate-800">{claim.situation} Claim</div>
+                            <div className="text-xs text-slate-500 font-medium mt-1">₹{claim.amount}</div>
+                          </div>
+                          <div className={`text-xs font-bold px-2 py-1 rounded-md ${
+                            claim.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
+                            claim.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
+                            'bg-amber-100 text-amber-700'
+                          }`}>
+                            {claim.status}
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>

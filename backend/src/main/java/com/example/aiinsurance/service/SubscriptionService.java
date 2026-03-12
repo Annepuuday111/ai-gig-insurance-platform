@@ -16,6 +16,7 @@ public class SubscriptionService {
     @Autowired private SubscriptionRepository subscriptionRepository;
     @Autowired private PaymentRepository       paymentRepository;
     @Autowired private PlanRepository          planRepository;
+    @Autowired private ClaimRequestRepository   claimRequestRepository;
 
 
     /**
@@ -132,6 +133,7 @@ public class SubscriptionService {
             Payment pay = payments.get(i);
             Map<String, Object> pMap = new LinkedHashMap<>();
             pMap.put("id",        pay.getId());
+            pMap.put("plan",      pay.getSubscription().getPlan().getName());
             pMap.put("amount",    pay.getAmount());
             pMap.put("method",    pay.getMethod().name());
             pMap.put("status",    pay.getStatus().name());
@@ -141,6 +143,21 @@ public class SubscriptionService {
         }
         summary.put("recentPayments", payList);
         summary.put("totalPayments",  payments.size());
+
+        // Calculate total stats for reports
+        double totalPayout = payments.stream()
+            .filter(p -> p.getStatus() == Payment.Status.CLAIMED)
+            .mapToDouble(p -> p.getSubscription() != null ? p.getSubscription().getPlan().getCoverageAmount() : p.getAmount())
+            .sum();
+        
+        List<ClaimRequest> claimReqs = claimRequestRepository.findByUser(user);
+        double totalClaimReqPayout = claimReqs.stream()
+            .filter(ClaimRequest::isClaimed)
+            .mapToDouble(ClaimRequest::getAmount)
+            .sum();
+            
+        summary.put("totalPayout", totalPayout + totalClaimReqPayout);
+        summary.put("totalClaims", (int) (payments.stream().filter(p -> p.getStatus() == Payment.Status.CLAIMED).count() + claimReqs.stream().filter(ClaimRequest::isClaimed).count()));
 
         return summary;
     }

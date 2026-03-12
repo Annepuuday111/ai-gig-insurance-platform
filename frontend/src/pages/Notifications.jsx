@@ -54,7 +54,7 @@ export default function Notifications(){
             </div>
           ) : (
             notifications.map((n) => (
-              <div key={n.id} onClick={() => !n.read && handleRead(n.id)} className={n.read ? 'opacity-60' : ''}>
+              <div key={n.id} onClick={() => !n.read && handleRead(n.id)} className={`p-4 rounded-xl cursor-pointer transition ${n.read ? 'bg-slate-50 opacity-60 border border-transparent' : 'bg-white border border-slate-200 shadow-sm'}`}>
                 <NotificationCard 
                   title={n.title} 
                   desc={n.message} 

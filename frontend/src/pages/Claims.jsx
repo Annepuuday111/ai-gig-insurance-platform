@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import NotificationCard from '../components/NotificationCard'
 import ClaimCard from '../components/ClaimCard'
-import { getPaymentHistory, claimPayment, getMyClaimRequests, submitClaimRequest, claimRequestPayout } from "../api";
+import { getPaymentHistory, claimPayment, getMyClaimRequests, submitClaimRequest, claimRequestPayout, getCurrentUser } from "../api";
 import { FaFileAlt, FaCloudRain, FaShieldAlt, FaHistory, FaCheckCircle, FaTimesCircle, FaHourglassHalf } from 'react-icons/fa';
 
 export default function Claims() {
@@ -30,12 +30,13 @@ export default function Claims() {
 
   const handleClaim = async (id, type) => {
     const res = type === 'request' ? await claimRequestPayout(id) : await claimPayment(id);
-    if (res.error) {
-       setMessage({ text: res.error, type: 'error' });
-    } else {
-       setMessage({ text: "Amount claimed successfully!", type: 'success' });
-       loadData();
-    }
+     if (res.error) {
+        setMessage({ text: res.error, type: 'error' });
+     } else {
+        const balance = res.newBalance !== undefined ? res.newBalance : "updated";
+        setMessage({ text: `Amount claimed successfully! New Balance: ₹${balance}`, type: 'success' });
+        loadData();
+     }
     setTimeout(() => setMessage(null), 3000);
   };
 

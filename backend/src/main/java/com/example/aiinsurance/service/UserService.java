@@ -5,11 +5,13 @@ import com.example.aiinsurance.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@Transactional
 public class UserService {
 
     @Autowired
@@ -60,6 +62,7 @@ public class UserService {
 
     // update an existing user record (save acts as upsert)
     public User updateUser(User user) {
-        return userRepository.save(user);
+        User saved = userRepository.saveAndFlush(user);
+        return saved;
     }
 }
