@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 @Table(name = "subscriptions")
 public class Subscription {
 
-    public enum Status { TRIAL, ACTIVE, EXPIRED, CANCELLED }
+    public enum Status { TRIAL, PENDING, ACTIVE, EXPIRED, CANCELLED }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

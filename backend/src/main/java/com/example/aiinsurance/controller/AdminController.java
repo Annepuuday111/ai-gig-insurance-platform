@@ -12,6 +12,7 @@ import com.example.aiinsurance.service.PlanService;
 import com.example.aiinsurance.service.UserService;
 import com.example.aiinsurance.repository.PaymentRepository;
 import com.example.aiinsurance.service.QueryService;
+import com.example.aiinsurance.repository.SubscriptionRepository;
 import com.example.aiinsurance.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -52,6 +53,9 @@ public class AdminController {
 
     @Autowired
     private NotificationRepository notificationRepository;
+
+    @Autowired
+    private SubscriptionRepository subscriptionRepository;
 
     @Autowired
     private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
@@ -180,6 +184,9 @@ public class AdminController {
             if (updates.containsKey("coverageAmount")) {
                 plan.setCoverageAmount(Double.valueOf(updates.get("coverageAmount").toString()));
             }
+            if (updates.containsKey("name")) {
+                plan.setName(updates.get("name").toString());
+            }
             Plan saved = planService.savePlan(plan);
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
@@ -228,18 +235,26 @@ public class AdminController {
             return ResponseEntity.status(500).body(Map.of("error", "Could not verify admin wallet balance."));
         }
 
+
         // 1. Approve the payment
         p.setStatus(Payment.Status.APPROVED);
         paymentRepository.save(p);
 
-        // 2. Admin Wallet was already credited when the payment was created (in SubscriptionService)
+        // 2. Credit the premium amount to Admin Wallet (insurance fund)
+        try {
+            Admin admin = getAdminWallet();
+            admin.setWalletBalance(admin.getWalletBalance() + p.getAmount());
+            adminRepository.save(admin);
+        } catch (Exception e) {
+            System.err.println("Warning: Could not credit admin wallet: " + e.getMessage());
+        }
 
         // 3. Activate the subscription
         try {
             com.example.aiinsurance.model.Subscription sub = p.getSubscription();
             if (sub != null) {
                 sub.setStatus(com.example.aiinsurance.model.Subscription.Status.ACTIVE);
-                // Inject subscription repo
+                subscriptionRepository.save(sub);
             }
         } catch (Exception e) {
             System.err.println("Warning: Could not activate subscription: " + e.getMessage());

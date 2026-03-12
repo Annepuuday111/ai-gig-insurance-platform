@@ -16,15 +16,7 @@ public class SubscriptionService {
     @Autowired private SubscriptionRepository subscriptionRepository;
     @Autowired private PaymentRepository       paymentRepository;
     @Autowired private PlanRepository          planRepository;
-    @Autowired private AdminRepository         adminRepository;
 
-    private Admin getAdminWallet() {
-        List<Admin> admins = adminRepository.findAll();
-        if (admins.isEmpty()) {
-            throw new RuntimeException("No admin record found");
-        }
-        return admins.get(0);
-    }
 
     /**
      * Subscribe a user to a plan.
@@ -57,7 +49,7 @@ public class SubscriptionService {
             sub.setTrialEndDate(LocalDateTime.now().plusDays(plan.getTrialDays()));
             sub.setNextPaymentDate(LocalDateTime.now().plusDays(plan.getTrialDays()));
         } else {
-            sub.setStatus(Subscription.Status.ACTIVE);
+            sub.setStatus(Subscription.Status.PENDING);
             sub.setNextPaymentDate(LocalDateTime.now().plusDays(7));
         }
         sub.setEndDate(LocalDateTime.now().plusDays(7));
@@ -69,21 +61,12 @@ public class SubscriptionService {
         payment.setSubscription(saved);
         payment.setAmount(isTrial ? 0.0 : plan.getWeeklyPremium());
         payment.setMethod(Payment.Method.valueOf(isTrial ? "FREE_TRIAL" : method.toUpperCase()));
-        payment.setStatus(Payment.Status.SUCCESS);
+        payment.setStatus(isTrial ? Payment.Status.SUCCESS : Payment.Status.PENDING);
         payment.setGatewayReference(txnReference);
         payment.setUpiId(upiId);
         paymentRepository.save(payment);
 
-        // Credit the admin wallet immediately upon premium collection
-        if (payment.getAmount() > 0) {
-            try {
-                Admin admin = getAdminWallet();
-                admin.setWalletBalance(admin.getWalletBalance() + payment.getAmount());
-                adminRepository.save(admin);
-            } catch (Exception e) {
-                 System.err.println("Warning: Could not update admin wallet: " + e.getMessage());
-            }
-        }
+        // Wallet credit is now handled in AdminController.approvePayment upon approval
 
         // Build response
         Map<String, Object> resp = new LinkedHashMap<>();

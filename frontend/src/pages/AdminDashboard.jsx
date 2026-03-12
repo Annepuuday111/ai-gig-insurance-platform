@@ -30,6 +30,7 @@ import {
   FaBell, FaUserCircle, FaBars, FaTimes,
   FaPlus, FaGlobe, FaBuilding, FaLink,
   FaCloudRain, FaWallet, FaArrowUp, FaArrowDown,
+  FaSeedling, FaLightbulb, FaRocket, FaCrown,
 } from "react-icons/fa";
 
 /* ══════════════════════════════════════════
@@ -430,7 +431,8 @@ export default function AdminDashboard() {
     const copy = [...plans]; copy[idx][field] = value; setPlans(copy);
   };
   const handleSavePlan = async (id, plan) => {
-    await adminUpdatePlan(id, plan); showMsg("Plan updated successfully!"); loadPlans();
+    await adminUpdatePlan(id, { weeklyPremium: plan.weeklyPremium, coverageAmount: plan.coverageAmount }); 
+    showMsg("Plan updated successfully!"); loadPlans();
   };
 
   const handleSettingsSave = async () => {
@@ -866,49 +868,76 @@ export default function AdminDashboard() {
   /* ══════════════════════════════════════
      SECTION: PLANS
   ══════════════════════════════════════ */
-  const renderPlans = () => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-      {plans.map((plan, idx) => (
-        <div key={plan.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center text-teal-500">
-              <FaClipboardList />
-            </div>
-            <div>
-              <h3 className="font-bold text-gray-800">{plan.name}</h3>
-            </div>
-          </div>
-          <div className="bg-teal-50 rounded-xl p-4 border border-teal-100 mb-4">
-            <p className="text-xs text-teal-500 font-semibold uppercase tracking-wide mb-1">Current Weekly Premium</p>
-            <p className="text-2xl font-black text-teal-600">₹{plan.weeklyPremium}</p>
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide block mb-1.5">Update Amount</label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-sm">₹</span>
-                <input
-                  type="number"
-                  value={plan.weeklyPremium}
-                  onChange={(e) => handlePlanChange(idx, "weeklyPremium", e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl pl-7 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 bg-gray-50 focus:bg-white"
-                />
+  const renderPlans = () => {
+    const PLAN_THEMES = {
+      Starter: { icon: <FaSeedling />, color: "text-sky-500", bg: "bg-sky-50", border: "border-sky-100", accent: "bg-sky-500" },
+      Smart:   { icon: <FaLightbulb />, color: "text-violet-500", bg: "bg-violet-50", border: "border-violet-100", accent: "bg-violet-500" },
+      Pro:     { icon: <FaRocket />, color: "text-emerald-500", bg: "bg-emerald-50", border: "border-emerald-100", accent: "bg-emerald-500" },
+      Max:     { icon: <FaCrown />, color: "text-amber-500", bg: "bg-amber-50", border: "border-amber-100", accent: "bg-amber-500" },
+    };
+
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        {plans.map((plan, idx) => {
+          const theme = PLAN_THEMES[plan.name] || { icon: <FaClipboardList />, color: "text-teal-500", bg: "bg-teal-50", border: "border-teal-100", accent: "bg-teal-500" };
+          return (
+            <div key={plan.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={`w-10 h-10 ${theme.bg} rounded-xl flex items-center justify-center text-lg ${theme.color}`}>
+                    {theme.icon}
+                  </div>
+                  <h3 className="font-bold text-gray-800 text-sm whitespace-nowrap">{plan.name}</h3>
+                </div>
+                
+                <div className={`${theme.bg} rounded-xl p-3 border ${theme.border} mb-4`}>
+                  <p className={`text-[10px] ${theme.color} font-semibold uppercase tracking-wide mb-1`}>Weekly Premium</p>
+                  <p className={`text-xl font-black ${theme.color}`}>₹{plan.weeklyPremium}</p>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide block mb-1">Weekly Premium</label>
+                    <div className="relative">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-xs">₹</span>
+                      <input
+                        type="number"
+                        value={plan.weeklyPremium}
+                        onChange={(e) => handlePlanChange(idx, "weeklyPremium", e.target.value)}
+                        className="w-full border border-gray-200 rounded-lg pl-6 pr-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-teal-400 bg-gray-50 focus:bg-white"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide block mb-1">Coverage Amount</label>
+                    <div className="relative">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-xs">₹</span>
+                      <input
+                        type="number"
+                        value={plan.coverageAmount}
+                        onChange={(e) => handlePlanChange(idx, "coverageAmount", e.target.value)}
+                        className="w-full border border-gray-200 rounded-lg pl-6 pr-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-teal-400 bg-gray-50 focus:bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
+              
               <button
-                onClick={() => handleSavePlan(plan.id, { weeklyPremium: plan.weeklyPremium })}
-                className="px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white text-sm rounded-xl font-semibold transition flex items-center gap-1.5"
+                onClick={() => handleSavePlan(plan.id, plan)}
+                className={`w-full mt-5 px-3 py-2 ${theme.accent} hover:opacity-90 text-white text-xs rounded-lg font-semibold transition flex items-center justify-center gap-1.5 shadow-sm`}
               >
-                <FaSave className="text-xs" /> Save
+                <FaSave className="text-[10px]" /> Save Changes
               </button>
             </div>
-          </div>
-        </div>
-      ))}
-      {plans.length === 0 && (
-        <div className="col-span-2 bg-white rounded-2xl border border-gray-100 p-12 text-center text-gray-300">No plans found</div>
-      )}
-    </div>
-  );
+          );
+        })}
+        {plans.length === 0 && (
+          <div className="col-span-full bg-white rounded-2xl border border-gray-100 p-12 text-center text-gray-300">No plans found</div>
+        )}
+      </div>
+    );
+  };
 
   /* ══════════════════════════════════════
      SECTION: PAYMENTS

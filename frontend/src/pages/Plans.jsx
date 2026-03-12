@@ -4,26 +4,34 @@ import { getPlans } from "../api";
 
 /* ─── plan-tier metadata ─────────────────────────────────────────────────────── */
 const PLAN_META = {
-  Basic: {
+  Starter: {
     gradient: "linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%)",
     glow: "rgba(14,165,233,0.25)",
     badge: "Starter",
     badgeColor: "#0ea5e9",
-    icon: "🛡️",
+    icon: "🌱",
     popular: false,
   },
-  Standard: {
+  Smart: {
     gradient: "linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)",
     glow: "rgba(124,58,237,0.28)",
     badge: "Most Popular",
     badgeColor: "#7c3aed",
-    icon: "⚡",
+    icon: "💡",
     popular: true,
   },
-  Premium: {
+  Pro: {
+    gradient: "linear-gradient(135deg, #10b981 0%, #34d399 100%)",
+    glow: "rgba(16,185,129,0.25)",
+    badge: "Best Value",
+    badgeColor: "#10b981",
+    icon: "🚀",
+    popular: false,
+  },
+  Max: {
     gradient: "linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)",
     glow: "rgba(245,158,11,0.28)",
-    badge: "Best Value",
+    badge: "Enterprise",
     badgeColor: "#f59e0b",
     icon: "👑",
     popular: false,
@@ -62,6 +70,8 @@ const STYLES = `
                 border-color 0.3s ease;
     animation: fadeUp 0.5s ease both;
     cursor: pointer;
+    display: flex;
+    flex-direction: column;
   }
   .plan-card:hover {
     transform: translateY(-6px);
@@ -209,7 +219,7 @@ function PlanCard({ plan, meta, onBuy, onTrial, delay }) {
       </div>
 
       {/* Body */}
-      <div style={{ padding: "20px 24px 24px" }}>
+      <div style={{ padding: "20px 24px 24px", flex: 1, display: "flex", flexDirection: "column" }}>
         {/* Risk badge */}
         <div style={{ marginBottom: 16 }}>
           <span className="risk-badge" style={riskStyle(plan.riskLevel)}>
@@ -219,7 +229,7 @@ function PlanCard({ plan, meta, onBuy, onTrial, delay }) {
         </div>
 
         {/* Features */}
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 20, flex: 1 }}>
           {plan.features.map((f, i) => (
             <div className="feature-item" key={i}>
               <span style={{ color: "#16a34a", fontSize: 16, flexShrink: 0 }}>✓</span>
@@ -358,11 +368,11 @@ export default function Plans() {
       </div>
 
       {/* ── Plan Cards ── */}
-      <div style={{ maxWidth: 1100, margin: "-28px auto 60px", padding: "0 16px", position: "relative", zIndex: 10 }}>
+      <div style={{ maxWidth: 1280, margin: "-28px auto 60px", padding: "0 16px", position: "relative", zIndex: 10 }}>
 
         {loading && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 24 }}>
-            {[0, 1, 2].map(i => (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 24 }}>
+            {[0, 1, 2, 3].map(i => (
               <div key={i} className="skeleton" style={{ height: 480 }} />
             ))}
           </div>
@@ -380,11 +390,11 @@ export default function Plans() {
         {!loading && !error && (
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-            gap: 28,
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: 24,
           }}>
             {plans.map((plan, i) => {
-              const meta = PLAN_META[plan.name] || PLAN_META.Basic;
+              const meta = PLAN_META[plan.name] || PLAN_META.Starter;
               return (
                 <PlanCard
                   key={plan.id}

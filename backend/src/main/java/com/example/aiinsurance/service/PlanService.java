@@ -19,31 +19,26 @@ public class PlanService {
      */
     @PostConstruct
     public void seedPlans() {
-        if (planRepository.count() == 0) {
-            planRepository.save(new Plan(
-                "Basic",
-                20.0,
-                3000.0,
-                "Low",
-                "Accident Cover|Hospital Cash ₹500/day|24×7 Helpline|Free trial 7 days",
-                7
-            ));
-            planRepository.save(new Plan(
-                "Standard",
-                40.0,
-                6000.0,
-                "Moderate",
-                "Accident Cover|Hospital Cash ₹1000/day|Weather Payout|Income Protection|24×7 Helpline|Free trial 7 days",
-                7
-            ));
-            planRepository.save(new Plan(
-                "Premium",
-                60.0,
-                12000.0,
-                "High",
-                "Accident Cover|Hospital Cash ₹2000/day|Weather Payout|Income Protection|Life Cover ₹5L|Priority Claims|Dedicated Manager|Free trial 7 days",
-                7
-            ));
+        // Ensure the 4 specific plans exist: Starter, Smart, Pro, Max
+        // First, rename legacy plans if they exist
+        List<Plan> allPlans = planRepository.findAll();
+        for (Plan p : allPlans) {
+            if ("Basic".equalsIgnoreCase(p.getName())) p.setName("Starter");
+            else if ("Standard".equalsIgnoreCase(p.getName())) p.setName("Smart");
+            else if ("Premium".equalsIgnoreCase(p.getName())) p.setName("Pro");
+            planRepository.save(p);
+        }
+
+        // Now ensure all 4 exist
+        ensurePlanExists("Starter", 20.0, 3000.0, "Low", "Accident Cover|Hospital Cash ₹500/day|24×7 Helpline|Free trial 7 days");
+        ensurePlanExists("Smart",   40.0, 6000.0, "Moderate", "Accident Cover|Hospital Cash ₹1000/day|Weather Payout|Income Protection|24×7 Helpline|Free trial 7 days");
+        ensurePlanExists("Pro",     60.0, 12000.0, "High", "Accident Cover|Hospital Cash ₹2000/day|Weather Payout|Income Protection|Life Cover ₹5L|Priority Claims|Dedicated Manager|Free trial 7 days");
+        ensurePlanExists("Max",     100.0, 25000.0, "High", "Accident Cover|Hospital Cash ₹3000/day|Weather Payout|Global Protection|Life Cover ₹10L|Priority Claims|Family Cover|Free trial 7 days");
+    }
+
+    private void ensurePlanExists(String name, double premium, double coverage, String risk, String features) {
+        if (planRepository.findAll().stream().noneMatch(p -> p.getName().equalsIgnoreCase(name))) {
+            planRepository.save(new Plan(name, premium, coverage, risk, features, 7));
         }
     }
 
