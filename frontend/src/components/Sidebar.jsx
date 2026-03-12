@@ -5,7 +5,6 @@ import api from "../api";
 import {
   FaShieldAlt,
   FaHome,
-  FaFileInvoiceDollar,
   FaClipboardList,
   FaChartBar,
   FaUser,
@@ -48,7 +47,7 @@ export default function Sidebar() {
         if (Array.isArray(res)) {
           setUnreadCount(res.filter(n => !n.read).length);
         }
-      } catch (e) {}
+      } catch (e) { }
     }
     fetchNotifications();
     // Poll notifications every 30 seconds
@@ -70,7 +69,7 @@ export default function Sidebar() {
     "flex items-center gap-3 px-4 py-3 rounded-lg bg-[var(--s-light)] text-[var(--s-accent)] font-medium";
 
   return (
-    <aside 
+    <aside
       className="w-64 h-screen bg-white border-r shadow-sm flex flex-col"
       style={{
         "--s-accent": theme.accent,
@@ -80,7 +79,7 @@ export default function Sidebar() {
     >
       {/* LOGO */}
       <div className="flex items-center gap-3 px-6 py-5 border-b">
-        <div 
+        <div
           className="w-10 h-10 rounded-lg flex items-center justify-center text-white shadow"
           style={{ background: theme.gradient }}
         >
@@ -92,37 +91,72 @@ export default function Sidebar() {
       </div>
 
       {/* NAVIGATION */}
-      <nav className="flex-1 px-4 py-6 space-y-2">
-        <NavLink to="/dashboard" className={({ isActive }) => isActive ? activeItem : menuItem}>
-          <FaHome /> Dashboard
-        </NavLink>
-
-        <NavLink to="/plans" className={({ isActive }) => isActive ? activeItem : menuItem}>
-          <FaFileInvoiceDollar /> Plans
-        </NavLink>
-
-        <NavLink to="/claims" className={({ isActive }) => isActive ? activeItem : menuItem}>
-          <FaClipboardList /> Claims
-        </NavLink>
-
-        <NavLink to="/reports" className={({ isActive }) => isActive ? activeItem : menuItem}>
-          <FaChartBar /> Reports
-        </NavLink>
-
-        <NavLink to="/profile" className={({ isActive }) => isActive ? activeItem : menuItem}>
-          <FaUser /> Profile
-        </NavLink>
-
-        <NavLink to="/notifications" className={({ isActive }) => isActive ? activeItem : menuItem}>
-          <div className="flex items-center justify-between w-full">
-            <span className="flex items-center gap-3"><FaBell /> Notifications</span>
-            {unreadCount > 0 && <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{unreadCount}</span>}
+      <nav className="flex-1 px-4 py-6 space-y-6 overflow-y-auto">
+        {/* OVERVIEW */}
+        <div>
+          <h3 className="px-4 mb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Overview</h3>
+          <div className="space-y-1">
+            <NavLink to="/dashboard" className={({ isActive }) => isActive ? activeItem : menuItem}>
+              <FaHome size={18} /> Dashboard
+            </NavLink>
           </div>
-        </NavLink>
+        </div>
 
-        <NavLink to="/chat" className={({ isActive }) => isActive ? activeItem : menuItem}>
-          <FaCommentDots /> Chat Support
-        </NavLink>
+        {/* INSURANCE */}
+        <div>
+          <h3 className="px-4 mb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Insurance</h3>
+          <div className="space-y-1">
+            <NavLink to="/plans" className={({ isActive }) => isActive ? activeItem : menuItem}>
+              <FaShieldAlt size={18} /> Insurance Plans
+            </NavLink>
+            <NavLink to="/claims" className={({ isActive }) => isActive ? activeItem : menuItem}>
+              <FaClipboardList size={18} /> Insurance Claims
+            </NavLink>
+          </div>
+        </div>
+
+        {/* ANALYTICS */}
+        <div>
+          <h3 className="px-4 mb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Analytics</h3>
+          <div className="space-y-1">
+            <NavLink to="/reports" className={({ isActive }) => isActive ? activeItem : menuItem}>
+              <FaChartBar size={18} /> Reports & Insights
+            </NavLink>
+          </div>
+        </div>
+
+        {/* UPDATES */}
+        <div>
+          <h3 className="px-4 mb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Updates</h3>
+          <div className="space-y-1">
+            <NavLink to="/notifications" className={({ isActive }) => isActive ? activeItem : menuItem}>
+              <div className="flex items-center justify-between w-full">
+                <span className="flex items-center gap-3"><FaBell size={18} /> Notifications</span>
+                {unreadCount > 0 && <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{unreadCount}</span>}
+              </div>
+            </NavLink>
+          </div>
+        </div>
+
+        {/* ACCOUNT */}
+        <div>
+          <h3 className="px-4 mb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Account</h3>
+          <div className="space-y-1">
+            <NavLink to="/profile" className={({ isActive }) => isActive ? activeItem : menuItem}>
+              <FaUser size={18} /> My Profile
+            </NavLink>
+          </div>
+        </div>
+
+        {/* SUPPORT */}
+        <div>
+          <h3 className="px-4 mb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Support</h3>
+          <div className="space-y-1">
+            <NavLink to="/chat" className={({ isActive }) => isActive ? activeItem : menuItem}>
+              <FaCommentDots size={18} /> Support Chat
+            </NavLink>
+          </div>
+        </div>
       </nav>
 
       {/* LOGOUT */}
