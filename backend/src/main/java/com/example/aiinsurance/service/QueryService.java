@@ -21,7 +21,7 @@ public class QueryService {
     }
 
     public List<Query> getForUser(User user) {
-        return queryRepository.findByUserOrderByCreatedAtDesc(user);
+        return queryRepository.findByUserOrderByCreatedAtAsc(user);
     }
 
     public List<Query> getAll() {

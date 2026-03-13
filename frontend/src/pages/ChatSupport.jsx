@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ChatMessage from '../components/ChatMessage'
+import DateSeparator from '../components/DateSeparator'
 import api from '../api';
 import { FaPaperPlane, FaHeadset, FaCommentAlt } from 'react-icons/fa';
 
@@ -8,10 +9,11 @@ const defaultTheme = { gradient: "linear-gradient(135deg,#16a34a,#4ade80)", ligh
 
 const STYLES = `
   @keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
+    from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
   }
   .chat-card { animation: slideUp 0.5s ease both; }
+  .chat-scroll { scroll-behavior: smooth; }
   .chat-scroll::-webkit-scrollbar { width: 6px; }
   .chat-scroll::-webkit-scrollbar-track { background: transparent; }
   .chat-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
@@ -147,7 +149,18 @@ export default function ChatSupport() {
               <p style={{ fontSize: 13, color: "#64748b" }}>Ask a question below to start a conversation with our support team.</p>
             </div>
           ) : (
-            messages.map((m, i) => <ChatMessage key={i} from={m.from} text={m.text} time={m.time} theme={theme} />)
+            messages.map((m, i) => {
+              const currentDate = m.time ? new Date(m.time).toDateString() : null;
+              const prevDate = i > 0 && messages[i-1].time ? new Date(messages[i-1].time).toDateString() : null;
+              const showSeparator = currentDate && currentDate !== prevDate;
+              
+              return (
+                <React.Fragment key={i}>
+                  {showSeparator && <DateSeparator date={m.time} />}
+                  <ChatMessage from={m.from} text={m.text} time={m.time} theme={theme} />
+                </React.Fragment>
+              );
+            })
           )}
         </div>
 

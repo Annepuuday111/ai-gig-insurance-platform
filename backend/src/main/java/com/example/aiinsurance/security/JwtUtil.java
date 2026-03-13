@@ -54,6 +54,9 @@ public class JwtUtil {
         try {
             parseClaims(token);
             return true;
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            // we can log here if needed
+            return false;
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }

@@ -9,5 +9,5 @@ import java.util.List;
 
 @Repository
 public interface QueryRepository extends JpaRepository<Query, Long> {
-    List<Query> findByUserOrderByCreatedAtDesc(User user);
+    List<Query> findByUserOrderByCreatedAtAsc(User user);
 }
