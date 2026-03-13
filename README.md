@@ -1,278 +1,208 @@
 # AI-Powered Parametric Insurance Platform for Gig Workers
 
-An **AI-based parametric insurance platform** designed to protect gig delivery workers from **income loss caused by external disruptions** such as heavy rain, pollution, floods, or curfews.
+An **AI-based parametric insurance platform** designed to protect gig delivery workers (Zomato, Swiggy, Amazon, etc.) from **income loss caused by external disruptions** such as heavy rain, floods, or curfews.
 
 ---
 
 ## 1. Problem Statement
 
-Gig delivery workers from platforms like **Zomato, Swiggy, Amazon, Zepto, and Blinkit** depend on daily earnings.
-External disruptions such as **extreme weather, pollution, floods, or curfews** can prevent them from working, causing significant income loss.
-
-Currently, there is **no automated insurance system** that compensates workers for these uncontrollable events.
+Gig delivery workers depend on daily earnings. External disruptions like **extreme weather, floods, or sudden curfews** prevent them from working, causing immediate financial distress. Currently, standard insurance lacks the speed and automation to provide the "instant relief" these workers need for short-term disruptions.
 
 ---
 
-## 2. Proposed Solution
+## 2. Our Solution
 
-We propose an **AI-powered parametric insurance platform** that automatically detects disruptions and provides **instant compensation payouts** to affected gig workers.
-
-The system uses **AI risk prediction and parametric triggers** to automate claims and reduce manual intervention.
+We have built a high-tech **Parametric Insurance Platform** that replaces manual claims with **AI-driven automation**. The system uses real-time data to trigger payouts instantly when disaster strikes, ensuring workers are never left without a safety net.
 
 ---
 
-## 3. Target Users
+## 3. Key Accomplishments & Features
 
-Gig delivery partners working with:
+### 🛡️ Smart Insurance Plans
+- **Dynamic Pricing**: AI-calculated weekly premiums starting as low as ₹10.
+- **Weekly Cycle**: Aligned with gig worker payout cycles (7-day policies).
+- **One-Plan-Per-Week Rule**: Strictly enforced logic to prevent duplicate subscriptions and ensure sustainable coverage.
 
-- Zomato
-- Swiggy
-- Amazon
-- Zepto
-- Blinkit
+### 🌩️ AI Parametric Triggers
+- **Real-Time Monitoring**: Automatically detects extreme weather or curfews in a user's specific district.
+- **Proactive Alerts**: Notifies users when they are eligible for a claim based on detected disasters.
+- **Auto-Filing**: AI can proactively file claims for users when triggers are met.
 
----
+### 💰 Automated Claim System
+- **Transparent History**: Detailed logs of all past claims, including **Purchased Date**, **Coverage Amount**, and **Claimed-On** timestamps.
+- **Status Tracking**: Clear visibility into **Active**, **Claimed**, and **Expired** policies.
+- **One-Payout-Per-Week**: A fair-use policy that permits one successful insurance payout every 7 days.
 
-## 4. Key Features
+### 🤖 AI Core (Integrated)
+- **Fraud Detection Engine**: Analyzes claim requests for GPS spoofing and suspicious patterns, assigning a risk score.
+- **Dynamic Risk Assessment**: Adjusts plan recommendations and premiums based on the user's location and historical disruption data.
 
-- AI-based **risk prediction**
-- **Weekly insurance pricing model**
-- Automated **parametric claim triggers**
-- AI-based **fraud detection**
-- **Instant payout simulation**
-- Worker **dashboard and notifications**
-- **Chat support and claim management**
+### 🏢 Partner Integration
+- **Platform Specific Branding**: The UI dynamically adapts its theme (colors, logos, banners) based on the user's gig platform (e.g., Zomato Red, Swiggy Orange, Amazon Blue).
+- **Verified Gigs**: Integration logic to ensure only active partners can subscribe.
 
----
-
-## 5. System Architecture
-
-The architecture of the AI Gig Insurance Platform is shown below.
-
-![System Architecture](assets/system-architecture.png)
-
-### Architecture Overview
-
-```
-Delivery Worker App
-        ↓
-Frontend (React)
-        ↓
-Backend API (Node.js)
-        ↓
-AI Risk Prediction Engine
-        ↓
-Parametric Trigger System
-        ↓
-Claim Automation Engine
-        ↓
-Payment Gateway (Mock UPI)
-```
-
-### Component Responsibilities
-
-**Frontend (React)**
-Provides the user interface for gig workers to register, view coverage, select plans, and manage claims.
-
-**Backend API (Node.js)**
-Handles authentication, policy management, claims processing, and API integration.
-
-**AI Risk Prediction Engine**
-Analyzes weather, traffic, pollution, and historical data to calculate risk and dynamic premiums.
-
-**Parametric Trigger System**
-Automatically triggers claims when predefined conditions occur.
-
-**Claim Automation Engine**
-Creates claims and initiates payouts automatically.
-
-**Payment Gateway (Mock UPI)**
-Simulates instant payouts to the worker’s account.
+### 👮 Admin Control Center
+- **Wallet Management**: Admins manage a central "Insurance Fund" wallet.
+- **Claim Oversight**: Tools to review, approve, or reject manually filed claims.
+- **User Management**: full control over user accounts and support queries.
 
 ---
 
-## 6. Application UI
+## 4. Technical Stack
 
-Below are the primary user interface screens for the platform.
+### **Frontend**
+- **React.js**: Modern, responsive UI with dynamic theme switching.
+- **React Icons**: For a premium, intuitive interface.
+- **CSS3 Variables**: Used for the platform-specific "Glassmorphism" design.
 
-![Application UI](assets/ui-wireframe.png)
+### **Backend**
+- **Java / Spring Boot**: High-performance, scalable API handled via REST.
+- **Spring Security (JWT)**: Secure, token-based authentication.
+- **MySQL**: Relational database for robust transaction and subscription management.
 
-### Main Screens
-
-- Worker Registration
-- Login
-- Worker Dashboard
-- Insurance Plan Selection
-- Premium Payment
-- Notifications
-- Chat Support
-- Claim Processing
+### **AI Microservice**
+- **Python / Flask**: Specialized engine for fraud detection and parametric monitoring.
 
 ---
 
-## 6.5 Admin Dashboard
+## 5. System Workflow
 
-An administrator account is built into the system for managing users, plans, payments, and support queries. The default credentials are:
-
-- **Email:** Gigadmin@gmail.com
-- **Password:** gigadmin@123
-
-Admins log in via the **same login page** as regular users using their email and password. If the submitted credentials match an admin account, the application redirects to the admin portal instead of the user dashboard.
-
-Once logged in, the admin may:
-
-- View/list and delete users
-- Review and reply to user queries
-- Adjust plan premiums and details
-- View payments and approve pending payouts
-- Change the admin email/password under Settings
-
-There is no separate admin registration page; credentials can be updated via the Settings panel after login.
-
-## 7. System Workflow
-
-1. Worker registers on the platform
-2. AI calculates the **weekly premium** based on risk factors
-3. System continuously monitors **weather, pollution, and traffic data**
-4. If a disruption is detected, a **parametric trigger activates**
-5. Claim is automatically generated
-6. Worker receives **instant payout**
+1. **Register**: Worker joins and selects their gig platform (Blinkit, Amazon, etc.).
+2. **Subscribe**: Worker selects a weekly plan (₹20 - ₹60) using a mock UPI/Card gateway.
+3. **Monitor**: The AI engine monitors weather and local conditions 24/7.
+4. **Trigger**: If a parametric condition is met (e.g., Rain > 60mm), the user is alerted.
+5. **Claim**: User clicks "Claim" and receives **instant wallet credit** from the Admin Insurance Fund.
+6. **Cycle**: The policy expires after 7 days or upon claim, and the user can renew for the next week.
 
 ---
 
-## 8. Weekly Pricing Model
+## 6. Data Models (Backend)
 
-| Plan     | Weekly Premium | Max Payout |
-| -------- | -------------- | ---------- |
-| Basic    | ₹20            | ₹300       |
-| Standard | ₹40            | ₹600       |
-| Premium  | ₹60            | ₹1000      |
+The system is built on a robust relational schema using **JPA/Hibernate** for persistent storage.
 
-This pricing model aligns with the **weekly earning cycle of gig workers**.
+### 👤 User
+The core entity representing the gig worker.
+- **Location**: Stores `state`, `district`, and `mandal` for geography-based parametric triggers.
+- **Finance**: Tracks `walletBalance` for claim payouts.
+- **Platform**: Identifies the gig partner (Zomato, Swiggy, etc.) for dynamic branding.
 
----
+### 📜 Plan
+Defines the insurance products available for subscription.
+- **Fields**: `name`, `weeklyPremium`, `coverageAmount` (max payout), `riskLevel`, and `trialDays`.
+- **Features**: List of benefits displayed in the UI.
 
-## 9. Parametric Triggers
+### 🎫 Subscription
+Maps a User to a specific Plan for a 7-day policy period.
+- **Statuses**: `TRIAL`, `PENDING`, `ACTIVE`, `EXPIRED`, `CANCELLED`.
+- **Lifecycle**: Automatically tracks `startDate`, `nextPaymentDate`, and `endDate`.
 
-| Disruption | Condition          | Action               |
-| ---------- | ------------------ | -------------------- |
-| Heavy Rain | Rain > 60mm        | Automatic payout     |
-| Flood      | Flood alert issued | Auto claim triggered |
-| Pollution  | AQI > 400          | Compensation payout  |
-| Curfew     | Zone lockdown      | Income payout        |
+### 💳 Payment
+Logs all financial transactions (subscriptions & trials).
+- **Methods**: `UPI`, `CARD`, `WALLET`, `FREE_TRIAL`.
+- **Traces**: Stores `gatewayReference` and `claimedAt` timestamps for audit trails.
+- **Claim Status**: `isClaimed` flag marks if this specific payment period resulted in a payout.
 
----
+### ⚠️ ClaimRequest
+Handles disaster-specific parametric claims (e.g., Floods, Rain).
+- **Situations**: `FLOOD`, `RAIN`, `CURFEW`, `POLLUTION`.
+- **Approval**: Tracks `status` (`PENDING`, `APPROVED`, `REJECTED`) and prevents duplicate claims via `isClaimed`.
 
-## 10. Tech Stack
+### 💼 Partner
+Powers the multi-tenant branding engine.
+- **Aesthetics**: Stores `logoUrl`, `dashboardBannerUrl`, and `borderColor`.
+- **Logic**: Used to dynamically restyle the entire frontend dashboard based on the worker's gig partner.
 
-### Frontend
+### 🛡️ Admin
+Represents the system administrator and the **Insurance Fund**.
+- **Wallet**: `walletBalance` acts as the central fund that collects premiums and pays out claims.
+- **Credentials**: Secured with Bcrypt for administrative control.
 
-React.js
-
-### Backend
-
-Node.js
-Express.js
-
-### Database
-
-MongoDB
-
-### AI / Machine Learning
-
-Python
-Scikit-learn
-
-### External APIs
-
-Weather API
-Pollution API
-Traffic API
+### 💬 Query & Notification
+- **Query**: Tracks support tickets raised by users and the corresponding admin responses.
+- **Notification**: Real-time alerts for claim status, parametric triggers, and payment confirmations.
 
 ---
 
-## 11. AI Integration
+## 7. Admin Portal & Credentials
 
-AI is used for the following functions:
+The system includes a dedicated administrative interface for platform management.
 
-### Risk Prediction
-
-Predict disruption risk using:
-
-- rainfall
-- temperature
-- pollution levels
-- traffic congestion
-- historical disruption data
-
-### Dynamic Premium Calculation
-
-Weekly premiums are dynamically calculated based on predicted risk levels.
-
-### Fraud Detection
-
-AI identifies suspicious claim patterns such as:
-
-- GPS spoofing
-- duplicate claims
-- abnormal activity patterns
+- **Admin Email**: `Gigadmin@gmail.com`
+- **Admin Password**: `gigadmin@123`
+- **Access**: Log in through the standard login page; the system automatically redirects to the Admin Dashboard based on your role.
+- **Capabilities**: Fund management, user auditing, manual claim approvals, and partner styling configuration.
 
 ---
 
-## 12. Development Plan
+## 8. Parametric Trigger Conditions
 
-### Phase 1 – Ideation & Architecture
+Claims are triggered based on the following environmental and social parameters:
 
-Define system architecture, workflow, and AI integration strategy.
-
-### Phase 2 – Core Platform Development
-
-Build registration, policy management, dynamic premium calculation, and claims automation.
-
-### Phase 3 – Advanced Features
-
-Implement fraud detection, instant payout simulation, and analytics dashboard.
+| Disruption | Condition | Action |
+| :--- | :--- | :--- |
+| **Heavy Rain** | Precipitation > 60mm | Automatic payout alert |
+| **Flood** | Localized flood alert issued | Auto-claim triggered |
+| **Pollution** | AQI > 400 (Severe) | Health hazard compensation |
+| **Curfew** | Police zone lockdown | Income loss protection |
 
 ---
 
-## 13. Team Responsibilities
+## 9. AI Integration Specifics
 
-| Role     | Responsibility                    |
-| -------- | --------------------------------- |
-| Member 1 | Documentation and README          |
-| Member 2 | System architecture design        |
-| Member 3 | AI model research                 |
-| Member 4 | UI wireframes and user experience |
-| Member 5 | API integration and backend setup |
+Our AI microservice (Python/Flask) performs three critical roles:
+
+1.  **Risk Score Engine**: Generates a risk profile (0-100) for each worker based on their historical delivery patterns and local weather forecasts.
+2.  **Fraud Detection**: Before any claim is processed, the AI checks for **GPS Spoofing** and **Duplicate Activity**. High-risk claims are flagged for manual admin review.
+3.  **Dynamic Premium Scaling**: Instead of fixed prices, AI can suggest adjusted premiums (e.g., ₹38 instead of ₹40) based on real-time environmental risk in the worker's district.
 
 ---
 
-## 14. Demo Video
+## 10. How to Run
 
-A short demo video explaining the idea and architecture will be added here.
+### **Prerequisites**
+- Java 17+
+- Node.js 18+
+- MySQL 8.0+
+- Python 3.9+
 
-```
-Demo Video Link: (To be added)
+### **Backend Setup**
+1. Configure `backend/src/main/resources/application.properties` with your MySQL credentials.
+2. Run the Spring Boot application: `./mvnw spring-boot:run`
+
+### **Frontend Setup**
+1. Navigate to `frontend` folder.
+2. Install dependencies: `npm install`
+3. Start the dev server: `npm run dev`
+
+### **AI Setup**
+1. Navigate to `ai-model` folder.
+2. Install requirements: `pip install -r requirements.txt`
+3. Start the engine: `python main.py`
+
+---
+
+## 11. Repository Structure
+
+```text
+ai-gig-insurance-platform/
+├── backend/            # Spring Boot (Java) API
+│   ├── src/main/java/  # Java Source Code (Models, Controllers, Services)
+│   └── src/main/resources/ # Configuration & Properties
+├── frontend/           # React.js SPA
+│   ├── src/pages/      # Dashboard, Claims, Plans, Payment pages
+│   └── src/api.js      # API interaction layer
+├── ai-model/           # Python (Flask) Risk & Fraud Engine
+├── docs/               # Technical designs & wireframes
+└── assets/             # Branding & screenshots
 ```
 
 ---
 
-## 15. Repository Structure
-
-```
-ai-gig-insurance-platform
-│
-├── README.md
-├── docs
-│   ├── architecture.md
-│   └── workflow.md
-│
-├── frontend
-├── backend
-├── ai-model
-└── assets
-    ├── system-architecture.png
-    └── ui-wireframe.png
-```
+## 12. Current Project Status
+- ✅ **Phase 1 (Core)**: Authentication, Dashboard, and Plan Selection are fully operational.
+- ✅ **Phase 2 (Automation)**: Parametric logic, Wallet system, and Claim automation are integrated.
+- ✅ **Phase 3 (AI & Security)**: Fraud detection and status-length database fixes are complete.
+- 🚀 **Next Steps**: Real-world API integration for weather data and production-ready payment gateways.
 
 ---
+*Created with ❤️ for the Gig Economy.*
