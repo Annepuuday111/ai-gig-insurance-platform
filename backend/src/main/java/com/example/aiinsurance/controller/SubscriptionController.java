@@ -109,15 +109,18 @@ public class SubscriptionController {
             List<Map<String, Object>> result = new ArrayList<>();
             for (Payment p : payments) {
                 Map<String, Object> m = new LinkedHashMap<>();
-                m.put("id",        p.getId());
-                m.put("plan",      p.getSubscription().getPlan().getName());
-                m.put("amount",    p.getAmount());
-                m.put("method",    p.getMethod().name());
-                m.put("status",    p.getStatus().name());
-                m.put("reference", p.getGatewayReference());
-                m.put("upiId",     p.getUpiId());
-                m.put("isClaimed", p.isClaimed());
-                m.put("date",      p.getCreatedAt());
+                m.put("id",             p.getId());
+                m.put("plan",           p.getSubscription().getPlan().getName());
+                m.put("amount",         p.getAmount());
+                m.put("coverage",       p.getSubscription().getPlan().getCoverageAmount());
+                m.put("method",         p.getMethod().name());
+                m.put("status",         p.getStatus().name());
+                m.put("subStatus",      p.getSubscription().getStatus().name());
+                m.put("reference",      p.getGatewayReference());
+                m.put("upiId",          p.getUpiId());
+                m.put("isClaimed",      p.isClaimed());
+                m.put("date",           p.getCreatedAt());
+                m.put("claimedAt",      p.getClaimedAt());
                 result.add(m);
             }
             return ResponseEntity.ok(result);

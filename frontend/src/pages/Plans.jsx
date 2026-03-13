@@ -1,272 +1,507 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getPlans } from "../api";
+import { 
+  FaShieldAlt, 
+  FaRocket, 
+  FaCrown, 
+  FaLightbulb, 
+  FaArrowRight, 
+  FaCheck, 
+  FaLock, 
+  FaInfoCircle, 
+  FaUserShield,
+  FaRobot,
+  FaLeaf
+} from "react-icons/fa";
+import { getPlans, getDashboardSummary, getAIDashboard, getAIPlanRecommendation, getCurrentUser, getPartners } from "../api";
 
-/* ─── plan-tier metadata ─────────────────────────────────────────────────────── */
+const defaultTheme = { accent: "#16a34a", light: "#f0fdf4", gradient: "linear-gradient(135deg,#16a34a,#4ade80)" };
+
+/* ─── Premium Plan Metadata ─────────────────────────────────────────────────── */
 const PLAN_META = {
   Starter: {
-    gradient: "linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%)",
-    glow: "rgba(14,165,233,0.25)",
-    badge: "Starter",
-    badgeColor: "#0ea5e9",
-    icon: "🌱",
+    icon: <FaLeaf />,
+    description: "Perfect for beginners exploring digital insurance coverage.",
     popular: false,
+    alpha: "33",
+    gradient: "linear-gradient(135deg, #10b981, #34d399)",
+    glow: "rgba(16, 185, 129, 0.3)"
   },
   Smart: {
-    gradient: "linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)",
-    glow: "rgba(124,58,237,0.28)",
-    badge: "Most Popular",
-    badgeColor: "#7c3aed",
-    icon: "💡",
+    icon: <FaLightbulb />,
+    description: "Enhanced protection for active gig workers and freelancers.",
     popular: true,
+    alpha: "ff",
+    gradient: "linear-gradient(135deg, #7c3aed, #a78bfa)",
+    glow: "rgba(124, 58, 237, 0.3)"
   },
   Pro: {
-    gradient: "linear-gradient(135deg, #10b981 0%, #34d399 100%)",
-    glow: "rgba(16,185,129,0.25)",
-    badge: "Best Value",
-    badgeColor: "#10b981",
-    icon: "🚀",
+    icon: <FaRocket />,
+    description: "Maximum coverage for full-time professional gig partners.",
     popular: false,
+    alpha: "aa",
+    gradient: "linear-gradient(135deg, #0ea5e9, #38bdf8)",
+    glow: "rgba(14, 165, 233, 0.3)"
   },
   Max: {
-    gradient: "linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)",
-    glow: "rgba(245,158,11,0.28)",
-    badge: "Enterprise",
-    badgeColor: "#f59e0b",
-    icon: "👑",
+    icon: <FaCrown />,
+    description: "Enterprise-grade safety net with priority claim processing.",
     popular: false,
+    alpha: "77",
+    gradient: "linear-gradient(135deg, #f59e0b, #fbbf24)",
+    glow: "rgba(245, 158, 11, 0.3)"
   },
 };
 
 const STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Bento:wght@400;700&display=swap');
 
-  .plans-root * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
-  .plans-root h1, .plans-root h2, .plans-root h3 { font-family: 'Sora', sans-serif; }
+  :root {
+    --primary: #7c3aed;
+    --primary-dark: #4338ca;
+    --surface: #ffffff;
+    --background: #f8fafc;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --glass: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.4);
+    --card-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+    --card-shadow-hover: 0 25px 50px -12px rgba(0, 0, 0, 0.12);
+  }
 
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(28px); }
-    to   { opacity: 1; transform: translateY(0); }
+  .plans-container * { font-family: 'Plus Jakarta Sans', sans-serif; box-sizing: border-box; }
+
+  @keyframes float {
+    0% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(1deg); }
+    100% { transform: translateY(0px) rotate(0deg); }
   }
-  @keyframes pulse-ring {
-    0%   { box-shadow: 0 0 0 0 rgba(124,58,237,0.45); }
-    70%  { box-shadow: 0 0 0 12px rgba(124,58,237,0); }
-    100% { box-shadow: 0 0 0 0 rgba(124,58,237,0); }
+
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4); }
+    70% { box-shadow: 0 0 0 15px rgba(124, 58, 237, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
   }
-  @keyframes shimmer {
-    0%   { background-position: -400px 0; }
-    100% { background-position: 400px 0; }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
   }
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
+
+  .plans-hero {
+    position: relative;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+
+  .banner-card {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: linear-gradient(135deg, #0f172a 0%, #1a202c 100%);
+    border-radius: 24px;
+    padding: 28px 40px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    border: 1px solid var(--theme-border);
+    animation: slideIn 0.5s ease;
+  }
+
+  .banner-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -20%;
+    width: 100%;
+    height: 200%;
+    background: radial-gradient(circle at center, var(--theme-glow) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .plans-grid {
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    gap: 20px;
+    max-width: 1400px;
+    margin: 0 auto 60px;
+    padding: 0 16px;
+    position: relative;
+    z-index: 10;
+  }
+
+  .grid-item {
+    flex: 1;
+    min-width: 260px;
+    max-width: 290px;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .grid-item.elevated {
+    transform: scale(1.06);
+    z-index: 20;
+  }
+
+  @media (max-width: 1200px) { 
+    .plans-grid { flex-wrap: wrap; }
+    .grid-item { flex: none; width: calc(50% - 10px); max-width: none; }
+    .grid-item.elevated { transform: none; }
+  }
+  @media (max-width: 640px) { 
+    .grid-item { width: 100%; }
   }
 
   .plan-card {
-    position: relative; border-radius: 24px; overflow: hidden;
-    background: #fff; border: 1.5px solid #e2e8f0;
-    transition: transform 0.3s cubic-bezier(.22,.68,0,1.2),
-                box-shadow  0.3s ease,
-                border-color 0.3s ease;
-    animation: fadeUp 0.5s ease both;
-    cursor: pointer;
+    background: var(--surface);
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-shadow: var(--card-shadow);
+    animation: slideIn 0.5s ease-out both;
+  }
+
+  .plan-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--card-shadow-hover);
+    border-color: #cbd5e1;
+  }
+
+  .plan-card.locked {
+    pointer-events: none;
+    user-select: none;
+  }
+  .plan-card.locked::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(2px);
+    z-index: 5;
+    border-radius: 20px;
+  }
+  .lock-overlay-content {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    text-align: center;
+    padding: 20px;
+    pointer-events: auto; /* Allow this part to be interactive if needed, but the card is locked */
+  }
+
+  .plan-header {
+    padding: 24px 24px 20px;
+    border-radius: 20px 20px 0 0;
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .plan-badge {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(8px);
+    padding: 3px 10px;
+    border-radius: 99px;
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .plan-icon-box {
+    width: 44px;
+    height: 44px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    margin-bottom: 16px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .plan-price-large {
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    margin: 12px 0 6px;
+  }
+
+  .plan-body {
+    padding: 24px;
+    flex: 1;
     display: flex;
     flex-direction: column;
   }
-  .plan-card:hover {
-    transform: translateY(-6px);
-    border-color: transparent;
-  }
-  .plan-card.popular {
-    border-color: #7c3aed;
-    animation: fadeUp 0.5s ease 0.1s both, pulse-ring 2.2s infinite 1s;
+
+  .feature-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    color: var(--text-main);
+    font-size: 13.5px;
+    font-weight: 500;
   }
 
-  .plan-btn {
-    width: 100%; padding: 14px;
-    border: none; border-radius: 12px;
-    font-family: 'Sora', sans-serif;
-    font-size: 15px; font-weight: 700;
-    cursor: pointer; letter-spacing: 0.02em;
-    transition: all 0.25s ease;
-    position: relative; overflow: hidden;
-  }
-  .plan-btn::after {
-    content: ''; position: absolute; inset: 0;
-    background: rgba(255,255,255,0.35);
-    opacity: 0; transition: opacity 0.2s;
-  }
-  .plan-btn:hover::after { opacity: 1; }
-  .plan-btn:active { transform: scale(0.97); }
-
-  .plan-btn-trial {
-    background: #f1f5f9; color: #475569;
-    font-size: 13px; padding: 10px;
-    width: 100%; border: 1.5px dashed #cbd5e1;
-    border-radius: 10px; cursor: pointer;
-    font-weight: 600; transition: all 0.2s;
-    margin-top: 10px;
-  }
-  .plan-btn-trial:hover {
-    background: #e2e8f0; border-color: #94a3b8;
+  .feature-check {
+    width: 18px;
+    height: 18px;
+    background: #f0f9ff;
+    color: #0ea5e9;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    flex-shrink: 0;
   }
 
-  .feature-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 6px 0; font-size: 14px; color: #374151;
-    border-bottom: 1px solid #f1f5f9;
-  }
-  .feature-item:last-child { border-bottom: none; }
-
-  .risk-badge {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 3px 10px; border-radius: 20px; font-size: 11px;
-    font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
-  }
-
-  .skeleton {
-    background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
-    background-size: 800px 100%; animation: shimmer 1.4s infinite;
-    border-radius: 16px;
+  .buy-button {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: auto;
   }
 
-  /* modal */
+  .buy-button:hover {
+    gap: 12px;
+  }
+
+  .glass-info-bar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 32px;
+    max-width: 1400px;
+    margin: 40px auto;
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(12px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .info-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: transform 0.2s;
+  }
+
+  .info-item:hover {
+    transform: translateY(-2px);
+    color: var(--text-main);
+  }
+
+  @media (max-width: 768px) {
+    .glass-info-bar { flex-direction: column; gap: 16px; margin: 24px 16px; }
+  }
+
+  .lock-icon-circle {
+    width: 48px;
+    height: 48px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+    font-size: 20px;
+    color: #64748b;
+  }
+
+  .trial-link {
+    display: block;
+    text-align: center;
+    margin-top: 12px;
+    color: var(--text-muted);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .ai-suggest-badge {
+    background: #fdf2f8;
+    color: #db2777;
+    border: 1px solid #fbcfe8;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  @media (max-width: 640px) {
+    .plans-hero { padding: 40px 16px 80px; }
+    .plans-grid { margin-top: -40px; gap: 16px; }
+    .plan-card { border-radius: 16px; }
+  }
+
   .modal-overlay {
-    position: fixed; inset: 0; z-index: 9999;
-    background: rgba(15,23,42,0.55); backdrop-filter: blur(6px);
-    display: flex; align-items: center; justify-content: center;
-    padding: 16px; animation: fadeUp 0.2s ease;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.3s ease;
   }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
   .modal-box {
-    background: #fff; border-radius: 24px;
-    padding: 32px; max-width: 440px; width: 100%;
-    box-shadow: 0 32px 80px rgba(15,23,42,0.22);
-    animation: fadeUp 0.3s cubic-bezier(.22,.68,0,1.2);
+    background: white;
+    width: 100%;
+    max-width: 440px;
+    border-radius: 28px;
+    padding: 40px;
     position: relative;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    animation: scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes scaleUp {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
   }
 `;
 
-/* ─── Risk badge colour ────────────────────────────────────────────────────── */
-function riskStyle(level) {
-  if (level === "Low") return { background: "#dcfce7", color: "#16a34a" };
-  if (level === "Moderate") return { background: "#fef9c3", color: "#ca8a04" };
-  return { background: "#fee2e2", color: "#dc2626" };
-}
+function PlanCard({ plan, meta, aiDetails, isRecommended, hasActivePlan, onBuy, onTrial, delay, theme }) {
+  const adminPremium = plan.weeklyPremium;
+  const aiSuggestedPremium = aiDetails?.ai_premium;
+  const isAdjusted = aiSuggestedPremium && aiSuggestedPremium !== adminPremium;
 
-/* ─── Single Plan Card ────────────────────────────────────────────────────── */
-function PlanCard({ plan, meta, onBuy, onTrial, delay }) {
+  const cardGradient = `linear-gradient(135deg, ${theme.accent}, ${theme.accent}${meta.alpha || '88'})`;
+
   return (
-    <div
-      className={`plan-card${meta.popular ? " popular" : ""}`}
-      style={{
-        animationDelay: `${delay}s`,
-        boxShadow: `0 8px 40px ${meta.glow}, 0 2px 8px rgba(0,0,0,0.06)`,
+    <div 
+      className={`plan-card ${hasActivePlan ? 'locked' : ''} ${meta.popular ? 'elevated-shadow' : ''}`}
+      style={{ 
+        animationDelay: `${delay}s`, 
+        borderColor: meta.popular ? theme.accent : theme.accent + '22',
+        boxShadow: meta.popular ? `0 20px 40px ${theme.accent}33` : 'var(--card-shadow)'
       }}
-      onClick={() => onBuy(plan)}
     >
-      {/* Gradient header */}
-      <div style={{ background: meta.gradient, padding: "28px 24px 20px" }}>
-        {/* Popular badge */}
-        {meta.popular && (
-          <div style={{
-            position: "absolute", top: 16, right: 16,
-            background: "rgba(255,255,255,0.22)", backdropFilter: "blur(6px)",
-            border: "1.5px solid rgba(255,255,255,0.4)",
-            borderRadius: 20, padding: "4px 12px",
-            fontSize: 11, fontWeight: 800, color: "#fff",
-            letterSpacing: "0.06em", textTransform: "uppercase",
-          }}>
-            ⭐ {meta.badge}
-          </div>
-        )}
+      {hasActivePlan && (
+        <div className="lock-overlay-content">
+          <div className="lock-icon-circle" style={{ color: theme.accent }}><FaLock /></div>
+          <p style={{ fontWeight: 800, fontSize: 16, color: '#1e293b', marginBottom: 2 }}>Plan Active</p>
+          <p style={{ color: '#64748b', fontSize: 12 }}>One plan per week.</p>
+        </div>
+      )}
 
-        <div style={{ fontSize: 40, marginBottom: 10 }}>{meta.icon}</div>
-        <h3 style={{
-          fontFamily: "Sora,sans-serif", fontWeight: 800, fontSize: 22,
-          color: "#fff", margin: "0 0 4px",
-        }}>
-          {plan.name}
-        </h3>
-        <div style={{ color: "rgba(255,255,255,0.85)", fontSize: 13, fontWeight: 500 }}>
-          {plan.trialDays}-day free trial included
+      <div className="plan-header" style={{ background: cardGradient }}>
+        {meta.popular && <div className="plan-badge" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>Popular</div>}
+        {isRecommended && <div className="plan-badge" style={{ right: 'auto', left: 24, background: 'rgba(0,0,0,0.15)' }}>AI Match</div>}
+        
+        <div className="plan-icon-box">{meta.icon}</div>
+        
+        <h3 style={{ fontSize: 18, fontWeight: 800, margin: 0 }}>{plan.name}</h3>
+
+        <div className="plan-price-large">
+          <span>₹{adminPremium}</span>
+          <span style={{ fontSize: 14, opacity: 0.8, fontWeight: 500 }}>/wk</span>
         </div>
 
-        {/* Price */}
-        <div style={{ marginTop: 18, display: "flex", alignItems: "flex-end", gap: 4 }}>
-          <span style={{
-            fontFamily: "Sora,sans-serif", fontSize: 38, fontWeight: 800, color: "#fff",
-          }}>
-            ₹{plan.weeklyPremium}
-          </span>
-          <span style={{ color: "rgba(255,255,255,0.75)", fontSize: 14, marginBottom: 6 }}>
-            / week
-          </span>
-        </div>
-
-        <div style={{
-          marginTop: 8, display: "flex", alignItems: "center", gap: 8
-        }}>
-          <span style={{ color: "rgba(255,255,255,0.85)", fontSize: 13 }}>
-            Coverage up to
-          </span>
-          <span style={{
-            background: "rgba(255,255,255,0.22)", border: "1px solid rgba(255,255,255,0.35)",
-            padding: "2px 10px", borderRadius: 12, fontSize: 13, fontWeight: 700, color: "#fff",
-          }}>
-            ₹{plan.coverageAmount.toLocaleString("en-IN")}
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
+          <FaShieldAlt style={{ opacity: 0.7, fontSize: 12 }} />
+          <span style={{ fontSize: 12, fontWeight: 600 }}>Up to ₹{plan.coverageAmount.toLocaleString()}</span>
         </div>
       </div>
 
-      {/* Body */}
-      <div style={{ padding: "20px 24px 24px", flex: 1, display: "flex", flexDirection: "column" }}>
-        {/* Risk badge */}
-        <div style={{ marginBottom: 16 }}>
-          <span className="risk-badge" style={riskStyle(plan.riskLevel)}>
-            {plan.riskLevel === "Low" ? "🟢" : plan.riskLevel === "Moderate" ? "🟡" : "🔴"}
-            &nbsp;{plan.riskLevel} Risk
-          </span>
-        </div>
+      <div className="plan-body">
+        {isAdjusted && (
+          <div style={{ marginBottom: 16 }}>
+            <div className="ai-suggest-badge" style={{ backgroundColor: theme.light, color: theme.accent, borderColor: theme.accent + '33' }}>
+              <FaRobot /> AI INSIGHT
+            </div>
+            <p style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>
+              AI suggests ₹{aiSuggestedPremium}.
+            </p>
+          </div>
+        )}
 
-        {/* Features */}
-        <div style={{ marginBottom: 20, flex: 1 }}>
-          {plan.features.map((f, i) => (
-            <div className="feature-item" key={i}>
-              <span style={{ color: "#16a34a", fontSize: 16, flexShrink: 0 }}>✓</span>
-              <span>{f}</span>
+        <div style={{ marginBottom: 16 }}>
+          {plan.features.slice(0, 4).map((f, i) => (
+            <div className="feature-row" key={i}>
+              <div className="feature-check" style={{ backgroundColor: theme.light, color: theme.accent }}><FaCheck /></div>
+              <span style={{ fontSize: 12.5 }}>{f}</span>
             </div>
           ))}
         </div>
 
-        {/* Buy button */}
-        <button
-          className="plan-btn"
-          style={{ background: meta.gradient, color: "#fff" }}
-          onClick={e => { e.stopPropagation(); onBuy(plan); }}
+        <button 
+          className="buy-button"
+          style={{ 
+            background: hasActivePlan ? '#e2e8f0' : theme.gradient, 
+            color: hasActivePlan ? '#94a3b8' : 'white',
+            cursor: hasActivePlan ? 'not-allowed' : 'pointer'
+          }}
+          onClick={() => !hasActivePlan && onBuy(plan, adminPremium)}
+          disabled={hasActivePlan}
         >
-          Pay ₹{plan.weeklyPremium} &nbsp;→&nbsp; Subscribe Now
+          {hasActivePlan ? 'Plan Active' : 'Subscribe'} <FaArrowRight />
         </button>
 
-        {/* Free trial button */}
-        <button
-          className="plan-btn-trial"
-          onClick={e => { e.stopPropagation(); onTrial(plan); }}
-        >
-          🎁 Start {plan.trialDays}-Day Free Trial
-        </button>
+        {!hasActivePlan && (
+          <span className="trial-link" style={{ color: theme.accent }} onClick={() => onTrial(plan, adminPremium)}>
+            Start {plan.trialDays}-day trial
+          </span>
+        )}
       </div>
     </div>
   );
 }
 
-/* ─── Main Plans Page ────────────────────────────────────────────────────────── */
+
 export default function Plans() {
   const navigate = useNavigate();
-
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selected, setSelected] = useState(null); // { plan, mode: "paid"|"trial" }
+  const [selected, setSelected] = useState(null);
+  const [theme, setTheme] = useState(defaultTheme);
+  
+  const [aiDash, setAiDash] = useState(null);
+  const [recommendation, setRecommendation] = useState(null);
+  const [hasActivePlan, setHasActivePlan] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -274,17 +509,66 @@ export default function Plans() {
   }, [navigate]);
 
   useEffect(() => {
-    getPlans()
-      .then(data => {
-        if (Array.isArray(data)) setPlans(data);
-        else setError("Failed to load plans.");
-      })
-      .catch(() => setError("Network error. Please try again."))
-      .finally(() => setLoading(false));
+    const loadData = async () => {
+      try {
+        const [plansRes, aiRes, recRes, summaryRes, userRes] = await Promise.allSettled([
+          getPlans(),
+          getAIDashboard(),
+          getAIPlanRecommendation(),
+          getDashboardSummary(),
+          getCurrentUser()
+        ]);
+
+        if (plansRes.status === "fulfilled") setPlans(plansRes.value);
+        if (aiRes.status === "fulfilled" && !aiRes.value.error) setAiDash(aiRes.value);
+        if (recRes.status === "fulfilled" && !recRes.value.error) setRecommendation(recRes.value);
+        if (summaryRes.status === "fulfilled" && !summaryRes.value.error) {
+          const status = summaryRes.value.subscriptionStatus;
+          setHasActivePlan(status === "ACTIVE" || status === "TRIAL" || status === "PENDING");
+        }
+
+        // Match Sidebar's theme logic
+        if (userRes.status === "fulfilled") {
+          const u = userRes.value;
+          if (u && u.platform) {
+            const partners = await getPartners();
+            if (Array.isArray(partners)) {
+              const p = partners.find(ptr => ptr.name === u.platform);
+              if (p) {
+                setTheme({
+                  accent: p.borderColor || "#16a34a",
+                  light: p.borderColor ? `${p.borderColor}22` : "#f0fdf4",
+                  gradient: `linear-gradient(135deg, ${p.borderColor}, ${p.borderColor}bb)`
+                });
+              }
+            }
+          }
+        }
+      } catch (e) {
+        setError("Unable to load plans. Please refresh.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
   }, []);
 
-  const handleBuy = plan => setSelected({ plan, mode: "paid" });
-  const handleTrial = plan => setSelected({ plan, mode: "trial" });
+  const handleBuy = (plan, price) => {
+    if (hasActivePlan) {
+      alert("You already have an active or pending insurance plan for this week.");
+      return;
+    }
+    setSelected({ plan, mode: "paid", price });
+  };
+  
+  const handleTrial = (plan, price) => {
+    if (hasActivePlan) {
+      alert("You already have an active or pending insurance plan for this week.");
+      return;
+    }
+    setSelected({ plan, mode: "trial", price });
+  };
+  
   const handleClose = () => setSelected(null);
 
   const handleProceedToPayment = () => {
@@ -293,7 +577,7 @@ export default function Plans() {
       state: {
         planId: selected.plan.id,
         plan: selected.plan.name,
-        price: selected.plan.weeklyPremium,
+        price: selected.price,
         coverage: selected.plan.coverageAmount,
         trialDays: selected.plan.trialDays,
         mode: selected.mode,
@@ -303,193 +587,184 @@ export default function Plans() {
     handleClose();
   };
 
+  const riskScore = aiDash?.ai_summary?.risk_score || 0.5;
+
   return (
-    <div className="plans-root" style={{ minHeight: "100vh", background: "#f8fafc" }}>
+    <div className="plans-container" style={{ 
+      minHeight: "100vh", 
+      background: "#f8fafc", 
+      paddingBottom: 60,
+      "--hero-gradient": theme.gradient,
+      "--theme-border": `${theme.accent}44`,
+      "--theme-glow": `${theme.accent}22`
+    }}>
       <style>{STYLES}</style>
 
-      {/* ── Hero Header ── */}
-      <div style={{
-        background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
-        padding: "48px 24px 60px", textAlign: "center",
-      }}>
-        <div style={{
-          display: "inline-flex", alignItems: "center", gap: 8,
-          background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)",
-          borderRadius: 20, padding: "6px 16px", marginBottom: 20,
-        }}>
-          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#4ade80", display: "inline-block" }} />
-          <span style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-            Gig Worker Insurance Plans
-          </span>
-        </div>
+      {/* ── Premium Card Banner ── */}
+      <section className="plans-hero">
+        <div className="banner-card">
+           <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20 }}>
+              <div>
+                <div style={{
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  background: theme.light, border: `1px solid ${theme.accent}33`,
+                  borderRadius: 99, padding: "4px 12px", marginBottom: 12,
+                  color: theme.accent, fontWeight: 700, fontSize: 11, textTransform: 'uppercase'
+                }}>
+                  <FaRobot /> AI RISK ENGINE ACTIVE
+                </div>
 
-        <h1 style={{
-          fontFamily: "Sora,sans-serif", fontWeight: 800,
-          fontSize: "clamp(26px, 5vw, 42px)", color: "#fff",
-          lineHeight: 1.15, maxWidth: 600, margin: "0 auto 16px",
-        }}>
-          Choose the Plan That<br />
-          <span style={{ background: "linear-gradient(90deg,#a78bfa,#38bdf8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-            Protects You Best
-          </span>
-        </h1>
-
-        <p style={{
-          color: "rgba(255,255,255,0.65)", fontSize: 16, maxWidth: 480,
-          margin: "0 auto", lineHeight: 1.7,
-        }}>
-          All plans include a <strong style={{ color: "#fff" }}>7-day free trial</strong>.
-          No credit card required upfront. Cancel anytime.
-        </p>
-
-        {/* Stat pills */}
-        <div style={{
-          display: "flex", justifyContent: "center", flexWrap: "wrap",
-          gap: 16, marginTop: 32,
-        }}>
-          {[
-            { label: "Active Workers Covered", value: "12,400+" },
-            { label: "Claims Settled", value: "₹2.4 Cr+" },
-            { label: "Claim Approval Rate", value: "98.2%" },
-          ].map(s => (
-            <div key={s.label} style={{
-              background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)",
-              borderRadius: 14, padding: "12px 20px", textAlign: "center",
-            }}>
-              <div style={{ fontFamily: "Sora,sans-serif", fontWeight: 800, fontSize: 22, color: "#fff" }}>
-                {s.value}
+                <h1 style={{
+                  fontSize: 28, fontWeight: 800, color: "white",
+                  lineHeight: 1.2, margin: 0
+                }}>
+                  Personalized <span style={{ color: theme.accent }}>Protection Pool</span>
+                </h1>
+                <p style={{
+                  color: "#94a3b8", fontSize: 14, marginTop: 4, fontWeight: 500
+                }}>
+                  Risk Score: <span style={{ color: 'white', fontWeight: 800 }}>{Math.round(riskScore * 100)}/100</span> • Dynamic rates for your gig profile.
+                </p>
               </div>
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>
-                {s.label}
+
+              <div style={{
+                background: "rgba(255,255,255,0.05)",
+                padding: "12px 20px",
+                borderRadius: 16,
+                border: "1px solid rgba(255,255,255,0.1)",
+                textAlign: 'right'
+              }}>
+                <div style={{ fontSize: 11, color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Current Rating</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: theme.accent }}>{riskScore < 0.3 ? 'EXCELLENT' : riskScore < 0.6 ? 'STABLE' : 'HIGH RISK'}</div>
               </div>
-            </div>
-          ))}
+           </div>
         </div>
-      </div>
+      </section>
 
-      {/* ── Plan Cards ── */}
-      <div style={{ maxWidth: 1280, margin: "-28px auto 60px", padding: "0 16px", position: "relative", zIndex: 10 }}>
-
-        {loading && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 24 }}>
-            {[0, 1, 2, 3].map(i => (
-              <div key={i} className="skeleton" style={{ height: 480 }} />
-            ))}
+      {/* ── Grid Container ── */}
+      <div className="plans-grid">
+        {loading ? (
+          [1,2,3,4].map(i => (
+            <div key={i} className="grid-item" style={{ height: 400, background: '#f1f5f9', borderRadius: 20, opacity: 0.5 }}></div>
+          ))
+        ) : error ? (
+          <div style={{ width: '100%', textAlign: 'center', padding: 60, background: 'white', borderRadius: 32 }}>
+            <FaInfoCircle style={{ fontSize: 40, color: '#ef4444', marginBottom: 16 }} />
+            <h3 style={{ fontSize: 20, color: '#1e293b' }}>{error}</h3>
           </div>
-        )}
+        ) : (
+          plans.map((plan, i) => {
+            const meta = PLAN_META[plan.name] || PLAN_META.Starter;
+            const aiDetails = aiDash?.plan_options?.find(o => o.plan === plan.name);
+            const isRecommended = recommendation?.recommended_plan === plan.name;
 
-        {error && (
-          <div style={{
-            textAlign: "center", padding: 48,
-            color: "#dc2626", fontSize: 16, fontWeight: 600,
-          }}>
-            ⚠️ {error}
-          </div>
-        )}
-
-        {!loading && !error && (
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: 24,
-          }}>
-            {plans.map((plan, i) => {
-              const meta = PLAN_META[plan.name] || PLAN_META.Starter;
-              return (
+            return (
+              <div key={plan.id} className={`grid-item ${meta.popular ? 'elevated' : ''}`}>
                 <PlanCard
-                  key={plan.id}
                   plan={plan}
                   meta={meta}
+                  aiDetails={aiDetails}
+                  isRecommended={isRecommended}
+                  hasActivePlan={hasActivePlan}
                   onBuy={handleBuy}
                   onTrial={handleTrial}
-                  delay={i * 0.12}
+                  delay={i * 0.1}
+                  theme={theme}
                 />
-              );
-            })}
-          </div>
-        )}
-
-        {/* Info note */}
-        {!loading && !error && (
-          <div style={{
-            marginTop: 40, textAlign: "center",
-            padding: "20px 24px", background: "#fff",
-            border: "1.5px solid #e2e8f0", borderRadius: 16,
-          }}>
-            <p style={{ margin: 0, color: "#64748b", fontSize: 14 }}>
-              🔒 &nbsp;All payments are 100% secure and encrypted. &nbsp;|&nbsp;
-              📋 &nbsp;Coverage activates immediately after payment. &nbsp;|&nbsp;
-              📞 &nbsp;24×7 support for gig workers.
-            </p>
-          </div>
+              </div>
+            );
+          })
         )}
       </div>
 
-      {/* ── Confirm Modal ── */}
+      {/* ── Support Info ── */}
+      {!loading && !error && (
+        <div className="glass-info-bar">
+          <div className="info-item">
+            <FaShieldAlt style={{ color: theme.accent }} /> <span>Bank-Grade Encryption</span>
+          </div>
+          <div className="info-item">
+            <FaRobot style={{ color: theme.accent }} /> <span>AI Claims Automation</span>
+          </div>
+          <div className="info-item">
+            <FaCheck style={{ color: theme.accent }} /> <span>Instant Coverage Activation</span>
+          </div>
+        </div>
+      )}
+
+      {/* ── Confirmation Modal ── */}
       {selected && (
         <div className="modal-overlay" onClick={handleClose}>
           <div className="modal-box" onClick={e => e.stopPropagation()}>
-            {/* Close */}
             <button
               onClick={handleClose}
               style={{
-                position: "absolute", top: 16, right: 16,
-                background: "#f1f5f9", border: "none", borderRadius: "50%",
-                width: 32, height: 32, fontSize: 18, cursor: "pointer",
+                position: "absolute", top: 20, right: 20,
+                background: "#f8fafc", border: "none", borderRadius: "50%",
+                width: 36, height: 36, fontSize: 16, cursor: "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}
             >×</button>
 
-            <div style={{ fontSize: 42, marginBottom: 12 }}>
-              {(PLAN_META[selected.plan.name] || PLAN_META.Starter).icon}
+            <div style={{ position: 'relative', marginBottom: 24 }}>
+              <div style={{ 
+                width: 72, height: 72, borderRadius: 24, 
+                background: (PLAN_META[selected.plan.name] || PLAN_META.Starter).gradient,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 32, color: 'white',
+                boxShadow: `0 12px 24px ${(PLAN_META[selected.plan.name] || PLAN_META.Starter).glow}`
+              }}>
+                {(PLAN_META[selected.plan.name] || PLAN_META.Starter).icon}
+              </div>
+              <div style={{
+                position: 'absolute', bottom: -6, right: -6,
+                width: 28, height: 28, borderRadius: '50%',
+                background: '#fff', border: '3px solid #fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
+              }}>
+                <FaCheck style={{ color: theme.accent, fontSize: 12 }} />
+              </div>
             </div>
 
-            <h2 style={{
-              fontFamily: "Sora,sans-serif", fontWeight: 800,
-              fontSize: 22, color: "#0f172a", marginBottom: 6,
-            }}>
-              {selected.mode === "trial"
-                ? `Start Free Trial – ${selected.plan.name}`
-                : `Subscribe to ${selected.plan.name}`}
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: "#0f172a", marginBottom: 6 }}>
+              {selected.mode === "trial" ? "Confirm Free Trial" : "Confirm Subscription"}
             </h2>
 
-            <p style={{ color: "#64748b", fontSize: 14, marginBottom: 20 }}>
+            <p style={{ color: "#64748b", fontSize: 13, marginBottom: 20, lineHeight: 1.6 }}>
               {selected.mode === "trial"
-                ? `Enjoy full ${selected.plan.name} benefits free for ${selected.plan.trialDays} days. Your first payment of ₹${selected.plan.weeklyPremium} will be due after the trial ends.`
-                : `You will be charged ₹${selected.plan.weeklyPremium}/week. Coverage of ₹${selected.plan.coverageAmount.toLocaleString("en-IN")} starts immediately.`}
+                ? `Test the full benefits of ${selected.plan.name} for ${selected.plan.trialDays} days.`
+                : `Activate ${selected.plan.name} coverage instantly for ₹${selected.plan.weeklyPremium}/week.`}
             </p>
 
-            {/* Summary rows */}
             <div style={{
-              background: "#f8fafc", borderRadius: 12,
-              padding: "16px", marginBottom: 24,
+              background: "#f8fafc", borderRadius: 16, border: '1px solid #e2e8f0',
+              padding: "16px", marginBottom: 20,
             }}>
               {[
                 ["Plan", selected.plan.name],
-                ["Weekly Premium", `₹${selected.plan.weeklyPremium}`],
-                ["Coverage Amount", `₹${selected.plan.coverageAmount.toLocaleString("en-IN")}`],
-                ["Risk Level", selected.plan.riskLevel],
-                ["Today's Charge", selected.mode === "trial" ? "₹0 (Free Trial)" : `₹${selected.plan.weeklyPremium}`],
+                ["Coverage", `₹${selected.plan.coverageAmount.toLocaleString()}`],
+                ["Initial Cost", selected.mode === "trial" ? "₹0.00" : `₹${selected.plan.weeklyPremium}`],
               ].map(([label, val]) => (
                 <div key={label} style={{
                   display: "flex", justifyContent: "space-between",
-                  padding: "6px 0", borderBottom: "1px solid #e2e8f0", fontSize: 14,
+                  padding: "6px 0", fontSize: 13,
                 }}>
-                  <span style={{ color: "#64748b" }}>{label}</span>
-                  <span style={{ fontWeight: 700, color: "#0f172a" }}>{val}</span>
+                  <span style={{ color: "#64748b", fontWeight: 500 }}>{label}</span>
+                  <span style={{ fontWeight: 800, color: "#0f172a" }}>{val}</span>
                 </div>
               ))}
             </div>
 
             <button
-              className="plan-btn"
+              className="buy-button"
               style={{
-                background: (PLAN_META[selected.plan.name] || PLAN_META.Starter).gradient,
+                background: theme.gradient,
                 color: "#fff",
               }}
               onClick={handleProceedToPayment}
             >
-              {selected.mode === "trial" ? "🎁 Activate Free Trial" : "Proceed to Payment →"}
+              Confirm & Continue <FaArrowRight />
             </button>
           </div>
         </div>

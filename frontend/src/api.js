@@ -107,6 +107,9 @@ export async function adminListPlans() {
 export async function adminUpdatePlan(id, updates) {
   return request(`/api/admin/plans/${id}`, { method: 'PUT', body: JSON.stringify(updates) });
 }
+export async function adminCreatePlan(plan) {
+  return request('/api/admin/plans', { method: 'POST', body: JSON.stringify(plan) });
+}
 
 export async function adminListPayments() {
   return request('/api/admin/payments', { method: 'GET' });
@@ -173,6 +176,58 @@ export async function markNotificationAsRead(id) {
   return request(`/api/notifications/${id}/read`, { method: 'PUT' });
 }
 
+// ── AI Model Endpoints ────────────────────────────────────────────────────────
+
+/** AI dynamic premium calculation */
+export async function getAIPremium(planName = 'Smart') {
+  return request(`/api/ai/premium?planName=${encodeURIComponent(planName)}`, { method: 'GET' });
+}
+
+/** AI risk assessment for authenticated user */
+export async function getAIRisk() {
+  return request('/api/ai/risk', { method: 'GET' });
+}
+
+/** AI fraud detection for a claim */
+export async function detectFraud(data) {
+  return request('/api/ai/fraud/detect', { method: 'POST', body: JSON.stringify(data) });
+}
+
+/** AI parametric trigger check for user location */
+export async function checkParametric() {
+  return request('/api/ai/parametric/check', { method: 'GET' });
+}
+
+/** AI weather data for user location */
+export async function getAIWeather() {
+  return request('/api/ai/weather', { method: 'GET' });
+}
+
+/** Full AI insights dashboard */
+export async function getAIDashboard() {
+  return request('/api/ai/dashboard', { method: 'GET' });
+}
+
+/** AI plan recommendation */
+export async function getAIPlanRecommendation() {
+  return request('/api/ai/plans/recommend', { method: 'GET' });
+}
+
+/** Fraud prevention statistics (no auth needed) */
+export async function getFraudStats() {
+  return request('/api/ai/fraud/stats', { method: 'GET' });
+}
+
+/** All parametric triggers across India (no auth needed) */
+export async function getAllTriggers() {
+  return request('/api/ai/parametric/triggers', { method: 'GET' });
+}
+
+/** Admin weather report — all active user locations */
+export async function adminGetWeatherReport() {
+  return request('/api/ai/admin/weather-report', { method: 'GET' });
+}
+
 export default {
   registerUser, loginUser, getCurrentUser, updateUser,
   getPlans, getPlanById,
@@ -181,13 +236,17 @@ export default {
   postQuery, getMyQueries,
   adminChangeCredentials,
   adminListUsers, adminDeleteUser, adminUpdateUser,
-  adminListPlans, adminUpdatePlan,
+  adminListPlans, adminUpdatePlan, adminCreatePlan,
   adminListPayments, adminApprovePayment, adminRejectPayment, adminDeletePayment,
   adminListQueries, adminReplyQuery,
   claimPayment,
   submitClaimRequest, getMyClaimRequests, claimRequestPayout,
   adminListClaimRequests, adminApproveClaimRequest, adminRejectClaimRequest,
-  adminGetWallet,
+  adminGetWallet, adminGetWeatherReport,
   getMyNotifications, markNotificationAsRead,
   getPartners, adminAddPartner, adminDeletePartner,
+  // AI endpoints
+  getAIPremium, getAIRisk, detectFraud, checkParametric,
+  getAIWeather, getAIDashboard, getAIPlanRecommendation,
+  getFraudStats, getAllTriggers,
 };

@@ -209,6 +209,10 @@ export default function Claims() {
   const [theme, setTheme] = useState(defaultTheme);
   const [formData, setFormData] = useState({ situation: 'FLOOD', description: '' });
 
+  // AI State
+  const [parametric, setParametric] = useState(null);
+  const [fraudRisk, setFraudRisk] = useState(null);
+
   const claimedThisWeek = useMemo(
     () => hasClaimedThisWeek(payments, requests),
     [payments, requests]
@@ -217,18 +221,25 @@ export default function Claims() {
 
   const flash = (text, type = 'success') => {
     setMessage({ text, type });
-    setTimeout(() => setMessage(null), 3500);
+    setTimeout(() => setMessage(null), 4500);
   };
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [pRes, rRes] = await Promise.all([getPaymentHistory(), getMyClaimRequests()]);
+      const [pRes, rRes, paramRes] = await Promise.all([
+        getPaymentHistory(),
+        getMyClaimRequests(),
+        checkParametric()
+      ]);
+
       if (pRes && Array.isArray(pRes))
         setPayments(pRes.filter(p =>
           ["APPROVED", "REJECTED", "SUCCESS", "CLAIMED"].includes(p.status)
         ));
       if (rRes && Array.isArray(rRes)) setRequests(rRes);
+      if (paramRes && !paramRes.error) setParametric(paramRes);
+
     } catch (e) { console.error(e); }
     setLoading(false);
   };
@@ -256,6 +267,21 @@ export default function Claims() {
     init();
   }, [navigate]);
 
+  // 🤖 AI Auto-File Claim for Parametric Trigger
+  const handleAutoFile = async () => {
+    if (!parametric?.parametric_check?.auto_trigger) return;
+    const data = {
+      situation: parametric.parametric_check.trigger_reasons[0].split(':')[0].toUpperCase(),
+      description: `[AI PROACTIVE CLAIM]: ${parametric.parametric_check.trigger_reasons.join('. ')} Detected by AI Parametric Monitoring.`
+    };
+    const res = await submitClaimRequest(data);
+    if (res.error) flash(res.error, 'error');
+    else {
+      flash("🤖 AI parametric claim auto-filed and verified!");
+      loadData();
+    }
+  };
+
   const handleClaim = async (id, type) => {
     const res = type === 'request' ? await claimRequestPayout(id) : await claimPayment(id);
     if (res.error) { flash(res.error, 'error'); }
@@ -268,9 +294,29 @@ export default function Claims() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // 🤖 AI Fraud Check before submitting
+    const fraudRes = await detectFraud({
+      situation: formData.situation,
+      claim_amount: 5000,
+      coverage_amount: 6000
+    });
+
+    if (fraudRes?.action === 'REJECT_AUTO') {
+      flash("⚠️ AI Engine flagged this request as highly suspicious. Submission restricted.", 'error');
+      return;
+    }
+
     const res = await submitClaimRequest(formData);
     if (res.error) { flash(res.error, 'error'); }
-    else { flash("Claim request submitted!"); setShowForm(false); loadData(); }
+    else {
+      flash(fraudRes?.fraud_analysis?.fraud_score > 0.4
+        ? "Claim filed. AI flagged for additional verification."
+        : "Claim request submitted! AI Verified."
+      );
+      setShowForm(false);
+      loadData();
+    }
   };
 
   const accentColor = { color: theme.accent };
@@ -281,6 +327,38 @@ export default function Claims() {
   return (
     <div className="cl-wrap">
       <style>{STYLES}</style>
+
+      {/* ── AI Parametric Alert ── */}
+      {!claimedThisWeek && parametric?.parametric_check?.auto_trigger && (
+        <div style={{
+          background: "linear-gradient(135deg, #7c3aed, #a855f7)", color: "#fff",
+          borderRadius: 20, padding: "20px 24px", marginBottom: 28,
+          display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap",
+          boxShadow: "0 12px 32px rgba(124,58,237,0.3)", animation: "slideUp 0.4s ease"
+        }}>
+          <div style={{ fontSize: 40 }}>🌩️</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, fontFamily: "Sora" }}>AI Parametric Alert</h3>
+              <span style={{ background: "#ef4444", fontSize: 10, fontWeight: 900, padding: "2px 8px", borderRadius: 20 }}>URGENT</span>
+            </div>
+            <p style={{ margin: 0, fontSize: 13, opacity: 0.9 }}>
+              Extreme weather detected in <strong>{parametric.district}</strong>.
+              Parametric trigger: <strong>{parametric.parametric_check.severity} RISK</strong>.
+              You are eligible for an immediate AI-verified claim.
+            </p>
+          </div>
+          <button
+            onClick={handleAutoFile}
+            style={{
+              background: "#fff", color: "#7c3aed", border: "none", padding: "12px 24px",
+              borderRadius: 14, fontWeight: 800, fontSize: 13, cursor: "pointer",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
+            }}>
+            🤖 Auto-Submit AI Claim
+          </button>
+        </div>
+      )}
 
       {/* ── Header ── */}
       <div className="cl-header">
@@ -410,19 +488,31 @@ export default function Claims() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5, flexWrap: "wrap" }}>
                         <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>{req.situation}</span>
-                        {BADGES[req.status]}
+                        {req.isClaimed ? <span className="badge b-claimed">Claimed</span> : BADGES[req.status]}
                       </div>
-                      <p style={{ fontSize: 12, color: "#64748b", margin: "0 0 6px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 360 }}>
+                      <p style={{ fontSize: 12, color: "#64748b", margin: "0 0 8px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 360 }}>
                         {req.description}
                       </p>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: req.status === 'APPROVED' && !claimedThisWeek ? theme.accent : "#94a3b8" }}>
-                        Coverage: ₹{req.amount}
-                      </span>
+                      <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginTop: 4 }}>
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                          <span style={{ fontSize: 9, color: "#94a3b8", textTransform: "uppercase", fontWeight: 800 }}>Requested On</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>{new Date(req.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                          <span style={{ fontSize: 9, color: "#94a3b8", textTransform: "uppercase", fontWeight: 800 }}>Coverage Payout</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: theme.accent }}>₹{req.amount}</span>
+                        </div>
+                        {req.isClaimed && (
+                          <div style={{ display: "flex", flexDirection: "column" }}>
+                            <span style={{ fontSize: 9, color: "#16a34a", textTransform: "uppercase", fontWeight: 800 }}>Status</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "#16a34a" }}>Claimed Successfully</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div className="card-right" style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
                       {req.isClaimed ? (
-                        /* Already claimed — show badge + lock label, NO button */
                         <>
                           <span className="badge b-claimed">Claimed</span>
                           <span className="lock-label">
@@ -430,7 +520,6 @@ export default function Claims() {
                           </span>
                         </>
                       ) : req.status === 'APPROVED' && !claimedThisWeek ? (
-                        /* Can claim — show button */
                         <button
                           className="act-btn"
                           style={{ background: theme.accent }}
@@ -439,7 +528,6 @@ export default function Claims() {
                           Claim Payout
                         </button>
                       ) : req.status === 'APPROVED' && claimedThisWeek ? (
-                        /* Approved but locked this week — NO button, just lock label */
                         <span className="lock-label">
                           <FaLock size={9} /> Opens {nextWeekLabel}
                         </span>
@@ -463,9 +551,8 @@ export default function Claims() {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
                 {payments.map((p, i) => {
-                  const planName = p.subscription?.plan?.name || 'Insurance';
-                  const coverage = p.subscription?.plan?.coverageAmount || p.amount;
-                  const isClaimed = p.isClaimed || p.status === 'CLAIMED';
+                  const isClaimed = p.status === 'CLAIMED' || p.isClaimed;
+                  const isExpired = p.subStatus === 'EXPIRED' && !isClaimed;
                   const canClaim = p.status === 'APPROVED' && !isClaimed && !claimedThisWeek;
 
                   return (
@@ -475,21 +562,42 @@ export default function Claims() {
                           <FaShieldAlt size={18} color={isClaimed ? "#94a3b8" : "#fff"} />
                         </div>
                         <div style={{ minWidth: 0 }}>
-                          <p style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", margin: "0 0 3px" }}>
-                            {planName} Plan Active
-                          </p>
-                          <p style={{ fontSize: 12, color: "#64748b", margin: 0 }}>
-                            Coverage:{" "}
-                            <span style={{ fontWeight: 700, color: isClaimed || claimedThisWeek ? "#94a3b8" : theme.accent }}>
-                              ₹{coverage}
-                            </span>
-                          </p>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+                            <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>{p.plan} Plan</span>
+                            {isClaimed ? (
+                              <span className="badge b-claimed">Claimed</span>
+                            ) : isExpired ? (
+                              <span className="badge" style={{ background: "#fee2e2", color: "#b91c1c" }}>Expired</span>
+                            ) : (
+                              <span className="badge" style={{ background: "#d1fae5", color: "#065f46" }}>Active</span>
+                            )}
+                          </div>
+                          
+                          <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+                            <div style={{ display: "flex", flexDirection: "column" }}>
+                              <span style={{ fontSize: 9, color: "#94a3b8", textTransform: "uppercase", fontWeight: 800 }}>Purchased</span>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>{new Date(p.date).toLocaleDateString()}</span>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column" }}>
+                              <span style={{ fontSize: 9, color: "#94a3b8", textTransform: "uppercase", fontWeight: 800 }}>Premium</span>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: "#334155" }}>₹{p.amount}</span>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column" }}>
+                              <span style={{ fontSize: 9, color: "#94a3b8", textTransform: "uppercase", fontWeight: 800 }}>Coverage</span>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: theme.accent }}>₹{p.coverage}</span>
+                            </div>
+                            {isClaimed && p.claimedAt && (
+                              <div style={{ display: "flex", flexDirection: "column" }}>
+                                <span style={{ fontSize: 9, color: "#16a34a", textTransform: "uppercase", fontWeight: 800 }}>Claimed On</span>
+                                <span style={{ fontSize: 12, fontWeight: 700, color: "#16a34a" }}>{new Date(p.claimedAt).toLocaleDateString()}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
 
                       <div className="card-right" style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
                         {isClaimed ? (
-                          /* Already claimed — badge + lock label, NO button */
                           <>
                             <span className="badge b-claimed">Claimed</span>
                             <span className="lock-label">
@@ -497,7 +605,6 @@ export default function Claims() {
                             </span>
                           </>
                         ) : canClaim ? (
-                          /* Can claim — show button */
                           <button
                             className="act-btn"
                             style={{ background: theme.accent }}
@@ -506,10 +613,11 @@ export default function Claims() {
                             Claim
                           </button>
                         ) : p.status === 'APPROVED' && claimedThisWeek ? (
-                          /* Approved but locked this week — NO button */
                           <span className="lock-label">
                             <FaLock size={9} /> Opens {nextWeekLabel}
                           </span>
+                        ) : isExpired ? (
+                          <span style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", fontStyle: "italic" }}>Policy Expired</span>
                         ) : (
                           BADGES[p.status] || null
                         )}

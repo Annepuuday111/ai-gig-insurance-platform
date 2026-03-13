@@ -8,6 +8,7 @@ com/example/aiinsurance/service/SubscriptionService.class
 com/example/aiinsurance/repository/QueryRepository.class
 com/example/aiinsurance/repository/PaymentRepository.class
 com/example/aiinsurance/model/Subscription.class
+com/example/aiinsurance/service/AIService.class
 com/example/aiinsurance/controller/SubscriptionController.class
 com/example/aiinsurance/AdminInitializer.class
 com/example/aiinsurance/service/MyUserDetailsService.class
@@ -17,6 +18,7 @@ com/example/aiinsurance/controller/PlanController.class
 com/example/aiinsurance/repository/AdminRepository.class
 com/example/aiinsurance/security/SecurityConfig.class
 com/example/aiinsurance/controller/QueryController.class
+com/example/aiinsurance/controller/AIController.class
 com/example/aiinsurance/repository/NotificationRepository.class
 com/example/aiinsurance/controller/ClaimRequestController.class
 com/example/aiinsurance/repository/PlanRepository.class

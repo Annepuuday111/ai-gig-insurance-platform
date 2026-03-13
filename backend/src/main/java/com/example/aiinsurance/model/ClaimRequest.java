@@ -24,6 +24,7 @@ public class ClaimRequest {
     private String description;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 50)
     private Status status = Status.PENDING;
 
     private Double amount;

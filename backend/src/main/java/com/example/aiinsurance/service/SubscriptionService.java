@@ -34,6 +34,15 @@ public class SubscriptionService {
             String upiId,        // only for UPI
             String txnReference  // gateway reference from frontend (Razorpay/UPI)
     ) {
+        // ─── Prevent duplicate active/pending subscriptions ───────────────────
+        Optional<Subscription> latest = getLatestSubscription(user);
+        if (latest.isPresent()) {
+            Subscription.Status s = latest.get().getStatus();
+            if (s == Subscription.Status.ACTIVE || s == Subscription.Status.TRIAL || s == Subscription.Status.PENDING) {
+                throw new RuntimeException("You already have an active or pending insurance plan. Please wait until it expires or is processed.");
+            }
+        }
+
         Plan plan = planRepository.findById(planId)
             .orElseThrow(() -> new RuntimeException("Plan not found: " + planId));
 

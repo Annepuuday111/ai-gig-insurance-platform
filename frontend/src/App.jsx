@@ -14,7 +14,6 @@ import ChatSupport from "./pages/ChatSupport";
 import Profile from "./pages/Profile";
 import Reports from "./pages/Reports";
 
-import Wireframes from "./pages/Wireframes";
 import AdminDashboard from "./pages/AdminDashboard";
 import MainLayout from "./layouts/MainLayout";
 
@@ -28,7 +27,6 @@ export default function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/wireframes" element={<Wireframes />} />
 
         {/* Dashboard Layout */}
         <Route element={<MainLayout />}>

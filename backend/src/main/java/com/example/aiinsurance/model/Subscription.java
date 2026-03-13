@@ -22,7 +22,7 @@ public class Subscription {
     private Plan plan;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private Status status;
 
     @Column(nullable = false)

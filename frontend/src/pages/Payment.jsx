@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { buyPlan } from "../api";
+import { buyPlan, getCurrentUser, getPartners, getDashboardSummary } from "../api";
+
+const defaultTheme = { accent: "#16a34a", light: "#f0fdf4", gradient: "linear-gradient(135deg,#16a34a,#22c55e)" };
 
 const STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
@@ -37,9 +39,9 @@ const STYLES = `
     transition: all 0.2s ease;
     font-family: 'DM Sans', sans-serif;
   }
-  .method-btn:hover { border-color: #7c3aed; background: #faf5ff; }
+  .method-btn:hover { border-color: var(--p-accent); background: var(--p-light); }
   .method-btn.active {
-    border-color: #7c3aed; background: #faf5ff;
+    border-color: var(--p-accent); background: var(--p-light);
     box-shadow: 0 0 0 3px rgba(124,58,237,0.12);
   }
 
@@ -50,7 +52,7 @@ const STYLES = `
     outline: none; transition: border-color 0.2s;
     background: #f8fafc;
   }
-  .pay-input:focus { border-color: #7c3aed; background: #fff; }
+  .pay-input:focus { border-color: var(--p-accent); background: #fff; }
 
   .pay-btn-main {
     width: 100%; padding: 16px;
@@ -112,6 +114,40 @@ export default function Payment() {
   const [success,     setSuccess]     = useState(false);
   const [error,       setError]       = useState("");
   const [result,      setResult]      = useState(null);
+  const [theme,       setTheme]       = useState(defaultTheme);
+  const [hasPlanAlert, setHasPlanAlert] = useState(false);
+
+  useEffect(() => {
+    const fetchTheme = async () => {
+      try {
+        const u = await getCurrentUser();
+        if (u && u.platform) {
+          const partners = await getPartners();
+          if (Array.isArray(partners)) {
+            const p = partners.find(ptr => ptr.name === u.platform);
+            if (p) {
+              setTheme({
+                accent: p.borderColor || "#16a34a",
+                light: p.borderColor ? `${p.borderColor}22` : "#f0fdf4",
+                gradient: `linear-gradient(135deg, ${p.borderColor}, ${p.borderColor}bb)`
+              });
+            }
+          }
+        }
+        
+        // ── Check if they already have a plan ──
+        const summary = await getDashboardSummary();
+        if (summary && !summary.error) {
+          const s = summary.subscriptionStatus;
+          if (s === "ACTIVE" || s === "TRIAL" || s === "PENDING") {
+             setHasPlanAlert(true);
+             setError("You already have an active or pending insurance plan. You cannot purchase another one until it expires.");
+          }
+        }
+      } catch (err) { }
+    };
+    fetchTheme();
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -180,7 +216,16 @@ export default function Payment() {
   /* ── Success screen ─────────────────────────────────────────────────────── */
   if (success && result) {
     return (
-      <div className="pay-root" style={{ minHeight: "100vh", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div className="pay-root" style={{ 
+        minHeight: "100vh", 
+        background: "#f8fafc", 
+        display: "flex", 
+        alignItems: "center", 
+        justifyContent: "center",
+        "--p-accent": theme.accent,
+        "--p-light": theme.light,
+        "--p-gradient": theme.gradient
+      }}>
         <style>{STYLES}</style>
         <div className="pay-card success-container" style={{ maxWidth: 420, width: "100%", margin: 16 }}>
           <div style={{ fontSize: 72, marginBottom: 16 }}>🎉</div>
@@ -211,7 +256,7 @@ export default function Payment() {
 
           <button
             className="pay-btn-main"
-            style={{ background: gradient, color: "#fff" }}
+            style={{ background: theme.gradient, color: "#fff" }}
             onClick={() => navigate("/dashboard")}
           >
             Go to Dashboard →
@@ -223,12 +268,18 @@ export default function Payment() {
 
   /* ── Main payment UI ─────────────────────────────────────────────────────── */
   return (
-    <div className="pay-root" style={{ minHeight: "100vh", background: "#f8fafc" }}>
+    <div className="pay-root" style={{ 
+      minHeight: "100vh", 
+      background: "#f8fafc",
+      "--p-accent": theme.accent,
+      "--p-light": theme.light,
+      "--p-gradient": theme.gradient
+    }}>
       <style>{STYLES}</style>
 
       {/* Header */}
-      <div style={{ background: "linear-gradient(135deg,#0f172a,#1e293b)", padding: "36px 24px 52px", textAlign: "center" }}>
-        <h1 style={{ fontFamily: "Sora,sans-serif", fontWeight: 800, fontSize: "clamp(22px,4vw,30px)", color: "#fff", margin: "0 0 8px" }}>
+      <div style={{ background: "linear-gradient(135deg,#0f172a,#1e293b)", padding: "32px 24px 48px", textAlign: "center" }}>
+        <h1 style={{ fontFamily: "Sora,sans-serif", fontWeight: 800, fontSize: "clamp(20px,4vw,28px)", color: "#fff", margin: "0 0 8px" }}>
           {mode === "trial" ? "🎁 Activate Free Trial" : "💳 Complete Your Payment"}
         </h1>
         <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 15 }}>
@@ -321,7 +372,7 @@ export default function Payment() {
                       <div style={{ fontSize: 12, color: "#94a3b8" }}>{m.desc}</div>
                     </div>
                     {method === m.id && (
-                      <span style={{ marginLeft: "auto", color: "#7c3aed", fontWeight: 800, fontSize: 18 }}>✓</span>
+                      <span style={{ marginLeft: "auto", color: theme.accent, fontWeight: 800, fontSize: 18 }}>✓</span>
                     )}
                   </button>
                 ))}
@@ -405,15 +456,17 @@ export default function Payment() {
             {/* PAY button */}
             <button
               className="pay-btn-main"
-              style={{ background: gradient, color: "#fff", marginTop: 24 }}
+              style={{ background: hasPlanAlert ? "#e2e8f0" : theme.gradient, color: hasPlanAlert ? "#94a3b8" : "#fff", marginTop: 24 }}
               onClick={handlePay}
-              disabled={processing}
+              disabled={processing || hasPlanAlert}
             >
               {processing ? (
                 <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
                   <span style={{ width: 18, height: 18, border: "3px solid rgba(255,255,255,0.35)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.7s linear infinite", display: "inline-block" }} />
                   Processing...
                 </span>
+              ) : hasPlanAlert ? (
+                "Plan Already Active"
               ) : mode === "trial"
                 ? `🎁 Activate Free Trial — ₹0 Today`
                 : `Pay ₹${price} Securely`

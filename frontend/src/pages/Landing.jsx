@@ -1,12 +1,13 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import heroBg from "../../../assets/LandingBanner.png";
 import { FaInfoCircle, FaEnvelope, FaShieldAlt, FaLifeRing } from "react-icons/fa";
+import { getPlans } from "../api";
 
 /* ─────────────────────────────────────────────
    GLOBAL STYLES + KEYFRAMES
-───────────────────────────────────────────── */
+ ───────────────────────────────────────────── */
 const STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap');
 
@@ -94,9 +95,6 @@ const STYLES = `
   .scroll-reveal.visible { opacity: 1; transform: translateY(0); }
 `;
 
-/* ─────────────────────────────────────────────
-   DATA
-───────────────────────────────────────────── */
 const PARTNERS = [
   { src: "https://brandlogos.net/wp-content/uploads/2025/02/zomato-logo_brandlogos.net_9msh7.png", alt: "Zomato", bg: "#FFF1F0", border: "#fca5a5" },
   { src: "https://cdn.prod.website-files.com/600ee75084e3fe0e5731624c/65b6224b00ab2b9163719086_swiggy-logo.svg", alt: "Swiggy", bg: "#FFF7ED", border: "#fdba74" },
@@ -119,21 +117,6 @@ const FEATURES = [
   { icon: "💰", color: "bg-emerald-100 text-emerald-600", title: "Instant Payout", desc: "Workers receive compensation directly — no waiting, no forms, no delays." },
 ];
 
-const PLANS = [
-  {
-    name: "Basic", price: "₹29", period: "per week", highlight: false,
-    perks: ["Rain & storm protection", "Pollution coverage", "Basic AI risk monitoring"]
-  },
-  {
-    name: "Pro", price: "₹49", period: "per week", highlight: true,
-    perks: ["All weather protection", "Traffic disruption coverage", "Auto claim processing"]
-  },
-  {
-    name: "Premium", price: "₹79", period: "per week", highlight: false,
-    perks: ["All disruptions covered", "Instant payout", "Priority claim support"]
-  },
-];
-
 const TRUST = [
   { icon: "🤖", title: "AI Monitoring", desc: "Tracks weather, AQI, and civil disruptions in real time, 24 / 7." },
   { icon: "⚡", title: "Zero Claim Hassle", desc: "Claims auto-triggered — no manual forms, no waiting, no friction." },
@@ -147,26 +130,6 @@ const STEPS = [
   { n: "4", bg: "bg-green-100", text: "text-green-700", title: "Auto Payout", desc: "Receive instant compensation, every time." },
 ];
 
-/* ─────────────────────────────────────────────
-   SCROLL REVEAL HOOK
-───────────────────────────────────────────── */
-function useScrollReveal() {
-  React.useEffect(() => {
-    const els = document.querySelectorAll(".scroll-reveal");
-    const io = new IntersectionObserver(
-      entries => entries.forEach(e => {
-        if (e.isIntersecting) { e.target.classList.add("visible"); io.unobserve(e.target); }
-      }),
-      { threshold: 0.1 }
-    );
-    els.forEach(el => io.observe(el));
-    return () => io.disconnect();
-  }, []);
-}
-
-/* ─────────────────────────────────────────────
-   SECTION HEADING — single unified heading block
-───────────────────────────────────────────── */
 function SectionHeading({ tag, title, subtitle, light = false }) {
   return (
     <div className="text-center mb-10 sm:mb-12 scroll-reveal">
@@ -189,20 +152,51 @@ function SectionHeading({ tag, title, subtitle, light = false }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   MAIN
-───────────────────────────────────────────── */
 export default function Landing() {
-  useScrollReveal();
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const res = await getPlans();
+        if (Array.isArray(res) && res.length > 0) {
+          setPlans(res);
+        } else {
+          setPlans([
+            { id: 1, name: "Starter", weeklyPremium: 29, trialDays: 7, features: ["Rain protection", "Basic AI monitoring"] },
+            { id: 2, name: "Smart", weeklyPremium: 49, trialDays: 7, features: ["All weather protection", "Auto claims"] },
+            { id: 3, name: "Pro", weeklyPremium: 79, trialDays: 7, features: ["Instant payout", "Priority support"] }
+          ]);
+        }
+      } catch (err) {
+        console.error("Error fetching plans:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPlans();
+  }, []);
+
+  // Re-run observer whenever loading status changes for dynamic plans
+  useEffect(() => {
+    if (loading) return;
+    const els = document.querySelectorAll(".scroll-reveal");
+    const io = new IntersectionObserver(
+      entries => entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add("visible"); io.unobserve(e.target); }
+      }),
+      { threshold: 0.1 }
+    );
+    els.forEach(el => io.observe(el));
+    return () => io.disconnect();
+  }, [loading]);
 
   return (
     <div className="min-h-screen bg-slate-50" style={{ color: "#0f172a" }}>
       <style>{STYLES}</style>
       <Navbar />
 
-      {/* ══════════════════════════════════════
-          HERO
-      ══════════════════════════════════════ */}
       <header
         className="relative w-full bg-no-repeat bg-cover"
         style={{ backgroundImage: `url(${heroBg})`, backgroundPosition: "center right" }}
@@ -236,18 +230,12 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* ══════════════════════════════════════
-          PARTNERS  — colorful card marquee
-      ══════════════════════════════════════ */}
       <section id="partners" className="bg-white border-y border-slate-200 py-12 sm:py-16 overflow-hidden">
-        {/* ONE heading block */}
         <SectionHeading
           tag="Partners"
           title="Supported Delivery Platforms"
           subtitle="Trusted by workers across every major delivery app in India"
         />
-
-        {/* Masked marquee so edges fade nicely */}
         <div
           className="overflow-hidden w-full"
           style={{
@@ -288,9 +276,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════
-          DISRUPTIONS
-      ══════════════════════════════════════ */}
       <section id="coverage" className="max-w-6xl mx-auto px-5 sm:px-8 py-16 sm:py-20">
         <SectionHeading
           tag="Coverage"
@@ -313,9 +298,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════
-          FEATURES  (dark section)
-      ══════════════════════════════════════ */}
       <section
         id="features"
         className="py-16 sm:py-20"
@@ -350,67 +332,74 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════
-          PLANS
-      ══════════════════════════════════════ */}
       <section id="pricing" className="bg-white py-16 sm:py-20">
         <div className="max-w-6xl mx-auto px-5 sm:px-8">
           <SectionHeading
             tag="Pricing"
             title="Affordable Weekly Plans"
-            subtitle="Flexible coverage starting at just ₹29 per week"
+            subtitle="Flexible coverage starting at low weekly rates"
           />
-          <div className="grid md:grid-cols-3 gap-6">
-            {PLANS.map((p, i) => (
-              <div
-                key={i}
-                className={`plan-card scroll-reveal rounded-2xl p-7 flex flex-col gap-5 border relative
-                  ${p.highlight
-                    ? "border-green-400 shadow-2xl shadow-green-100 bg-gradient-to-b from-green-50 to-white"
-                    : "border-slate-200 shadow-sm bg-white"}`}
-                style={{ transitionDelay: `${i * 0.1}s` }}
-              >
-                {p.highlight && (
-                  <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-[10px] font-extrabold
-                                   tracking-widest uppercase px-4 py-1.5 rounded-full text-white shadow-md"
-                    style={{ background: "var(--green)" }}>
-                    Most Popular
-                  </span>
-                )}
-                <div>
-                  <h3 className="font-bold text-lg text-slate-800">{p.name}</h3>
-                  <div className="flex items-end gap-1 mt-2">
-                    <span className="text-4xl font-extrabold" style={{ color: "var(--green)" }}>{p.price}</span>
-                    <span className="text-slate-400 text-sm mb-1">{p.period}</span>
+          <div className="grid lg:grid-cols-4 md:grid-cols-2 gap-5">
+            {loading ? (
+               [1,2,3,4].map(i => <div key={i} className="h-64 bg-slate-100 rounded-2xl animate-pulse"></div>)
+            ) : (
+              plans.map((p, i) => {
+                const isPopular = p.name === "Smart" || i === 1;
+                return (
+                  <div
+                    key={p.id}
+                    className={`plan-card scroll-reveal rounded-2xl p-7 flex flex-col gap-5 border relative
+                      ${isPopular
+                        ? "border-green-400 shadow-2xl shadow-green-100 bg-gradient-to-b from-green-50 to-white"
+                        : "border-slate-200 shadow-sm bg-white"}`}
+                    style={{ transitionDelay: `${i * 0.1}s` }}
+                  >
+                    {isPopular && (
+                      <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-[10px] font-extrabold
+                                       tracking-widest uppercase px-4 py-1.5 rounded-full text-white shadow-md"
+                        style={{ background: "var(--green)" }}>
+                        Most Popular
+                      </span>
+                    )}
+                    <div>
+                      <h3 className="font-bold text-lg text-slate-800">{p.name}</h3>
+                      <div className="flex items-end gap-1 mt-2">
+                        <span className="text-4xl font-extrabold" style={{ color: "var(--green)" }}>₹{p.weeklyPremium}</span>
+                        <span className="text-slate-400 text-sm mb-1">per week</span>
+                      </div>
+                    </div>
+                    <ul className="space-y-2.5 flex-1">
+                      {p.features?.map((perk, j) => (
+                        <li key={j} className="flex items-center gap-2.5 text-sm text-slate-600">
+                          <span className="w-5 h-5 rounded-full bg-green-100 text-green-600 flex items-center
+                                           justify-center text-xs font-bold shrink-0">✓</span>
+                          {perk}
+                        </li>
+                      ))}
+                      <li className="flex items-center gap-2.5 text-sm text-slate-600">
+                        <span className="w-5 h-5 rounded-full bg-green-100 text-green-600 flex items-center
+                                         justify-center text-xs font-bold shrink-0">✓</span>
+                        {p.trialDays}-day free trial
+                      </li>
+                    </ul>
+                    <Link
+                      to="/register"
+                      className={`cta-btn w-full py-3 text-center rounded-xl font-semibold text-sm transition-all duration-200
+                        ${isPopular
+                          ? "text-white shadow-md hover:shadow-green-300"
+                          : "bg-slate-100 hover:bg-slate-200 text-slate-700"}`}
+                      style={isPopular ? { background: "linear-gradient(135deg,#16a34a,#22c55e)" } : {}}
+                    >
+                      {isPopular ? "Get Started" : "Select Plan"}
+                    </Link>
                   </div>
-                </div>
-                <ul className="space-y-2.5 flex-1">
-                  {p.perks.map((perk, j) => (
-                    <li key={j} className="flex items-center gap-2.5 text-sm text-slate-600">
-                      <span className="w-5 h-5 rounded-full bg-green-100 text-green-600 flex items-center
-                                       justify-center text-xs font-bold shrink-0">✓</span>
-                      {perk}
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  className={`cta-btn w-full py-3 rounded-xl font-semibold text-sm transition-all duration-200
-                    ${p.highlight
-                      ? "text-white shadow-md hover:shadow-green-300"
-                      : "bg-slate-100 hover:bg-slate-200 text-slate-700"}`}
-                  style={p.highlight ? { background: "linear-gradient(135deg,#16a34a,#22c55e)" } : {}}
-                >
-                  {p.highlight ? "Get Started" : "Select Plan"}
-                </button>
-              </div>
-            ))}
+                );
+              })
+            )}
           </div>
         </div>
       </section>
 
-      {/* ══════════════════════════════════════
-          TRUST
-      ══════════════════════════════════════ */}
       <section id="why-us" className="max-w-6xl mx-auto px-5 sm:px-8 py-16 sm:py-20">
         <SectionHeading
           tag="Why Us"
@@ -433,9 +422,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════
-          CTA BANNER
-      ══════════════════════════════════════ */}
       <section
         className="py-16 sm:py-20"
         style={{ background: "linear-gradient(135deg,#14532d 0%,#16a34a 55%,#22c55e 100%)" }}
@@ -458,9 +444,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════
-          HOW IT WORKS
-      ══════════════════════════════════════ */}
       <section id="how" className="max-w-6xl mx-auto px-5 sm:px-8 py-16 sm:py-20">
         <SectionHeading
           tag="Process"
@@ -476,7 +459,7 @@ export default function Landing() {
               style={{ transitionDelay: `${i * 0.08}s` }}
             >
               <div className={`step-circle w-12 h-12 mx-auto rounded-full flex items-center justify-center
-                               font-extrabold text-sm mb-4 ${s.bg} ${s.text}`}>
+                                font-extrabold text-sm mb-4 ${s.bg} ${s.text}`}>
                 {s.n}
               </div>
               <h4 className="font-bold text-sm sm:text-base text-slate-800 mb-1">{s.title}</h4>
@@ -486,9 +469,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════
-          FOOTER
-      ══════════════════════════════════════ */}
       <footer className="bg-slate-900">
         <div className="max-w-6xl mx-auto px-5 sm:px-8 py-10">
           <div className="flex flex-wrap justify-center gap-6 sm:gap-10 text-sm text-slate-400 mb-8">

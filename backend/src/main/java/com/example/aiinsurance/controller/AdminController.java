@@ -58,6 +58,9 @@ public class AdminController {
     private SubscriptionRepository subscriptionRepository;
 
     @Autowired
+    private com.example.aiinsurance.repository.ClaimRequestRepository claimRequestRepository;
+
+    @Autowired
     private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     // ─── helpers ─────────────────────────────────────────────────────────────
@@ -187,7 +190,44 @@ public class AdminController {
             if (updates.containsKey("name")) {
                 plan.setName(updates.get("name").toString());
             }
+            if (updates.containsKey("features")) {
+                Object fObj = updates.get("features");
+                if (fObj instanceof java.util.List) {
+                    @SuppressWarnings("unchecked")
+                    java.util.List<String> featureList = (java.util.List<String>) fObj;
+                    plan.setFeatures(String.join("|", featureList));
+                } else if (fObj != null) {
+                    plan.setFeatures(fObj.toString());
+                }
+            }
             Plan saved = planService.savePlan(plan);
+            return ResponseEntity.ok(saved);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/admin/plans")
+    public ResponseEntity<?> createPlan(@RequestBody Map<String, Object> body) {
+        try {
+            Plan p = new Plan();
+            p.setName(body.get("name").toString());
+            p.setWeeklyPremium(Double.valueOf(body.getOrDefault("weeklyPremium", "0").toString()));
+            p.setCoverageAmount(Double.valueOf(body.getOrDefault("coverageAmount", "0").toString()));
+            p.setRiskLevel(body.getOrDefault("riskLevel", "Moderate").toString());
+            p.setTrialDays(Integer.valueOf(body.getOrDefault("trialDays", 7).toString()));
+            
+            Object fObj = body.get("features");
+            if (fObj instanceof java.util.List) {
+                @SuppressWarnings("unchecked")
+                java.util.List<String> featureList = (java.util.List<String>) fObj;
+                p.setFeatures(String.join("|", featureList));
+            } else if (fObj != null) {
+                p.setFeatures(fObj.toString());
+            } else {
+                p.setFeatures("Standard Coverage");
+            }
+            Plan saved = planService.savePlan(p);
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -254,6 +294,8 @@ public class AdminController {
             com.example.aiinsurance.model.Subscription sub = p.getSubscription();
             if (sub != null) {
                 sub.setStatus(com.example.aiinsurance.model.Subscription.Status.ACTIVE);
+                sub.setStartDate(java.time.LocalDateTime.now());
+                sub.setEndDate(java.time.LocalDateTime.now().plusDays(7));
                 subscriptionRepository.save(sub);
             }
         } catch (Exception e) {
@@ -322,48 +364,51 @@ public class AdminController {
      * GET /api/admin/wallet
      * Returns Admin Wallet balance + full transaction history:
      *   - CREDIT entries: each APPROVED payment (premium collected)
-     *   - DEBIT entries:  each CLAIMED payment (coverage paid out to user)
+     *   - DEBIT entries:  each CLAIMED payment or approved claim request (coverage paid out to user)
+     * Balance = Total Premiums Collected - Total Claims Paid
      */
     @GetMapping("/admin/wallet")
     public ResponseEntity<?> getAdminWalletInfo() {
         try {
             Admin admin = getAdminWallet();
 
-            // Build transaction history from payments
-            List<Payment> allPayments = paymentRepository.findAll();
             List<Map<String, Object>> transactions = new ArrayList<>();
 
+            // ── 1. Build transaction history from payments (premium credits) ──
+            List<Payment> allPayments = paymentRepository.findAll();
             for (Payment p : allPayments) {
                 double coverageAmount = 0.0;
                 String planName = "Insurance Plan";
+                String location = "—";
                 if (p.getSubscription() != null && p.getSubscription().getPlan() != null) {
                     coverageAmount = p.getSubscription().getPlan().getCoverageAmount();
                     planName = p.getSubscription().getPlan().getName() + " Plan";
                 }
-
-                // Determine cycle status. If payment is APPROVED (not claimed), policy is "On Going". If CLAIMED or subscription EXPIRED, it's "Completed"
-                String cycleStatus = "Unknown";
-                if (p.getStatus() == Payment.Status.APPROVED) {
-                    cycleStatus = "On Going";
-                } else if (p.getStatus() == Payment.Status.CLAIMED || p.getStatus() == Payment.Status.REJECTED || p.getStatus() == Payment.Status.FAILED) {
-                    cycleStatus = "Completed";
-                } else if (p.getStatus() == Payment.Status.SUCCESS || p.getStatus() == Payment.Status.PENDING) {
-                    cycleStatus = "Pending Approval";
+                if (p.getUser() != null && p.getUser().getState() != null) {
+                    location = (p.getUser().getDistrict() != null ? p.getUser().getDistrict() + ", " : "") + p.getUser().getState();
                 }
+
+                String cycleStatus = "Unknown";
+                if (p.getStatus() == Payment.Status.APPROVED) cycleStatus = "On Going";
+                else if (p.getStatus() == Payment.Status.CLAIMED) cycleStatus = "Claimed";
+                else if (p.getStatus() == Payment.Status.REJECTED || p.getStatus() == Payment.Status.FAILED) cycleStatus = "Completed";
+                else if (p.getStatus() == Payment.Status.PENDING) cycleStatus = "Pending Approval";
 
                 String upiId = p.getUpiId() != null && !p.getUpiId().isBlank() ? p.getUpiId() : "—";
                 String method = p.getMethod() != null ? p.getMethod().name() : "—";
 
-                // CREDIT: premium collected (APPROVED or CLAIMED or SUCCESS/PENDING payments)
-                if (p.getStatus() == Payment.Status.APPROVED || p.getStatus() == Payment.Status.CLAIMED || p.getStatus() == Payment.Status.SUCCESS || p.getStatus() == Payment.Status.PENDING) {
+                // CREDIT: every approved/active premium payment
+                if (p.getStatus() == Payment.Status.APPROVED || p.getStatus() == Payment.Status.CLAIMED
+                        || p.getStatus() == Payment.Status.SUCCESS || p.getStatus() == Payment.Status.PENDING) {
                     Map<String, Object> credit = new LinkedHashMap<>();
                     credit.put("id", "pay-" + p.getId());
                     credit.put("type", "CREDIT");
                     credit.put("description", "Premium collected – " + planName);
-                    credit.put("amount", p.getAmount()); // Premium amount
+                    credit.put("amount", p.getAmount());
                     credit.put("coverageAmount", coverageAmount);
                     credit.put("userEmail", p.getUser() != null ? p.getUser().getEmail() : "—");
                     credit.put("userName", p.getUser() != null ? p.getUser().getName() : "—");
+                    credit.put("location", location);
                     credit.put("date", p.getCreatedAt() != null ? p.getCreatedAt().toString() : null);
                     credit.put("status", "CREDIT");
                     credit.put("upiId", upiId);
@@ -372,29 +417,59 @@ public class AdminController {
                     transactions.add(credit);
                 }
 
-                // DEBIT: coverage paid out (CLAIMED status)
+                // DEBIT: regular (non-AI) claim payout
                 if (p.getStatus() == Payment.Status.CLAIMED) {
                     Map<String, Object> debit = new LinkedHashMap<>();
-                    debit.put("id", "claim-" + p.getId());
+                    debit.put("id", "claim-pay-" + p.getId());
                     debit.put("type", "DEBIT");
                     debit.put("description", "Coverage payout – " + planName);
-                    debit.put("amount", coverageAmount); // Coverage amount
-                    // For debit, we swap things around: premium is tracked here for history, but main amount is coverage
-                    // To keep UI uniform, we can just supply both
+                    debit.put("amount", coverageAmount);
                     debit.put("premiumAmount", p.getAmount());
                     debit.put("coverageAmount", coverageAmount);
                     debit.put("userEmail", p.getUser() != null ? p.getUser().getEmail() : "—");
                     debit.put("userName", p.getUser() != null ? p.getUser().getName() : "—");
+                    debit.put("location", location);
                     debit.put("date", p.getClaimedAt() != null ? p.getClaimedAt().toString() : p.getCreatedAt().toString());
                     debit.put("status", "DEBIT");
                     debit.put("upiId", upiId);
                     debit.put("method", method);
-                    debit.put("cycleStatus", cycleStatus);
+                    debit.put("cycleStatus", "Claimed");
                     transactions.add(debit);
                 }
             }
 
-            // Sort by date descending (most recent first) - simple string sort works for ISO dates
+            // ── 2. Add DEBIT entries for each CLAIMED disaster (ClaimRequest) ──
+            List<com.example.aiinsurance.model.ClaimRequest> allDisasterClaims = claimRequestRepository.findAll();
+            for (com.example.aiinsurance.model.ClaimRequest cr : allDisasterClaims) {
+                if (cr.isClaimed()) {
+                    String planName = cr.getSubscription() != null && cr.getSubscription().getPlan() != null 
+                                      ? cr.getSubscription().getPlan().getName() + " Plan" : "Insurance Plan";
+                    String location = "—";
+                    if (cr.getUser() != null && cr.getUser().getState() != null) {
+                        location = (cr.getUser().getDistrict() != null ? cr.getUser().getDistrict() + ", " : "") + cr.getUser().getState();
+                    }
+
+                    Map<String, Object> debit = new LinkedHashMap<>();
+                    debit.put("id", "disaster-" + cr.getId());
+                    debit.put("type", "DEBIT");
+                    debit.put("description", "Disaster payout – " + planName + " (" + cr.getSituation() + ")");
+                    debit.put("amount", cr.getAmount());
+                    debit.put("premiumAmount", 0.0); // Not a premium refund
+                    debit.put("coverageAmount", cr.getAmount());
+                    debit.put("userEmail", cr.getUser() != null ? cr.getUser().getEmail() : "—");
+                    debit.put("userName", cr.getUser() != null ? cr.getUser().getName() : "—");
+                    debit.put("location", location);
+                    debit.put("date", cr.getCreatedAt() != null ? cr.getCreatedAt().toString() : null);
+                    debit.put("status", "DEBIT");
+                    debit.put("upiId", "—"); // Disaster claims are wallet-to-wallet
+                    debit.put("method", "WALLET");
+                    debit.put("cycleStatus", "Claimed");
+                    transactions.add(debit);
+                }
+            }
+
+
+            // Sort by date descending
             transactions.sort((a, b) -> {
                 String da = (String) a.get("date");
                 String db = (String) b.get("date");
@@ -403,11 +478,23 @@ public class AdminController {
                 return db.compareTo(da);
             });
 
+            double totalCredits = transactions.stream()
+                    .filter(t -> "CREDIT".equals(t.get("type")))
+                    .mapToDouble(t -> ((Number) t.get("amount")).doubleValue())
+                    .sum();
+            double totalDebits = transactions.stream()
+                    .filter(t -> "DEBIT".equals(t.get("type")))
+                    .mapToDouble(t -> ((Number) t.get("amount")).doubleValue())
+                    .sum();
+
             Map<String, Object> resp = new LinkedHashMap<>();
             resp.put("walletBalance", admin.getWalletBalance());
+            resp.put("totalPremiumCollected", totalCredits);
+            resp.put("totalClaimsPaid", totalDebits);
+            resp.put("computedBalance", Math.max(0, totalCredits - totalDebits));
             resp.put("transactions", transactions);
-            resp.put("totalCredits", transactions.stream().filter(t -> "CREDIT".equals(t.get("type"))).mapToDouble(t -> (double) t.get("amount")).sum());
-            resp.put("totalDebits", transactions.stream().filter(t -> "DEBIT".equals(t.get("type"))).mapToDouble(t -> (double) t.get("amount")).sum());
+            resp.put("totalCredits", totalCredits);
+            resp.put("totalDebits", totalDebits);
 
             return ResponseEntity.ok(resp);
         } catch (Exception e) {

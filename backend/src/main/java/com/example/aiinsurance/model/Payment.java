@@ -30,7 +30,7 @@ public class Payment {
     private Method method;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private Status status;
 
     // external gateway reference (Razorpay order/payment id or UPI ref)
