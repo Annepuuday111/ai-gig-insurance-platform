@@ -24,6 +24,7 @@ public class Query {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @com.fasterxml.jackson.annotation.JsonProperty("isFromAdmin")
     @Column(nullable = false)
     private boolean isFromAdmin = false;
 
@@ -68,6 +69,7 @@ public class Query {
     public LocalDateTime getAnsweredAt() { return answeredAt; }
     public void setAnsweredAt(LocalDateTime answeredAt) { this.answeredAt = answeredAt; }
 
+    @com.fasterxml.jackson.annotation.JsonProperty("isFromAdmin")
     public boolean isFromAdmin() { return isFromAdmin; }
     public void setFromAdmin(boolean fromAdmin) { isFromAdmin = fromAdmin; }
 

@@ -35,7 +35,7 @@ export default function ChatSupport() {
     try {
       const qs = await api.getMyQueries();
       const msgs = qs
-        .map(q => q.isFromAdmin
+        .map(q => (q.isFromAdmin || q.fromAdmin)
           ? { id: q.id, from: 'agent', text: q.answer,   time: q.createdAt, replyTo: q.replyToMessage }
           : { id: q.id, from: 'user',  text: q.question, time: q.createdAt }
         )

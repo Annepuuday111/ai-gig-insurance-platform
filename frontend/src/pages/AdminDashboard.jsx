@@ -11,6 +11,7 @@ import {
   adminDeletePayment,
   adminListQueries,
   adminReplyQuery,
+  adminClearUserChat,
   adminChangeCredentials,
   getPartners,
   adminAddPartner,
@@ -49,6 +50,7 @@ function ReplyForm({ onReply }) {
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onReply(text); setText(""); } }}
         rows={3}
         className="w-full border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-white resize-none"
         placeholder="Type your answer here…"
@@ -363,6 +365,7 @@ export default function AdminDashboard() {
   const [selectedChatUser, setSelectedChatUser] = useState(null);
   const [chatText, setChatText] = useState("");
   const [replyMessageUser, setReplyMessageUser] = useState(null);
+  const [isSending, setIsSending] = useState(false);
 
   const carouselRef = useRef(null);
   const chatScrollRef = useRef(null);
@@ -474,16 +477,35 @@ export default function AdminDashboard() {
   const handleRejectClaimReq = async (id) => { if (!window.confirm("Reject this claim request?")) return; await adminRejectClaimRequest(id); loadClaimRequests(); showMsg("Claim request rejected", "error"); };
 
   const handleReplyChat = async () => {
-    if (!selectedChatUser || !chatText.trim()) return;
-    const refQuery = queries
-      .filter(q => q.user?.id === selectedChatUser.id && !q.isFromAdmin)
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-    if (!refQuery) return;
-    await adminReplyQuery(refQuery.id, { answer: chatText, replyToMessage: replyMessageUser ? replyMessageUser.text : null });
-    setChatText("");
-    setReplyMessageUser(null);
-    await loadQueries();
-    showMsg("Reply sent!");
+    // Get the actual active user being displayed (consistent with renderQueries)
+    let targetUser = selectedChatUser;
+    if (!targetUser && queries.length > 0) {
+      const usersWithQueries = Array.from(new Set(queries.map(q => q.user?.id)));
+      if (usersWithQueries.length > 0) {
+        const firstUserId = usersWithQueries[0];
+        targetUser = queries.find(q => q.user?.id === firstUserId)?.user;
+      }
+    }
+
+    if (!targetUser || !chatText.trim() || isSending) return;
+
+    setIsSending(true);
+    try {
+      const refQuery = queries
+        .filter(q => q.user?.id === targetUser.id && !(q.isFromAdmin || q.fromAdmin))
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+      
+      if (!refQuery) return;
+      await adminReplyQuery(refQuery.id, { answer: chatText, replyToMessage: replyMessageUser ? replyMessageUser.text : null });
+      setChatText("");
+      setReplyMessageUser(null);
+      await loadQueries();
+      showMsg("Reply sent!");
+    } catch (e) {
+      showMsg("Failed to send reply", "error");
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const clearAdminChat = async (user) => {
@@ -654,15 +676,16 @@ export default function AdminDashboard() {
   };
 
   const pendingApprovals = payments.filter(p => p.status === "PENDING").length;
-  // A conversation is "unanswered" when the LAST message from that user is not followed by an admin reply
   const unansweredQ = (() => {
-    const userIds = [...new Set(queries.filter(q => !q.isFromAdmin).map(q => q.user?.id))];
+    // Count users whose latest message is NOT from an admin
+    const userIds = [...new Set(queries.map(q => q.user?.id))].filter(Boolean);
     return userIds.filter(uid => {
       const userQs = queries.filter(q => q.user?.id === uid);
-      if (!userQs.length) return false;
+      if (userQs.length === 0) return false;
       const sorted = [...userQs].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      // If the most recent record in this thread is a user message (not admin), it's unanswered
-      return !sorted[0].isFromAdmin;
+      const lastMsg = sorted[0];
+      // It's unanswered if the last message is NOT from admin (check both property variations)
+      return !(lastMsg.isFromAdmin || lastMsg.fromAdmin);
     }).length;
   })();
   const pendingClaimReqs = claimRequests.filter(c => c.status === "PENDING").length;
@@ -1047,25 +1070,19 @@ export default function AdminDashboard() {
         // Consolidate all messages for this user into a single sorted timeline
         const timeline = [];
         userQs.forEach(q => {
-          if (q.isFromAdmin) {
+          if (q.isFromAdmin || q.fromAdmin) {
             timeline.push({ from: 'agent', text: q.answer, time: q.createdAt });
           } else {
             timeline.push({ from: 'user', text: q.question, time: q.createdAt });
-            // Legacy answer check - don't duplicate if a separate admin record exists for this answer
-            if (q.answer && !userQs.some(uq => uq.isFromAdmin && uq.answer === q.answer)) {
-              timeline.push({ from: 'agent', text: q.answer, time: q.answeredAt || q.createdAt });
-            }
           }
         });
-        
+
         // Sort timeline to find the TRUE last message
         timeline.sort((a,b) => new Date(a.time) - new Date(b.time));
         const lastMsg = timeline[timeline.length - 1];
-        
-        // Unread = User questions that don't have an answer in the same record 
-        // AND there are no newer admin records
-        const unansweredQs = userQs.filter(q => !q.isFromAdmin && !q.answer);
-        const unreadCount = unansweredQs.length;
+
+        const hasUnanswered = lastMsg && lastMsg.from === 'user';
+        const unreadCount = hasUnanswered ? 1 : 0;
         
         const lastText = lastMsg.from === 'agent' 
           ? `You: ${lastMsg.text}` 
@@ -1175,14 +1192,10 @@ export default function AdminDashboard() {
                 {(() => {
                   const unified = [];
                   activeMessages.forEach(q => {
-                    if (q.isFromAdmin) {
+                    if (q.isFromAdmin || q.fromAdmin) {
                       unified.push({ id: q.id, from: 'agent', text: q.answer, time: q.createdAt, replyTo: q.replyToMessage });
                     } else {
                       unified.push({ id: q.id, from: 'user', text: q.question, time: q.createdAt });
-                      // If it's a legacy record with an answer but no separate record exists
-                      if (q.answer && !activeMessages.some(am => am.isFromAdmin && am.answer === q.answer)) {
-                        unified.push({ from: 'agent', text: q.answer, time: q.answeredAt || q.createdAt });
-                      }
                     }
                   });
                   unified.sort((a,b) => new Date(a.time) - new Date(b.time));
@@ -1252,24 +1265,38 @@ export default function AdminDashboard() {
                     </button>
                   </div>
                 )}
-                <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-2xl px-2 py-2 focus-within:ring-2 focus-within:ring-green-400 focus-within:bg-white transition-all">
+                <div className="flex items-center gap-3">
                   <textarea
                     id="chatInput"
                     value={chatText}
                     onChange={(e) => setChatText(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleReplyChat(); } }}
                     placeholder="Type your reply here..."
-                    className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-2 px-3 resize-none max-h-32 text-gray-700"
-                    rows={1}
+                    style={{
+                      flex: 1, background: "#f8fafc", border: "1.5px solid #e2e8f0", borderRadius: 16,
+                      padding: "12px 16px", outline: "none", fontSize: 14, minHeight: 48, maxHeight: 120,
+                      resize: "none", transition: "all 0.2s"
+                    }}
+                    onFocus={e => { e.target.style.borderColor = "#16a34a"; e.target.style.background = "#fff"; }}
+                    onBlur={e  => { e.target.style.borderColor = "#e2e8f0";   e.target.style.background = "#f8fafc"; }}
                   />
                   <button
                     onClick={handleReplyChat}
-                    disabled={!chatText.trim()}
-                    className="w-10 h-10 bg-green-500 hover:bg-green-600 text-white rounded-xl flex items-center justify-center transition disabled:opacity-50 disabled:bg-gray-300 shadow-sm"
+                    disabled={!chatText.trim() || isSending}
+                    style={{
+                      width: 48, height: 48, borderRadius: 14,
+                      background: (chatText.trim() && !isSending) ? "linear-gradient(135deg,#16a34a,#4ade80)" : "#f1f5f9",
+                      color: chatText.trim() ? "#fff" : "#cbd5e1",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      border: "none", cursor: chatText.trim() ? "pointer" : "default",
+                      transition: "all 0.2s",
+                      boxShadow: chatText.trim() ? "0 4px 12px rgba(0,0,0,0.1)" : "none"
+                    }}
                   >
-                    <FaReply />
+                    <FaReply size={18} />
                   </button>
                 </div>
+                <p className="text-[10px] text-gray-400 text-center mt-1">Press <strong>Enter</strong> to send</p>
               </div>
             </>
           ) : (
