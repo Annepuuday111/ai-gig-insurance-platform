@@ -296,9 +296,9 @@ export default function Dashboard() {
                 accent="#f59e0b"
               />
               <DashboardCard
-                title="Wallet Balance"
+                title="Your Wallet"
                 value={`₹${(user.walletBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                small="Available for payout"
+                small={`Pool: ₹${(summary?.totalInsuranceFund || 0).toLocaleString("en-IN")}`}
                 icon={<IconMoney className="w-5 h-5" />}
                 accent="#10b981"
               />

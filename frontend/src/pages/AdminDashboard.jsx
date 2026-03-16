@@ -32,7 +32,7 @@ import {
   FaBell, FaUserCircle, FaBars, FaTimes,
   FaPlus, FaGlobe, FaBuilding, FaLink,
   FaCloudRain, FaWallet, FaArrowUp, FaArrowDown,
-  FaSeedling, FaLightbulb, FaRocket, FaCrown,
+  FaSeedling, FaLightbulb, FaRocket, FaCrown, FaCalculator,
 } from "react-icons/fa";
 
 /* ══════════════════════════════════════════
@@ -436,7 +436,7 @@ export default function AdminDashboard() {
     try {
       const res = await adminApprovePayment(id);
       if (res?.error) throw new Error(res.error);
-      await loadPayments();
+      await Promise.all([loadPayments(), loadWallet()]);
       showMsg("Payment approved!");
     } catch (err) {
       showMsg(err.message || "Failed to approve payment", "error");
@@ -639,13 +639,13 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-3">
         <StatCard icon={<FaUsers />} label="Total Users" value={users.length} bgColor="bg-blue-50" iconColor="text-blue-500" sub="Registered accounts" />
         <StatCard icon={<FaClipboardList />} label="Active Plans" value={plans.length} bgColor="bg-teal-50" iconColor="text-teal-500" sub="Insurance plans" />
         <StatCard icon={<FaGlobe />} label="Platforms" value={partners.length} bgColor="bg-indigo-50" iconColor="text-indigo-500" sub="Supported partners" />
-        <StatCard icon={<FaWallet />} label="Total Funds" value={`₹${(adminWallet.walletBalance || 0).toLocaleString("en-IN")}`} bgColor="bg-emerald-50" iconColor="text-emerald-500" sub="Combined admin wallet" />
+        <StatCard icon={<FaWallet />} label="Total Funds" value={`₹${(adminWallet.walletBalance || 0).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} bgColor="bg-emerald-50" iconColor="text-emerald-500" sub="Combined admin wallet" />
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
         <StatCard icon={<FaHourglassHalf />} label="Pending" value={pendingApprovals + pendingClaimReqs} bgColor="bg-amber-50" iconColor="text-amber-500" sub="Awaiting approval" />
         <StatCard icon={<FaCheckCircle />} label="Approved" value={payments.filter(p => p.status === "APPROVED").length + claimRequests.filter(c => c.status === "APPROVED").length} bgColor="bg-green-50" iconColor="text-green-500" sub="Successfully processed" />
         <StatCard icon={<FaTimesCircle />} label="Rejected" value={payments.filter(p => p.status === "REJECTED").length + claimRequests.filter(c => c.status === "REJECTED").length} bgColor="bg-red-50" iconColor="text-red-500" sub="Declined requests" />
@@ -698,9 +698,9 @@ export default function AdminDashboard() {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-gray-700 text-sm truncate">{p.user?.email}</p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="font-semibold text-gray-700 text-sm">₹{p.amount}</span>
-                  <button onClick={() => handleApprove(p.id)} className="px-2.5 py-1 bg-green-50 text-green-600 hover:bg-green-100 text-xs rounded-lg font-medium transition border border-green-200">
+                <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 shrink-0">
+                  <span className="font-bold text-gray-700 text-sm">₹{p.amount}</span>
+                  <button onClick={() => handleApprove(p.id)} className="px-3 py-1 bg-green-50 text-green-600 hover:bg-green-100 text-[10px] sm:text-xs rounded-lg font-bold transition border border-green-200 uppercase tracking-tighter sm:tracking-normal">
                     Approve
                   </button>
                 </div>
@@ -1489,7 +1489,7 @@ export default function AdminDashboard() {
     return (
       <div className="space-y-5">
         {/* Stats row */}
-        <div className="grid grid-cols-3 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           {[
             { label: "Pending", count: pending.length, bg: "bg-amber-50", border: "border-amber-100", icon: <FaHourglassHalf className="text-amber-400" />, num: "text-amber-600", lbl: "text-amber-500" },
             { label: "Approved", count: approved.length, bg: "bg-green-50", border: "border-green-100", icon: <FaCheckCircle className="text-green-500" />, num: "text-green-600", lbl: "text-green-500" },
@@ -1720,11 +1720,36 @@ export default function AdminDashboard() {
                 </div>
                 <p className="text-indigo-200 text-xs font-semibold uppercase tracking-widest">Insurance Fund</p>
               </div>
-              <p className="text-white/70 text-sm mb-1">Admin Wallet Balance</p>
+                <p className="text-white/70 text-sm mb-1">Current Pool Balance (Net)</p>
               <p className="text-4xl sm:text-5xl font-black text-white tracking-tight">
                 ₹{balance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
-              <p className="text-indigo-200 text-xs mt-2">Total accumulated insurance fund</p>
+              <div className="mt-3 p-3 bg-white/10 rounded-xl border border-white/10 backdrop-blur-md">
+                <p className="text-white/80 text-[11px] font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <FaCalculator className="text-green-300" /> Fund Calculation Logic
+                </p>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-3 text-white/90 text-sm">
+                   <div className="flex flex-col bg-white/5 p-2 rounded-lg border border-white/5">
+                     <span className="text-[10px] text-indigo-200 uppercase font-black">Old Premiums</span>
+                     <span className="font-bold">₹{(adminWallet.oldPremiumCollected || 0).toLocaleString("en-IN")}</span>
+                   </div>
+                   <span className="text-indigo-300 font-black flex items-center justify-center w-6">+</span>
+                   <div className="flex flex-col bg-white/5 p-2 rounded-lg border border-white/5">
+                     <span className="text-[10px] text-indigo-200 uppercase font-black">New Premiums</span>
+                     <span className="font-bold">₹{(adminWallet.newPremiumCollected || 0).toLocaleString("en-IN")}</span>
+                   </div>
+                   <span className="text-indigo-300 font-black flex items-center justify-center w-6">=</span>
+                   <div className="flex flex-col px-3 py-2 bg-white/10 rounded-lg border border-white/20">
+                     <span className="text-[10px] text-green-300 uppercase font-black">Gross Total</span>
+                     <span className="font-black">₹{(adminWallet.totalPremiumCollected || 0).toLocaleString("en-IN")}</span>
+                   </div>
+                   <span className="text-red-300 font-black flex items-center justify-center w-6">-</span>
+                   <div className="flex flex-col bg-white/5 p-2 rounded-lg border border-white/5">
+                     <span className="text-[10px] text-red-200 uppercase font-black">Total Claims</span>
+                     <span className="font-bold">₹{(adminWallet.totalClaimsPaid || 0).toLocaleString("en-IN")}</span>
+                   </div>
+                </div>
+              </div>
             </div>
 
             <div className="flex flex-row sm:flex-col gap-3">
@@ -1749,26 +1774,26 @@ export default function AdminDashboard() {
         </div>
 
         {/* Summary mini cards */}
-        <div className="grid grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5">
             <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold mb-1">Total Premiums</p>
-            <p className="text-2xl font-black text-indigo-600">₹{(adminWallet.totalPremiumCollected || 0).toLocaleString("en-IN")}</p>
-            <p className="text-xs text-gray-400 mt-1">Total funds collected</p>
+            <p className="text-xl sm:text-2xl font-black text-indigo-600">₹{(adminWallet.totalPremiumCollected || 0).toLocaleString("en-IN")}</p>
+            <p className="text-[10px] sm:text-xs text-gray-400 mt-1">Total funds collected</p>
           </div>
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5">
             <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold mb-1">Total Claims Paid</p>
-            <p className="text-2xl font-black text-red-500">₹{(adminWallet.totalClaimsPaid || 0).toLocaleString("en-IN")}</p>
-            <p className="text-xs text-gray-400 mt-1">Total fund out-flow</p>
+            <p className="text-xl sm:text-2xl font-black text-red-500">₹{(adminWallet.totalClaimsPaid || 0).toLocaleString("en-IN")}</p>
+            <p className="text-[10px] sm:text-xs text-gray-400 mt-1">Total fund out-flow</p>
           </div>
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5">
             <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold mb-1">Status</p>
-            <p className="text-2xl font-black text-green-500">{adminWallet.totalPremiumCollected >= adminWallet.totalClaimsPaid ? "Sustainable" : "At Risk"}</p>
-            <p className="text-xs text-gray-400 mt-1">Pool health status</p>
+            <p className="text-xl sm:text-2xl font-black text-green-500">{(adminWallet.totalPremiumCollected || 0) >= (adminWallet.totalClaimsPaid || 0) ? "Sustainable" : "At Risk"}</p>
+            <p className="text-[10px] sm:text-xs text-gray-400 mt-1">Pool health status</p>
           </div>
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5">
             <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold mb-1">Transactions</p>
-            <p className="text-2xl font-black text-gray-800">{txns.length}</p>
-            <p className="text-xs text-gray-400 mt-1">Total ledger entries</p>
+            <p className="text-xl sm:text-2xl font-black text-gray-800">{txns.length}</p>
+            <p className="text-[10px] sm:text-xs text-gray-400 mt-1">Total ledger entries</p>
           </div>
         </div>
 
@@ -1807,6 +1832,7 @@ export default function AdminDashboard() {
                     <th className="px-5 py-3 text-left font-semibold">User</th>
                     <th className="px-5 py-3 text-right font-semibold">Premium</th>
                     <th className="px-5 py-3 text-right font-semibold">Coverage</th>
+                    <th className="px-5 py-3 text-right font-semibold">Net Balance</th>
                     <th className="px-5 py-3 text-left font-semibold">Payment / UPI</th>
                     <th className="px-5 py-3 text-left font-semibold">Cycle Status</th>
                     <th className="px-5 py-3 text-left font-semibold">Date</th>
@@ -1853,6 +1879,11 @@ export default function AdminDashboard() {
                         <td className="px-5 py-3.5 text-right">
                           <span className={`font-black text-sm ${!isCredit ? 'text-red-500' : 'text-indigo-600'}`}>
                             ₹{Number(coverageAmount).toLocaleString("en-IN")}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5 text-right">
+                          <span className="font-extrabold text-slate-900 text-sm">
+                            ₹{Number(txn.runningBalance || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                           </span>
                         </td>
                         <td className="px-5 py-3.5">

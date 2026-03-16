@@ -264,22 +264,9 @@ public class AdminController {
             return ResponseEntity.badRequest().body(Map.of("error", "Only pending payments can be approved"));
         }
 
-        // Before approving, check if Admin Wallet has sufficient funds to cover the potential claim
-        double coverageAmount = 0.0;
-        if (p.getSubscription() != null && p.getSubscription().getPlan() != null) {
-            coverageAmount = p.getSubscription().getPlan().getCoverageAmount();
-        } else {
-            coverageAmount = p.getAmount(); // fallback
-        }
-
-        try {
-            Admin admin = getAdminWallet();
-            if (admin.getWalletBalance() < coverageAmount) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Insufficient funds in Admin Wallet to cover this policy (Requires ₹" + coverageAmount + ")"));
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", "Could not verify admin wallet balance."));
-        }
+        // Admin Wallet (Insurance Fund) accumulates all premiums to cover future claims.
+        // We do NOT block premium collection if the fund is low; we want it to grow.
+        // The solvency check is moved to a warning or purely informational.
 
 
         // 1. Approve the payment
@@ -287,12 +274,25 @@ public class AdminController {
         paymentRepository.save(p);
 
         // 2. Credit the premium amount to Admin Wallet (insurance fund)
+        // If the method was WALLET, we MUST deduct from the user's wallet balance.
         try {
             Admin admin = getAdminWallet();
             admin.setWalletBalance(admin.getWalletBalance() + p.getAmount());
             adminRepository.save(admin);
+
+            if (p.getMethod() == Payment.Method.WALLET) {
+                User user = p.getUser();
+                if (user.getWalletBalance() < p.getAmount()) {
+                    // This should have been checked at submission, but let's be safe
+                    p.setStatus(Payment.Status.FAILED);
+                    paymentRepository.save(p);
+                    return ResponseEntity.badRequest().body(Map.of("error", "User has insufficient wallet balance to pay this premium."));
+                }
+                user.setWalletBalance(user.getWalletBalance() - p.getAmount());
+                userService.updateUser(user);
+            }
         } catch (Exception e) {
-            System.err.println("Warning: Could not credit admin wallet: " + e.getMessage());
+            System.err.println("Warning: Could not update wallet balances: " + e.getMessage());
         }
 
         // 3. Activate the subscription
@@ -311,12 +311,14 @@ public class AdminController {
         // 4. Notify user that insurance is now ACTIVE
         try {
             User user = p.getUser();
+            double covAmt = (p.getSubscription() != null && p.getSubscription().getPlan() != null)
+                             ? p.getSubscription().getPlan().getCoverageAmount() : p.getAmount();
 
             Notification n = new Notification();
             n.setUser(user);
             n.setTitle("🛡️ Insurance Policy Activated!");
             n.setMessage("Your insurance policy is now ACTIVE! You are covered for ₹" +
-                    (long) coverageAmount + ". You can now file a claim directly from your dashboard.");
+                    (long) covAmt + ". You can now file a claim directly from your dashboard.");
             n.setType("SUCCESS");
             notificationRepository.save(n);
         } catch (Exception e) {
@@ -376,7 +378,8 @@ public class AdminController {
     @GetMapping("/admin/wallet")
     public ResponseEntity<?> getAdminWalletInfo() {
         try {
-            Admin admin = getAdminWallet();
+            getAdminWallet();
+
 
             List<Map<String, Object>> transactions = new ArrayList<>();
 
@@ -424,7 +427,7 @@ public class AdminController {
                 }
 
                 // DEBIT: regular (non-AI) claim payout
-                if (p.getStatus() == Payment.Status.CLAIMED) {
+                if (p.getStatus() == Payment.Status.CLAIMED || p.isClaimed()) {
                     Map<String, Object> debit = new LinkedHashMap<>();
                     debit.put("id", "claim-pay-" + p.getId());
                     debit.put("type", "DEBIT");
@@ -475,7 +478,32 @@ public class AdminController {
             }
 
 
-            // Sort by date descending
+            // Sort by date ascending to calculate running balance
+            transactions.sort((a, b) -> {
+                String da = (String) a.get("date");
+                String db = (String) b.get("date");
+                if (da == null) return -1;
+                if (db == null) return 1;
+                return da.compareTo(db);
+            });
+
+            double runningPool = 0.0;
+            for (Map<String, Object> t : transactions) {
+                Object amtObj = t.get("amount");
+                double amt = 0.0;
+                if (amtObj instanceof Number) {
+                    amt = ((Number) amtObj).doubleValue();
+                }
+                
+                if ("CREDIT".equals(t.get("type"))) {
+                    runningPool += amt;
+                } else {
+                    runningPool -= amt;
+                }
+                t.put("runningBalance", runningPool);
+            }
+
+            // Now sort by date descending for the UI view
             transactions.sort((a, b) -> {
                 String da = (String) a.get("date");
                 String db = (String) b.get("date");
@@ -484,23 +512,75 @@ public class AdminController {
                 return db.compareTo(da);
             });
 
-            double totalCredits = transactions.stream()
-                    .filter(t -> "CREDIT".equals(t.get("type")))
-                    .mapToDouble(t -> ((Number) t.get("amount")).doubleValue())
-                    .sum();
-            double totalDebits = transactions.stream()
-                    .filter(t -> "DEBIT".equals(t.get("type")))
-                    .mapToDouble(t -> ((Number) t.get("amount")).doubleValue())
-                    .sum();
+            // ── 3. Force accurate totals from fresh records ──
+            double totalPremiums = 0.0;
+            double oldPremiums = 0.0;
+            double newPremiums = 0.0;
+            double totalRegularClaims = 0.0;
+            double totalDisasterClaims = 0.0;
+
+            java.time.LocalDateTime oneWeekAgo = java.time.LocalDateTime.now().minusDays(7);
+
+            for (Payment p : allPayments) {
+                double amt = (p.getAmount() != null ? p.getAmount() : 0.0);
+                // Sum Premiums (Approved/Success/Claimed)
+                if (p.getStatus() == Payment.Status.APPROVED || 
+                    p.getStatus() == Payment.Status.CLAIMED || 
+                    p.getStatus() == Payment.Status.SUCCESS) {
+                    
+                    totalPremiums += amt;
+                    
+                    if (p.getCreatedAt() != null && p.getCreatedAt().isBefore(oneWeekAgo)) {
+                        oldPremiums += amt;
+                    } else {
+                        newPremiums += amt;
+                    }
+                }
+
+                // Sum Claims Paid (Regular)
+                if (p.isClaimed() || p.getStatus() == Payment.Status.CLAIMED) {
+                    double covAmt = 0.0;
+                    if (p.getSubscription() != null && p.getSubscription().getPlan() != null) {
+                        covAmt = p.getSubscription().getPlan().getCoverageAmount();
+                    } else {
+                        covAmt = amt; // fallback
+                    }
+                    totalRegularClaims += covAmt;
+                }
+            }
+
+            for (com.example.aiinsurance.model.ClaimRequest cr : allDisasterClaims) {
+                // Sum Claims Paid (Disaster) - Approved status counts as a payout engagement
+                if (cr.isClaimed() || (cr.getStatus() != null && cr.getStatus().name().equals("APPROVED"))) {
+                    totalDisasterClaims += (cr.getAmount() != null ? cr.getAmount() : 0.0);
+                }
+            }
+
+            double computedBalance = totalPremiums - totalRegularClaims - totalDisasterClaims;
+            // The wallet balance is the cumulative total (Old Amount + New Amount - Claims)
+            double finalWalletBalance = computedBalance; // Allow looking at the actual net balance even if it's low
+
+            // Synchronize the Admin DB record with the calculated balance to ensure persistence
+            try {
+                Admin adminRecord = getAdminWallet();
+                adminRecord.setWalletBalance(finalWalletBalance);
+                adminRepository.save(adminRecord);
+            } catch (Exception e) {
+                System.err.println("Warning: Syncing admin wallet balance failed: " + e.getMessage());
+            }
 
             Map<String, Object> resp = new LinkedHashMap<>();
-            resp.put("walletBalance", admin.getWalletBalance());
-            resp.put("totalPremiumCollected", totalCredits);
-            resp.put("totalClaimsPaid", totalDebits);
-            resp.put("computedBalance", Math.max(0, totalCredits - totalDebits));
+            resp.put("walletBalance", finalWalletBalance);
+            resp.put("totalPremiumCollected", totalPremiums);
+            resp.put("oldPremiumCollected", oldPremiums);
+            resp.put("newPremiumCollected", newPremiums);
+            resp.put("totalClaimsPaid", totalRegularClaims + totalDisasterClaims);
+            resp.put("totalRegularClaims", totalRegularClaims);
+            resp.put("totalDisasterClaims", totalDisasterClaims);
+            resp.put("computedBalance", computedBalance);
             resp.put("transactions", transactions);
-            resp.put("totalCredits", totalCredits);
-            resp.put("totalDebits", totalDebits);
+            resp.put("totalCredits", totalPremiums);
+            resp.put("totalDebits", totalRegularClaims + totalDisasterClaims);
 
             return ResponseEntity.ok(resp);
         } catch (Exception e) {

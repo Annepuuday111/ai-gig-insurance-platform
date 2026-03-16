@@ -17,6 +17,7 @@ public class SubscriptionService {
     @Autowired private PaymentRepository       paymentRepository;
     @Autowired private PlanRepository          planRepository;
     @Autowired private ClaimRequestRepository   claimRequestRepository;
+    @Autowired private AdminRepository          adminRepository;
 
 
     /**
@@ -167,6 +168,14 @@ public class SubscriptionService {
             
         summary.put("totalPayout", totalPayout + totalClaimReqPayout);
         summary.put("totalClaims", (int) (payments.stream().filter(p -> p.getStatus() == Payment.Status.CLAIMED).count() + claimReqs.stream().filter(ClaimRequest::isClaimed).count()));
+
+        // Add Total Insurance Fund (Admin Pool) for transparency
+        List<Admin> admins = adminRepository.findAll();
+        if (!admins.isEmpty()) {
+            summary.put("totalInsuranceFund", admins.get(0).getWalletBalance());
+        } else {
+            summary.put("totalInsuranceFund", 0.0);
+        }
 
         return summary;
     }
