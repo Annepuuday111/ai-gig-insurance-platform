@@ -29,6 +29,9 @@ public class Plan {
     @Column(nullable = false)
     private Integer trialDays;
 
+    @Column(columnDefinition = "TEXT")
+    private String parametricTriggers; // JSON string for auto-claim conditions
+
     public Plan() {}
 
     public Plan(String name, Double weeklyPremium, Double coverageAmount,
@@ -61,4 +64,7 @@ public class Plan {
 
     public Integer getTrialDays() { return trialDays; }
     public void setTrialDays(Integer trialDays) { this.trialDays = trialDays; }
+
+    public String getParametricTriggers() { return parametricTriggers; }
+    public void setParametricTriggers(String parametricTriggers) { this.parametricTriggers = parametricTriggers; }
 }

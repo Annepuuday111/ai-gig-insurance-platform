@@ -206,6 +206,9 @@ public class AdminController {
                     plan.setFeatures(fObj.toString());
                 }
             }
+            if (updates.containsKey("parametricTriggers")) {
+                plan.setParametricTriggers(updates.get("parametricTriggers").toString());
+            }
             Plan saved = planService.savePlan(plan);
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
@@ -233,6 +236,11 @@ public class AdminController {
             } else {
                 p.setFeatures("Standard Coverage");
             }
+
+            if (body.containsKey("parametricTriggers")) {
+                p.setParametricTriggers(body.get("parametricTriggers").toString());
+            }
+
             Plan saved = planService.savePlan(p);
             return ResponseEntity.ok(saved);
         } catch (Exception e) {

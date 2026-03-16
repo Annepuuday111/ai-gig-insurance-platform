@@ -7,6 +7,7 @@ import com.example.aiinsurance.repository.PaymentRepository;
 import com.example.aiinsurance.repository.NotificationRepository;
 import com.example.aiinsurance.repository.SubscriptionRepository;
 import com.example.aiinsurance.service.AIService;
+import com.example.aiinsurance.service.ClaimService;
 import com.example.aiinsurance.service.UserService;
 import com.example.aiinsurance.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,7 @@ import java.util.Optional;
 public class ClaimRequestController {
 
     @Autowired private AIService              aiService;
+    @Autowired private ClaimService             claimService;
     @Autowired private ClaimRequestRepository claimRequestRepository;
     @Autowired private NotificationRepository   notificationRepository;
     @Autowired private SubscriptionRepository   subscriptionRepository;
@@ -60,13 +62,11 @@ public class ClaimRequestController {
 
         // ── 🤖 AI FRAUD ANALYSIS ──
         try {
-            // Predict fraud risk using AI microservice
-            @SuppressWarnings("unchecked")
             Map<String, Object> aiResult = (Map<String, Object>) aiService.detectFraud(
                 user.getId(), 
                 req.getSituation(),
-                user.getState(), user.getState(), // simple mock location check
-                true, 30, 0.8, // passing high weather risk to correlate
+                user.getState(), user.getState(), 
+                true, 30, 0.8, 
                 req.getAmount(), req.getAmount(),
                 30, 0
             );
@@ -76,7 +76,6 @@ public class ClaimRequestController {
                 String recommendation = (String) aiResult.get("action");
                 Double fraudScore = Double.valueOf(fraudAnalysis.get("fraud_score").toString());
                 
-                // If AI flags it as highly suspicious, we could auto-reject or flag for admin
                 if ("REJECT_AUTO".equals(recommendation)) {
                     return ResponseEntity.status(403).body(Map.of(
                         "error", "Claim flagged as highly suspicious by AI engine. Please contact support.",
@@ -84,7 +83,6 @@ public class ClaimRequestController {
                     ));
                 }
                 
-                // Append AI notes to description for admin to see
                 req.setDescription(req.getDescription() + "\n\n[AI ANALYTICS]: Risk Score " + 
                     Math.round(fraudScore * 100) + "%. " + 
                     recommendation.replace("_", " ") + ".");
@@ -93,8 +91,18 @@ public class ClaimRequestController {
             System.err.println("AI Fraud Analysis skipped (Service Offline): " + e.getMessage());
         }
 
+        // ── 🛡️ PARAMETRIC TRIGGER CHECK (AUTO-APPROVE/REJECT) ──
+        String triggerResult = claimService.evaluateTriggers(req, user);
+        if ("APPROVE".equals(triggerResult)) {
+            claimService.approveRequestInternal(req);
+            return ResponseEntity.ok(Map.of("message", "Trigger matched! Claim approved automatically by AI monitoring.", "request", req));
+        } else if ("REJECT".equals(triggerResult)) {
+            claimService.rejectRequestInternal(req, "Weather thresholds for " + req.getSituation() + " were not met at your location. Claim auto-rejected.");
+            return ResponseEntity.badRequest().body(Map.of("error", "Claim auto-rejected: Weather thresholds for " + req.getSituation() + " were not met."));
+        }
+
         claimRequestRepository.save(req);
-        return ResponseEntity.ok(Map.of("message", "Claim request submitted successfully (AI Verified)", "request", req));
+        return ResponseEntity.ok(Map.of("message", "Claim request submitted successfully. Our AI will review the situation.", "request", req));
     }
 
     @GetMapping("/my")
@@ -116,64 +124,14 @@ public class ClaimRequestController {
         if (req.getStatus() == ClaimRequest.Status.APPROVED || req.isClaimed()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Claim is already approved or claimed"));
         }
-
-        User user = req.getUser();
-
-        // 1. Add to user wallet
-        User managedUser = userService.findById(user.getId()).orElse(user);
-        managedUser.setWalletBalance(managedUser.getWalletBalance() + req.getAmount());
-        userService.updateUser(managedUser);
-
-        // 2. Deduct from Admin Wallet
-        try {
-            java.util.List<Admin> admins = adminRepository.findAll();
-            if (!admins.isEmpty()) {
-                Admin admin = admins.get(0);
-                double newAdminBalance = admin.getWalletBalance() - req.getAmount();
-                admin.setWalletBalance(Math.max(0.0, newAdminBalance));
-                adminRepository.save(admin);
-            }
-        } catch (Exception e) {
-            System.err.println("Warning: Could not deduct from admin wallet: " + e.getMessage());
-        }
-
-        // 3. Mark request as APPROVED and CLAIMED (automated)
-        req.setStatus(ClaimRequest.Status.APPROVED);
-        req.setClaimed(true);
-        claimRequestRepository.save(req);
-
-        // 4. Mark Subscription as EXPIRED (closes the user plan)
-        Subscription sub = req.getSubscription();
-        if (sub != null) {
-            sub.setStatus(Subscription.Status.EXPIRED);
-            subscriptionRepository.save(sub);
-        }
-
-        // 5. Notify User with success
-        Notification n = new Notification();
-        n.setUser(managedUser);
-        n.setTitle("Insurance Claim Approved & Paid! 🌩️");
-        n.setMessage("Your claim for " + req.getSituation() + " was approved. ₹" + req.getAmount() + " has been added to your wallet automatically. Your current weekly plan is now closed.");
-        n.setType("SUCCESS");
-        notificationRepository.save(n);
-
+        claimService.approveRequestInternal(req);
         return ResponseEntity.ok(Map.of("message", "Claim request approved and payout processed automatically"));
     }
 
     @PutMapping("/admin/{id}/reject")
     public ResponseEntity<?> rejectRequest(@PathVariable Long id) {
         ClaimRequest req = claimRequestRepository.findById(id).orElseThrow();
-        req.setStatus(ClaimRequest.Status.REJECTED);
-        claimRequestRepository.save(req);
-
-        // Notify User
-        Notification n = new Notification();
-        n.setUser(req.getUser());
-        n.setTitle("Claim Rejected");
-        n.setMessage("Your claim request was rejected. Please contact support for more details.");
-        n.setType("DANGER");
-        notificationRepository.save(n);
-
+        claimService.rejectRequestInternal(req, "Your claim request was rejected. Please contact support for more details.");
         return ResponseEntity.ok(Map.of("message", "Claim request rejected"));
     }
 

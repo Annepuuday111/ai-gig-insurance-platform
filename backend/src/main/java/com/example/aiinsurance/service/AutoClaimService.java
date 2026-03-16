@@ -22,6 +22,7 @@ import java.util.Map;
 public class AutoClaimService {
 
     @Autowired private AIService aiService;
+    @Autowired private ClaimService claimService;
     @Autowired private SubscriptionRepository subscriptionRepository;
     @Autowired private ClaimRequestRepository claimRequestRepository;
     @Autowired private NotificationRepository notificationRepository;
@@ -133,19 +134,26 @@ public class AutoClaimService {
                     req.setCreatedAt(LocalDateTime.now());
                     claimRequestRepository.save(req);
 
-                    // Notify user
-                    sendNotification(user,
-                            "⚠️ Disaster Detected — AI Auto-Filed Claim",
-                            "A " + disasterType + " has been detected in your area (" + user.getDistrict() + ", " + user.getState() + "). " +
-                            "Our AI has automatically filed a claim of ₹" + req.getAmount() + " on your behalf. " +
-                            "Awaiting admin approval. You will be notified once approved and the amount is credited to your wallet.",
-                            "WARNING");
+                    // ── 🛡️ AUTO-APPROVE CHECK ──
+                    String triggerResult = claimService.evaluateTriggers(req, user);
+                    if ("APPROVE".equals(triggerResult)) {
+                        claimService.approveRequestInternal(req);
+                        System.out.println("[AutoClaimService] ✅ Claim for " + user.getEmail() + " auto-approved based on plan triggers.");
+                    } else {
+                        // Notify user
+                        sendNotification(user,
+                                "⚠️ Disaster Detected — AI Auto-Filed Claim",
+                                "A " + disasterType + " has been detected in your area (" + user.getDistrict() + ", " + user.getState() + "). " +
+                                "Our AI has automatically filed a claim of ₹" + req.getAmount() + " on your behalf. " +
+                                "Awaiting final verification. You will be notified once approved.",
+                                "WARNING");
 
-                    // Notify admin
-                    notifyAdmin("🆕 New AI Claim — " + disasterType,
-                            "AI detected " + disasterType + " in " + user.getDistrict() + ", " + user.getState() +
-                            ". Claim of ₹" + req.getAmount() + " auto-filed for user " + user.getName() + " (" + user.getEmail() + "). " +
-                            "Please review and approve/reject in the Disaster Claims section.");
+                        // Notify admin
+                        notifyAdmin("🆕 New AI Claim — " + disasterType,
+                                "AI detected " + disasterType + " in " + user.getDistrict() + ", " + user.getState() +
+                                ". Claim of ₹" + req.getAmount() + " auto-filed for user " + user.getName() + " (" + user.getEmail() + "). " +
+                                "Review and approve in the Disaster Claims section.");
+                    }
 
                 } else {
                     System.out.println("[AutoClaimService] No trigger for user " + user.getEmail()

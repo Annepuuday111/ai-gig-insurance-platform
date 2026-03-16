@@ -520,6 +520,38 @@ export default function AdminDashboard() {
       setPlans(copy);
     }
   };
+
+  const handleAddTrigger = (idx) => {
+    const copy = [...plans];
+    let triggers = [];
+    try {
+      triggers = copy[idx].parametricTriggers ? JSON.parse(copy[idx].parametricTriggers) : [];
+      if (!Array.isArray(triggers)) triggers = [];
+    } catch (e) { triggers = []; }
+    triggers.push({ situation: "Summer", factor: "temperature", threshold: 45, operator: ">" });
+    copy[idx].parametricTriggers = JSON.stringify(triggers);
+    setPlans(copy);
+  };
+
+  const handleRemoveTrigger = (idx, tIdx) => {
+    const copy = [...plans];
+    try {
+      let triggers = JSON.parse(copy[idx].parametricTriggers);
+      triggers.splice(tIdx, 1);
+      copy[idx].parametricTriggers = JSON.stringify(triggers);
+      setPlans(copy);
+    } catch (e) {}
+  };
+
+  const handleTriggerChange = (idx, tIdx, field, value) => {
+    const copy = [...plans];
+    try {
+      let triggers = JSON.parse(copy[idx].parametricTriggers);
+      triggers[tIdx][field] = value;
+      copy[idx].parametricTriggers = JSON.stringify(triggers);
+      setPlans(copy);
+    } catch (e) {}
+  };
   const handleSavePlan = async (id, plan) => {
     const payload = {
       weeklyPremium: plan.weeklyPremium,
@@ -530,6 +562,11 @@ export default function AdminDashboard() {
       payload.features = plan.features.filter(f => f.trim() !== "");
     } else if (typeof plan.features === "string") {
       payload.features = plan.features;
+    }
+    if (plan.parametricTriggers) {
+      payload.parametricTriggers = typeof plan.parametricTriggers === 'object' 
+        ? JSON.stringify(plan.parametricTriggers) 
+        : plan.parametricTriggers;
     }
     await adminUpdatePlan(id, payload);
     showMsg("Plan updated successfully!"); loadPlans();
@@ -542,7 +579,8 @@ export default function AdminDashboard() {
     }
     const payload = {
       ...newPlan,
-      features: newPlan.features.split(",").map(f => f.trim()).filter(f => f !== "")
+      features: newPlan.features.split(",").map(f => f.trim()).filter(f => f !== ""),
+      parametricTriggers: newPlan.parametricTriggers || "[]"
     };
     await adminCreatePlan(payload);
     setNewPlan({ name: "", weeklyPremium: 0, coverageAmount: 0, trialDays: 7, riskLevel: "Moderate", features: "" });
@@ -1220,6 +1258,20 @@ export default function AdminDashboard() {
             </div>
             
             <InputField label="Features (comma separated)" icon={<FaLightbulb className="text-gray-300" />} value={newPlan.features} onChange={(e) => setNewPlan({ ...newPlan, features: e.target.value })} placeholder="Feature 1, Feature 2" />
+            
+            <div className="flex flex-col gap-1.5 lg:col-span-3">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
+                <FaCloudRain /> Parametric Auto-Claim Triggers (JSON)
+              </label>
+              <textarea 
+                value={newPlan.parametricTriggers} 
+                onChange={(e) => setNewPlan({ ...newPlan, parametricTriggers: e.target.value })}
+                placeholder='[{"situation":"Summer","factor":"temperature","threshold":50,"operator":">"}]'
+                className="w-full border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 bg-gray-50 focus:bg-white font-mono"
+                rows={2}
+              />
+              <p className="text-[10px] text-gray-400 italic">Example: {'[{"situation":"Summer","factor":"temperature","threshold":50,"operator":">"}]'}</p>
+            </div>
           </div>
           <div className="mt-4 flex justify-end">
             <button onClick={handleCreatePlan} className="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm rounded-xl font-semibold transition flex items-center gap-2">
@@ -1306,6 +1358,66 @@ export default function AdminDashboard() {
                           }} className="text-red-400 hover:text-red-600 p-1"><FaTimes size={10}/></button>
                         </div>
                       )) : null}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide block mb-1 flex justify-between items-center">
+                      <span className="flex items-center gap-1"><FaCloudRain className="text-teal-500"/> AI Triggers</span>
+                      <button onClick={() => handleAddTrigger(idx)} className="text-teal-600 hover:text-teal-800 p-1"><FaPlus size={10}/></button>
+                    </label>
+                    <div className="space-y-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
+                      {(() => {
+                        let triggers = [];
+                        try {
+                          triggers = plan.parametricTriggers ? JSON.parse(plan.parametricTriggers) : [];
+                          if (!Array.isArray(triggers)) triggers = [];
+                        } catch (e) { triggers = []; }
+
+                        return triggers.map((t, tIdx) => (
+                          <div key={tIdx} className="bg-gray-50 border border-gray-100 rounded-lg p-2 relative group">
+                            <button onClick={() => handleRemoveTrigger(idx, tIdx)} className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow-sm z-10">
+                              <FaTimes size={8}/>
+                            </button>
+                            <div className="grid grid-cols-2 gap-1.5 mb-1.5">
+                              <input 
+                                className="text-[10px] border border-gray-200 rounded px-1.5 py-0.5 bg-white focus:ring-1 focus:ring-teal-400 focus:outline-none"
+                                value={t.situation}
+                                onChange={(e) => handleTriggerChange(idx, tIdx, "situation", e.target.value)}
+                                placeholder="Situation"
+                              />
+                              <select 
+                                className="text-[10px] border border-gray-200 rounded px-1.5 py-0.5 bg-white focus:ring-1 focus:ring-teal-400 focus:outline-none"
+                                value={t.factor}
+                                onChange={(e) => handleTriggerChange(idx, tIdx, "factor", e.target.value)}
+                              >
+                                <option value="temperature">Temp (°C)</option>
+                                <option value="wind_speed">Wind (km/h)</option>
+                                <option value="rainfall">Rain (mm)</option>
+                                <option value="humidity">Humidity (%)</option>
+                              </select>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <select 
+                                className="w-10 text-[10px] border border-gray-200 rounded px-1 py-0.5 bg-white"
+                                value={t.operator || ">"}
+                                onChange={(e) => handleTriggerChange(idx, tIdx, "operator", e.target.value)}
+                              >
+                                <option value=">">&gt;</option>
+                                <option value="<">&lt;</option>
+                                <option value="==">=</option>
+                              </select>
+                              <input 
+                                type="number"
+                                className="flex-1 text-[10px] border border-gray-200 rounded px-1.5 py-0.5 bg-white"
+                                value={t.threshold}
+                                onChange={(e) => handleTriggerChange(idx, tIdx, "threshold", parseFloat(e.target.value) || 0)}
+                                placeholder="Value"
+                              />
+                            </div>
+                          </div>
+                        ));
+                      })()}
                     </div>
                   </div>
                 </div>
