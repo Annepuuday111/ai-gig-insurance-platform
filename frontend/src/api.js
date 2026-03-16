@@ -89,6 +89,9 @@ export async function claimPayment(id) {
 export async function getMyQueries() {
   return request('/api/queries/my', { method: 'GET' });
 }
+export async function userClearChat() {
+  return request('/api/queries/my/clear', { method: 'DELETE' });
+}
 
 // ── Admin endpoints ──────────────────────────────────────────────────────────
 export async function adminListUsers() {
@@ -129,6 +132,9 @@ export async function adminListQueries() {
 }
 export async function adminReplyQuery(id, body) {
   return request(`/api/admin/queries/${id}/reply`, { method: 'PUT', body: JSON.stringify(body) });
+}
+export async function adminClearUserChat(userId) {
+  return request(`/api/admin/queries/user/${userId}/clear`, { method: 'DELETE' });
 }
 
 // ── Partners ──────────────────────────────────────────────────────────────────
@@ -238,7 +244,7 @@ export default {
   adminListUsers, adminDeleteUser, adminUpdateUser,
   adminListPlans, adminUpdatePlan, adminCreatePlan,
   adminListPayments, adminApprovePayment, adminRejectPayment, adminDeletePayment,
-  adminListQueries, adminReplyQuery,
+  adminListQueries, adminReplyQuery, adminClearUserChat, userClearChat,
   claimPayment,
   submitClaimRequest, getMyClaimRequests, claimRequestPayout,
   adminListClaimRequests, adminApproveClaimRequest, adminRejectClaimRequest,

@@ -362,8 +362,10 @@ export default function AdminDashboard() {
   const [newPlan, setNewPlan] = useState({ name: "", weeklyPremium: 0, coverageAmount: 0, trialDays: 7, riskLevel: "Moderate", features: "" });
   const [selectedChatUser, setSelectedChatUser] = useState(null);
   const [chatText, setChatText] = useState("");
+  const [replyMessageUser, setReplyMessageUser] = useState(null);
 
   const carouselRef = useRef(null);
+  const chatScrollRef = useRef(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -396,6 +398,22 @@ export default function AdminDashboard() {
     if (section === "disaster") { loadClaimRequests(); loadWeatherReport(); }
     if (section === "wallet") loadWallet();
   }, [section]);
+
+  // ── Live polling: refresh queries every 5 s while on the support tab ──
+  useEffect(() => {
+    if (section !== "queries") return;
+    const interval = setInterval(() => {
+      loadQueries();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [section]);
+
+  // ── Auto-scroll chat panel to bottom when messages arrive ──
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [queries, selectedChatUser]);
 
   const safeLoad = (fn, setter) => async () => {
     try {
@@ -457,12 +475,25 @@ export default function AdminDashboard() {
 
   const handleReplyChat = async () => {
     if (!selectedChatUser || !chatText.trim()) return;
-    const firstQuery = queries.find(q => q.user?.id === selectedChatUser.id);
-    if (!firstQuery) return;
-    await adminReplyQuery(firstQuery.id, { answer: chatText });
+    const refQuery = queries
+      .filter(q => q.user?.id === selectedChatUser.id && !q.isFromAdmin)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+    if (!refQuery) return;
+    await adminReplyQuery(refQuery.id, { answer: chatText, replyToMessage: replyMessageUser ? replyMessageUser.text : null });
     setChatText("");
-    loadQueries();
+    setReplyMessageUser(null);
+    await loadQueries();
     showMsg("Reply sent!");
+  };
+
+  const clearAdminChat = async (user) => {
+    if(!window.confirm(`Are you sure you want to clear the chat for ${user.email}? This cannot be undone.`)) return;
+    try {
+      if (adminClearUserChat) await adminClearUserChat(user.id);
+      setSelectedChatUser(null);
+      await loadQueries();
+      showMsg("Chat cleared for admin");
+    } catch(e) { console.error(e); showMsg("Failed to clear chat", "error");}
   };
 
   const handlePartnerDelete = async (id) => { if (!window.confirm("Delete this partner?")) return; await adminDeletePartner(id); loadPartners(); showMsg("Partner deleted!"); };
@@ -563,13 +594,19 @@ export default function AdminDashboard() {
     } else if (typeof plan.features === "string") {
       payload.features = plan.features;
     }
-    if (plan.parametricTriggers) {
-      payload.parametricTriggers = typeof plan.parametricTriggers === 'object' 
-        ? JSON.stringify(plan.parametricTriggers) 
-        : plan.parametricTriggers;
+    // Always send parametricTriggers (even if empty [])
+    if (typeof plan.parametricTriggers === 'object' && plan.parametricTriggers !== null) {
+      payload.parametricTriggers = JSON.stringify(plan.parametricTriggers);
+    } else {
+      payload.parametricTriggers = plan.parametricTriggers || "[]";
     }
-    await adminUpdatePlan(id, payload);
-    showMsg("Plan updated successfully!"); loadPlans();
+    try {
+      await adminUpdatePlan(id, payload);
+      showMsg("✅ Plan and AI triggers saved successfully!");
+    } catch (e) {
+      showMsg("❌ Failed to save plan: " + (e.message || "Unknown error"), "error");
+    }
+    loadPlans();
   };
 
   const handleCreatePlan = async () => {
@@ -617,7 +654,17 @@ export default function AdminDashboard() {
   };
 
   const pendingApprovals = payments.filter(p => p.status === "PENDING").length;
-  const unansweredQ = queries.filter(q => !q.answer).length;
+  // A conversation is "unanswered" when the LAST message from that user is not followed by an admin reply
+  const unansweredQ = (() => {
+    const userIds = [...new Set(queries.filter(q => !q.isFromAdmin).map(q => q.user?.id))];
+    return userIds.filter(uid => {
+      const userQs = queries.filter(q => q.user?.id === uid);
+      if (!userQs.length) return false;
+      const sorted = [...userQs].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      // If the most recent record in this thread is a user message (not admin), it's unanswered
+      return !sorted[0].isFromAdmin;
+    }).length;
+  })();
   const pendingClaimReqs = claimRequests.filter(c => c.status === "PENDING").length;
 
   /* ══════════════════════════════════════
@@ -1116,19 +1163,22 @@ export default function AdminDashboard() {
                 </div>
                 <div className="flex items-center gap-2">
                    {/* Chat Stats or Actions */}
+                   <button onClick={() => clearAdminChat(activeUser)} className="text-xs px-3 py-1.5 bg-red-100 text-red-600 font-semibold rounded-lg hover:bg-red-200 transition">
+                     Clear Chat
+                   </button>
                 </div>
               </div>
 
               {/* Messages Container */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50 bg-[radial-gradient(#e2e8f0_0.8px,transparent_0.8px)] [background-size:24px_24px]">
+              <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50 bg-[radial-gradient(#e2e8f0_0.8px,transparent_0.8px)] [background-size:24px_24px]">
                 {/* Process messages into unified chat flow */}
                 {(() => {
                   const unified = [];
                   activeMessages.forEach(q => {
                     if (q.isFromAdmin) {
-                      unified.push({ from: 'agent', text: q.answer, time: q.createdAt });
+                      unified.push({ id: q.id, from: 'agent', text: q.answer, time: q.createdAt, replyTo: q.replyToMessage });
                     } else {
-                      unified.push({ from: 'user', text: q.question, time: q.createdAt });
+                      unified.push({ id: q.id, from: 'user', text: q.question, time: q.createdAt });
                       // If it's a legacy record with an answer but no separate record exists
                       if (q.answer && !activeMessages.some(am => am.isFromAdmin && am.answer === q.answer)) {
                         unified.push({ from: 'agent', text: q.answer, time: q.answeredAt || q.createdAt });
@@ -1164,11 +1214,19 @@ export default function AdminDashboard() {
                           </div>
                         )}
                         <div className={`flex w-full ${isAgent ? "justify-start" : "justify-end"}`}>
-                          <div className={`max-w-[85%] sm:max-w-[70%] px-4 py-2.5 rounded-2xl shadow-sm text-sm font-medium leading-relaxed
+                          <div 
+                            className={`relative max-w-[85%] sm:max-w-[70%] px-4 py-2.5 rounded-2xl shadow-sm text-sm font-medium leading-relaxed cursor-pointer hover:-translate-y-0.5 transition-transform
                             ${isAgent 
                               ? "bg-white text-gray-700 border border-gray-100 rounded-bl-none" 
-                              : "bg-green-500 text-white rounded-br-none"}
-                          `}>
+                              : "bg-green-500 text-white rounded-br-none"}`}
+                            onClick={() => { setReplyMessageUser(m); document.getElementById('chatInput').focus(); }}
+                          >
+                            {m.replyTo && (
+                              <div className={`mb-2 p-2 rounded-lg text-xs border-l-4 opacity-80 ${isAgent ? 'bg-gray-100 border-gray-300 text-gray-600' : 'bg-green-600 border-green-400 text-green-100'}`}>
+                                <div className="font-bold mb-0.5">Replying to</div>
+                                <div className="truncate opacity-90">{m.replyTo}</div>
+                              </div>
+                            )}
                             <p>{m.text}</p>
                             <div className={`text-[9px] mt-1.5 font-bold uppercase tracking-wider ${isAgent ? "text-gray-300" : "text-green-100"} text-right`}>
                               {new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -1182,9 +1240,21 @@ export default function AdminDashboard() {
               </div>
 
               {/* Chat Input */}
-              <div className="p-4 border-t border-gray-100">
+              <div className="p-4 border-t border-gray-100 flex flex-col gap-2">
+                {replyMessageUser && (
+                  <div className="flex items-center justify-between bg-gray-100 rounded-lg p-2 px-3">
+                    <div className="flex flex-col text-xs text-gray-600">
+                      <span className="font-bold">Replying to {replyMessageUser.from === 'agent' ? "Admin" : activeUser.name}</span>
+                      <span className="truncate max-w-sm">{replyMessageUser.text}</span>
+                    </div>
+                    <button onClick={() => setReplyMessageUser(null)} className="text-gray-400 hover:text-red-500">
+                      <FaTimes />
+                    </button>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-2xl px-2 py-2 focus-within:ring-2 focus-within:ring-green-400 focus-within:bg-white transition-all">
                   <textarea
+                    id="chatInput"
                     value={chatText}
                     onChange={(e) => setChatText(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleReplyChat(); } }}
@@ -1380,12 +1450,21 @@ export default function AdminDashboard() {
                               <FaTimes size={8}/>
                             </button>
                             <div className="grid grid-cols-2 gap-1.5 mb-1.5">
-                              <input 
+                              <select
                                 className="text-[10px] border border-gray-200 rounded px-1.5 py-0.5 bg-white focus:ring-1 focus:ring-teal-400 focus:outline-none"
                                 value={t.situation}
                                 onChange={(e) => handleTriggerChange(idx, tIdx, "situation", e.target.value)}
-                                placeholder="Situation"
-                              />
+                              >
+                                <option value="Summer">🌡️ Summer / Heat</option>
+                                <option value="Rainy">🌧️ Heavy Rain</option>
+                                <option value="Winter">❄️ Winter / Cold</option>
+                                <option value="Cyclone">🌀 Cyclone</option>
+                                <option value="Flood">🌊 Flood</option>
+                                <option value="Accident">🚑 Accident</option>
+                                <option value="Pollution">😷 Pollution</option>
+                                <option value="Curfew">🚫 Curfew</option>
+                                <option value="Other">⚠️ Other</option>
+                              </select>
                               <select 
                                 className="text-[10px] border border-gray-200 rounded px-1.5 py-0.5 bg-white focus:ring-1 focus:ring-teal-400 focus:outline-none"
                                 value={t.factor}

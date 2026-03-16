@@ -150,7 +150,9 @@ public class AdminController {
     // ------------ user queries ----------------
     @GetMapping("/admin/queries")
     public List<com.example.aiinsurance.model.Query> listQueries() {
-        return queryService.getAll();
+        return queryService.getAll().stream()
+                .filter(q -> !q.isClearedByAdmin())
+                .toList();
     }
 
     @PutMapping("/admin/queries/{id}/reply")
@@ -165,8 +167,10 @@ public class AdminController {
             return ResponseEntity.badRequest().body(Map.of("error","answer required"));
         }
         
+        String replyTo = body.getOrDefault("replyToMessage", null);
+
         // Use the new service method to create a NEW chat message from admin
-        com.example.aiinsurance.model.Query reply = queryService.createFromAdmin(q.getUser(), answer);
+        com.example.aiinsurance.model.Query reply = queryService.createFromAdmin(q.getUser(), answer, replyTo);
         
         // Also update the original query's answer field to mark it as answered (legacy support/ui badge)
         q.setAnswer(answer);
@@ -174,6 +178,16 @@ public class AdminController {
         queryService.save(q);
         
         return ResponseEntity.ok(reply);
+    }
+
+    @DeleteMapping("/admin/queries/user/{userId}/clear")
+    public ResponseEntity<?> clearUserChat(@PathVariable Long userId) {
+        Optional<User> userOpt = userService.findById(userId);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(404).body(Map.of("error", "User not found"));
+        }
+        queryService.clearForAdmin(userOpt.get());
+        return ResponseEntity.ok(Map.of("message", "Chat cleared for admin"));
     }
 
     // ------------ plan management ----------------

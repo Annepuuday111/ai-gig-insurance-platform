@@ -59,7 +59,19 @@ public class QueryController {
         if (userOpt.isEmpty()) {
             return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
         }
-        List<Query> list = queryService.getForUser(userOpt.get());
+        List<Query> list = queryService.getForUser(userOpt.get()).stream()
+                .filter(q -> !q.isClearedByUser())
+                .toList();
         return ResponseEntity.ok(list);
+    }
+
+    @DeleteMapping("/my/clear")
+    public ResponseEntity<?> clearMyChat(@RequestHeader("Authorization") String authHeader) {
+        Optional<User> userOpt = getCurrentUser(authHeader);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        }
+        queryService.clearForUser(userOpt.get());
+        return ResponseEntity.ok(Map.of("message", "Chat cleared"));
     }
 }

@@ -21,12 +21,13 @@ public class QueryService {
         return queryRepository.save(q);
     }
 
-    public Query createFromAdmin(User user, String answer) {
+    public Query createFromAdmin(User user, String answer, String replyToMessage) {
         Query q = new Query();
         q.setUser(user);
         q.setQuestion(""); // Or "Response from Support"
         q.setAnswer(answer);
         q.setFromAdmin(true);
+        q.setReplyToMessage(replyToMessage);
         q.setAnsweredAt(java.time.LocalDateTime.now());
         return queryRepository.save(q);
     }
@@ -43,6 +44,30 @@ public class QueryService {
         return queryRepository.findById(id);
     }
 
+    public void clearForUser(User user) {
+        List<Query> queries = getForUser(user);
+        for (Query q : queries) {
+            q.setClearedByUser(true);
+            if (q.isClearedByUser() && q.isClearedByAdmin()) {
+                queryRepository.delete(q);
+            } else {
+                queryRepository.save(q);
+            }
+        }
+    }
+
+    public void clearForAdmin(User user) {
+        List<Query> queries = getForUser(user);
+        for (Query q : queries) {
+            q.setClearedByAdmin(true);
+            if (q.isClearedByUser() && q.isClearedByAdmin()) {
+                queryRepository.delete(q);
+            } else {
+                queryRepository.save(q);
+            }
+        }
+    }
+    
     public Query save(Query q) {
         return queryRepository.save(q);
     }

@@ -30,6 +30,15 @@ public class Query {
     @Column
     private LocalDateTime answeredAt;
 
+    @Column(nullable = false)
+    private boolean clearedByUser = false;
+
+    @Column(nullable = false)
+    private boolean clearedByAdmin = false;
+
+    @Column(columnDefinition = "TEXT")
+    private String replyToMessage;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
@@ -61,4 +70,13 @@ public class Query {
 
     public boolean isFromAdmin() { return isFromAdmin; }
     public void setFromAdmin(boolean fromAdmin) { isFromAdmin = fromAdmin; }
+
+    public boolean isClearedByUser() { return clearedByUser; }
+    public void setClearedByUser(boolean clearedByUser) { this.clearedByUser = clearedByUser; }
+
+    public boolean isClearedByAdmin() { return clearedByAdmin; }
+    public void setClearedByAdmin(boolean clearedByAdmin) { this.clearedByAdmin = clearedByAdmin; }
+
+    public String getReplyToMessage() { return replyToMessage; }
+    public void setReplyToMessage(String replyToMessage) { this.replyToMessage = replyToMessage; }
 }

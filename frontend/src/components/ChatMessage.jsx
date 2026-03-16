@@ -1,6 +1,6 @@
 import React from 'react'
 
-export default function ChatMessage({from, text, time, theme}){
+export default function ChatMessage({from, text, time, theme, replyTo, messageId, onReply}){
   const isAgent = from === 'agent'
   const messageTime = time ? new Date(time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
@@ -27,6 +27,23 @@ export default function ChatMessage({from, text, time, theme}){
           animation: "slideUp 0.3s ease-out"
         }}
       > 
+        {replyTo && (
+          <div style={{
+            background: "rgba(0,0,0,0.05)",
+            borderLeft: "4px solid rgba(0,0,0,0.2)",
+            padding: "6px 10px",
+            marginBottom: "8px",
+            borderRadius: "4px",
+            fontSize: 12,
+            fontStyle: "italic",
+            color: isAgent ? "#475569" : "#f1f5f9"
+          }}>
+            <div style={{ fontWeight: "bold", marginBottom: "2px" }}>Replying to</div>
+            <div style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {replyTo}
+            </div>
+          </div>
+        )}
         <div style={{ fontSize: 13.5, fontWeight: 500, lineHeight: 1.5, wordBreak: "break-word" }}>{text}</div>
         <div style={{ 
           fontSize: 9, 

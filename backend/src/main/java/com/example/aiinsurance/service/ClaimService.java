@@ -25,48 +25,90 @@ public class ClaimService {
     public String evaluateTriggers(ClaimRequest req, User user) {
         try {
             String json = req.getSubscription().getPlan().getParametricTriggers();
-            if (json == null || json.isBlank() || "[]".equals(json)) return "PENDING";
+            System.out.println("[ClaimService] Evaluating triggers for situation='" + req.getSituation() + "', triggers=" + json);
+
+            if (json == null || json.isBlank() || "[]".equals(json.trim())) {
+                System.out.println("[ClaimService] No triggers defined → PENDING");
+                return "PENDING";
+            }
 
             ObjectMapper mapper = new ObjectMapper();
             List<Map<String, Object>> triggers = mapper.readValue(json, new TypeReference<List<Map<String, Object>>>() {});
-            
-            // Filter triggers for this situation or AI-AUTO situations
+
+            // Case-insensitive situation matching
             List<Map<String, Object>> matchingTriggers = triggers.stream()
                 .filter(t -> {
-                    String sit = (String)t.get("situation");
-                    return req.getSituation().equalsIgnoreCase(sit) || req.getSituation().toUpperCase().contains(sit.toUpperCase());
+                    String sit = (String) t.get("situation");
+                    if (sit == null) return false;
+                    return req.getSituation().equalsIgnoreCase(sit)
+                        || req.getSituation().toUpperCase().contains(sit.toUpperCase())
+                        || sit.toUpperCase().contains(req.getSituation().toUpperCase());
                 })
                 .toList();
-            
-            if (matchingTriggers.isEmpty()) return "PENDING";
 
-            Map<String, Object> weather = aiService.getWeather(user.getState(), user.getDistrict());
-            if (weather.containsKey("error")) return "PENDING";
+            System.out.println("[ClaimService] Matching triggers: " + matchingTriggers.size());
+            if (matchingTriggers.isEmpty()) {
+                System.out.println("[ClaimService] No matching triggers for situation → PENDING");
+                return "PENDING";
+            }
+
+            Map<String, Object> weather = aiService.getWeather(
+                user.getState()    != null ? user.getState()    : "Maharashtra",
+                user.getDistrict() != null ? user.getDistrict() : user.getState()
+            );
+            System.out.println("[ClaimService] Weather data: " + weather);
+
+            if (weather.containsKey("error")) {
+                System.out.println("[ClaimService] Weather API error → PENDING");
+                return "PENDING";
+            }
 
             boolean anyMatch = false;
             for (Map<String, Object> t : matchingTriggers) {
-                String factor = (String) t.get("factor");
+                String factor   = (String) t.get("factor");
                 String operator = (String) t.get("operator");
                 double threshold = Double.parseDouble(t.get("threshold").toString());
-                
+
+                // Resolve actual weather value — handle different key names from API
                 Double actualValue = null;
-                if ("temperature".equalsIgnoreCase(factor)) actualValue = Double.valueOf(weather.get("temp").toString());
-                else if ("wind_speed".equalsIgnoreCase(factor)) actualValue = Double.valueOf(weather.get("wind_speed").toString());
-                else if ("rainfall".equalsIgnoreCase(factor)) actualValue = Double.valueOf(weather.get("rainfall").toString());
-                else if ("humidity".equalsIgnoreCase(factor)) actualValue = Double.valueOf(weather.get("humidity").toString());
+                if ("temperature".equalsIgnoreCase(factor)) {
+                    // Try both 'temp' and 'temperature' keys
+                    Object v = weather.getOrDefault("temp", weather.get("temperature"));
+                    if (v != null) actualValue = Double.valueOf(v.toString());
+                } else if ("wind_speed".equalsIgnoreCase(factor)) {
+                    Object v = weather.getOrDefault("wind_speed", weather.get("windspeed"));
+                    if (v != null) actualValue = Double.valueOf(v.toString());
+                } else if ("rainfall".equalsIgnoreCase(factor)) {
+                    Object v = weather.getOrDefault("rainfall", weather.getOrDefault("rain", weather.get("precipitation")));
+                    if (v != null) actualValue = Double.valueOf(v.toString());
+                } else if ("humidity".equalsIgnoreCase(factor)) {
+                    Object v = weather.get("humidity");
+                    if (v != null) actualValue = Double.valueOf(v.toString());
+                }
+
+                System.out.println("[ClaimService] Trigger check: factor=" + factor
+                    + " actual=" + actualValue + " " + operator + " threshold=" + threshold);
 
                 if (actualValue != null) {
-                    if (">".equals(operator) && actualValue > threshold) anyMatch = true;
-                    else if ("<".equals(operator) && actualValue < threshold) anyMatch = true;
-                    else if ("==".equals(operator) && actualValue == threshold) anyMatch = true;
-                    else if (">=".equals(operator) && actualValue >= threshold) anyMatch = true;
-                    else if ("<=".equals(operator) && actualValue <= threshold) anyMatch = true;
+                    boolean matched = false;
+                    if (">".equals(operator)  && actualValue > threshold)  matched = true;
+                    else if ("<".equals(operator)  && actualValue < threshold)  matched = true;
+                    else if ("==".equals(operator) && actualValue.equals(threshold)) matched = true;
+                    else if (">=".equals(operator) && actualValue >= threshold) matched = true;
+                    else if ("<=".equals(operator) && actualValue <= threshold) matched = true;
+                    if (matched) {
+                        System.out.println("[ClaimService] ✅ Trigger MATCHED → APPROVE");
+                        anyMatch = true;
+                    }
                 }
             }
 
-            return anyMatch ? "APPROVE" : "REJECT";
+            String result = anyMatch ? "APPROVE" : "REJECT";
+            System.out.println("[ClaimService] Final result: " + result);
+            return result;
         } catch (Exception e) {
-            System.err.println("Trigger evaluation failed: " + e.getMessage());
+            System.err.println("[ClaimService] Trigger evaluation failed: " + e.getMessage());
+            e.printStackTrace();
             return "PENDING";
         }
     }

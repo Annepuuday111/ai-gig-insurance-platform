@@ -207,7 +207,7 @@ export default function Claims() {
   const [message, setMessage] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [theme, setTheme] = useState(defaultTheme);
-  const [formData, setFormData] = useState({ situation: 'FLOOD', description: '' });
+  const [formData, setFormData] = useState({ situation: 'Summer', description: '' });
 
   // AI State
   const [parametric, setParametric] = useState(null);
@@ -420,11 +420,15 @@ export default function Claims() {
                 onChange={e => setFormData({ ...formData, situation: e.target.value })}
                 onFocus={formFocus} onBlur={formBlur}
               >
-                <option value="FLOOD">Floods / Heavy Rain</option>
-                <option value="CURFEW">Curfew / Local Lockdown</option>
-                <option value="DISESTER">Natural Disaster</option>
-                <option value="CRITICAL">Critical Emergency</option>
-                <option value="WEATHER">Extreme Weather Alert</option>
+                <option value="Summer">🌡️ Summer / Extreme Heat</option>
+                <option value="Rainy">🌧️ Heavy Rain / Floods</option>
+                <option value="Winter">❄️ Winter / Cold Wave</option>
+                <option value="Cyclone">🌀 Cyclone / Storm</option>
+                <option value="Flood">🌊 Flash Flood</option>
+                <option value="Accident">🚑 Road Accident</option>
+                <option value="Pollution">😷 Severe Pollution / AQI Alert</option>
+                <option value="Curfew">🚫 Curfew / Lockdown</option>
+                <option value="Other">⚠️ Other Emergency</option>
               </select>
             </div>
             <div>
@@ -439,7 +443,8 @@ export default function Claims() {
               />
             </div>
             <p className="f-note">
-              * Reviewed by admin. Once approved, you can claim the payout.
+              * AI checks weather conditions automatically. If your plan has a trigger for this situation
+              and current weather matches the threshold, your claim is <strong>approved instantly</strong>.
               Only <strong>one successful claim per week</strong> is allowed.
               Next window opens the following Monday.
             </p>

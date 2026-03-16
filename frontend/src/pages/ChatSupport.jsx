@@ -27,83 +27,75 @@ export default function ChatSupport() {
   const [user, setUser] = useState(null);
   const scrollRef = useRef(null);
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-    
-    // Fetch theme and messages
-    const init = async () => {
-      try {
-        const u = await api.getCurrentUser();
-        setUser(u);
-        
-        const partners = await api.getPartners();
-        if (Array.isArray(partners)) {
-          const p = partners.find(ptr => ptr.name === u.platform);
-          if (p) {
-            setTheme({
-              gradient: `linear-gradient(135deg, ${p.borderColor}, ${p.borderColor}bb)`,
-              light: p.borderColor ? `${p.borderColor}22` : "#f0fdf4",
-              accent: p.borderColor || "#16a34a"
-            });
-          }
-        }
-        
-        const qs = await api.getMyQueries();
-        const msgs = [];
-        qs.forEach(q => {
-          if (q.isFromAdmin) {
-            msgs.push({ from: 'agent', text: q.answer, time: q.createdAt });
-          } else {
-            msgs.push({ from: 'user', text: q.question, time: q.createdAt });
-            // For legacy queries that still have the answer field populated on the same record
-            if (q.answer && !qs.some(msg => msg.isFromAdmin && msg.answer === q.answer && msg.user?.id === q.user?.id)) {
-              // Only add if it's not already a separate admin message
-              // (This is a safety check for mixed old/new data)
-            }
-          }
-        });
-        setMessages(msgs);
-      } catch (e) {
-        console.error(e);
-      }
-    };
-    init();
-  }, [navigate]);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
-
+  // ── Build a clean chronological timeline from the DB records ──────────────
+  // Two record types exist:
+  //   isFromAdmin=false  ➜  user bubble  (question field)
+  //   isFromAdmin=true   ➜  agent bubble (answer field)
   const loadMessages = async () => {
     try {
       const qs = await api.getMyQueries();
-      const msgs = [];
-      qs.forEach(q => {
-        if (q.isFromAdmin) {
-          msgs.push({ from: 'agent', text: q.answer, time: q.createdAt });
-        } else {
-          msgs.push({ from: 'user', text: q.question, time: q.createdAt });
-        }
-      });
+      const msgs = qs
+        .map(q => q.isFromAdmin
+          ? { id: q.id, from: 'agent', text: q.answer,   time: q.createdAt, replyTo: q.replyToMessage }
+          : { id: q.id, from: 'user',  text: q.question, time: q.createdAt }
+        )
+        .sort((a, b) => new Date(a.time) - new Date(b.time));
       setMessages(msgs);
     } catch (e) {
       console.error(e);
     }
   };
 
+  // ── Initialise + start live polling ──────────────────────────────────────
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) { navigate("/login"); return; }
+
+    const init = async () => {
+      try {
+        const u = await api.getCurrentUser();
+        setUser(u);
+
+        const partners = await api.getPartners();
+        if (Array.isArray(partners)) {
+          const p = partners.find(ptr => ptr.name === u.platform);
+          if (p) {
+            setTheme({
+              gradient: `linear-gradient(135deg, ${p.borderColor}, ${p.borderColor}bb)`,
+              light:    p.borderColor ? `${p.borderColor}22` : "#f0fdf4",
+              accent:   p.borderColor || "#16a34a"
+            });
+          }
+        }
+
+        await loadMessages();
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    init();
+
+    // Poll every 5 s so users see admin replies without refreshing
+    const poll = setInterval(loadMessages, 5000);
+    return () => clearInterval(poll);
+  }, [navigate]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Auto-scroll to bottom whenever the message list updates ──────────────
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  // ── Send a new message ───────────────────────────────────────────────────
   const send = async () => {
     if (!text.trim()) return;
     const tempText = text;
     setText('');
     try {
       await api.postQuery(tempText);
-      loadMessages();
+      await loadMessages();
     } catch (e) {
       console.error(e);
       setText(tempText); // revert on error
@@ -115,17 +107,28 @@ export default function ChatSupport() {
       e.preventDefault();
       send();
     }
-  }
+  };
+
+  const clearChat = async () => {
+    if (!window.confirm("Are you sure you want to clear your chat history? This cannot be undone.")) return;
+    try {
+      if (api.userClearChat) await api.userClearChat();
+      setMessages([]);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to clear chat");
+    }
+  };
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "20px 16px" }}>
       <style>{STYLES}</style>
-      
+
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
-        <div style={{ 
-          width: 48, height: 48, borderRadius: 16, 
-          background: theme.gradient, 
+        <div style={{
+          width: 48, height: 48, borderRadius: 16,
+          background: theme.gradient,
           display: "flex", alignItems: "center", justifyContent: "center", color: "#fff",
           boxShadow: "0 8px 16px rgba(0,0,0,0.1)"
         }}>
@@ -135,19 +138,40 @@ export default function ChatSupport() {
           <h2 style={{ fontFamily: "Sora,sans-serif", fontSize: 24, fontWeight: 800, color: "#0f172a", margin: 0 }}>Support Center</h2>
           <p style={{ fontSize: 13, color: "#94a3b8", margin: 0 }}>We're here to help you</p>
         </div>
+        <div style={{ flex: 1 }} />
+        {messages.length > 0 && (
+          <button
+            onClick={clearChat}
+            style={{
+              padding: "8px 16px",
+              background: "#fee2e2",
+              color: "#dc2626",
+              border: "1px solid #fecaca",
+              borderRadius: "8px",
+              fontSize: "12px",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all 0.2s"
+            }}
+          >
+            Clear Chat
+          </button>
+        )}
       </div>
 
       {/* Chat Container */}
-      <div className="chat-card" style={{ 
-        background: "#fff", borderRadius: 24, overflow: "hidden", 
+      <div className="chat-card" style={{
+        background: "#fff", borderRadius: 24, overflow: "hidden",
         boxShadow: "0 20px 40px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)",
         display: "flex", flexDirection: "column", height: "calc(100vh - 200px)", minHeight: 500
       }}>
-        
+
         {/* Messages body */}
-        <div ref={scrollRef} className="chat-scroll" style={{ 
-          flex: 1, overflowY: "auto", padding: "24px 20px", 
-          background: "#f8fafc", backgroundImage: "radial-gradient(#e2e8f0 0.8px, transparent 0.8px)", backgroundSize: "24px 24px" 
+        <div ref={scrollRef} className="chat-scroll" style={{
+          flex: 1, overflowY: "auto", padding: "24px 20px",
+          background: "#f8fafc",
+          backgroundImage: "radial-gradient(#e2e8f0 0.8px, transparent 0.8px)",
+          backgroundSize: "24px 24px"
         }}>
           {messages.length === 0 ? (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", opacity: 0.5, textAlign: "center", padding: 40 }}>
@@ -160,11 +184,10 @@ export default function ChatSupport() {
               const currentDate = m.time ? new Date(m.time).toDateString() : null;
               const prevDate = i > 0 && messages[i-1].time ? new Date(messages[i-1].time).toDateString() : null;
               const showSeparator = currentDate && currentDate !== prevDate;
-              
               return (
                 <React.Fragment key={i}>
                   {showSeparator && <DateSeparator date={m.time} />}
-                  <ChatMessage from={m.from} text={m.text} time={m.time} theme={theme} />
+                  <ChatMessage from={m.from} text={m.text} time={m.time} theme={theme} replyTo={m.replyTo} />
                 </React.Fragment>
               );
             })
@@ -174,27 +197,27 @@ export default function ChatSupport() {
         {/* Input Area */}
         <div style={{ padding: "16px 20px", background: "#fff", borderTop: "1.5px solid #f1f5f9" }}>
           <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12 }}>
-            <textarea 
-              value={text} 
-              onChange={e => setText(e.target.value)} 
+            <textarea
+              value={text}
+              onChange={e => setText(e.target.value)}
               onKeyDown={handleKeyPress}
-              placeholder="Describe your issue..." 
-              style={{ 
-                flex: 1, background: "#f8fafc", border: "1.5px solid #e2e8f0", borderRadius: 16, 
+              placeholder="Describe your issue..."
+              style={{
+                flex: 1, background: "#f8fafc", border: "1.5px solid #e2e8f0", borderRadius: 16,
                 padding: "12px 16px", outline: "none", fontSize: 14, minHeight: 48, maxHeight: 120,
                 resize: "none", transition: "all 0.2s"
               }}
               onFocus={e => { e.target.style.borderColor = theme.accent; e.target.style.background = "#fff"; }}
-              onBlur={e => { e.target.style.borderColor = "#e2e8f0"; e.target.style.background = "#f8fafc"; }}
+              onBlur={e  => { e.target.style.borderColor = "#e2e8f0";   e.target.style.background = "#f8fafc"; }}
             />
-            <button 
-              onClick={send} 
+            <button
+              onClick={send}
               disabled={!text.trim()}
-              style={{ 
-                width: 48, height: 48, borderRadius: 14, 
-                background: text.trim() ? theme.gradient : "#f1f5f9", 
+              style={{
+                width: 48, height: 48, borderRadius: 14,
+                background: text.trim() ? theme.gradient : "#f1f5f9",
                 color: text.trim() ? "#fff" : "#cbd5e1",
-                display: "flex", alignItems: "center", justifyContent: "center", 
+                display: "flex", alignItems: "center", justifyContent: "center",
                 border: "none", cursor: text.trim() ? "pointer" : "default",
                 transition: "all 0.2s",
                 boxShadow: text.trim() ? "0 4px 12px rgba(0,0,0,0.1)" : "none"
@@ -207,5 +230,5 @@ export default function ChatSupport() {
         </div>
       </div>
     </div>
-  )
+  );
 }

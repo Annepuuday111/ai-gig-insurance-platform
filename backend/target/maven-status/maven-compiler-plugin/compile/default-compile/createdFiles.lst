@@ -27,7 +27,9 @@ com/example/aiinsurance/security/JwtUtil.class
 com/example/aiinsurance/model/User.class
 com/example/aiinsurance/model/ClaimRequest$Status.class
 com/example/aiinsurance/model/Admin.class
+com/example/aiinsurance/service/ClaimService$1.class
 com/example/aiinsurance/service/PlanService.class
+com/example/aiinsurance/service/ClaimService.class
 com/example/aiinsurance/model/Subscription$Status.class
 com/example/aiinsurance/model/Plan.class
 com/example/aiinsurance/repository/SubscriptionRepository.class
