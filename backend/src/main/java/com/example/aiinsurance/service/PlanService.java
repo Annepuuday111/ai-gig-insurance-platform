@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class PlanService {
@@ -32,15 +33,23 @@ public class PlanService {
         // Now ensure all 4 exist
         ensurePlanExists("Starter", 20.0, 3000.0, "Low", "Accident Cover|Hospital Cash ₹500/day|24×7 Helpline|Free trial 7 days", "[]");
         ensurePlanExists("Smart",   40.0, 6000.0, "Moderate", "Accident Cover|Hospital Cash ₹1000/day|Weather Payout|Income Protection|24×7 Helpline|Free trial 7 days", 
-            "[{\"situation\":\"Summer\",\"factor\":\"temperature\",\"threshold\":50,\"operator\":\">\"},{\"situation\":\"Rainy\",\"factor\":\"rainfall\",\"threshold\":100,\"operator\":\">\"}]");
+            "[{\"situation\":\"Summer\",\"factor\":\"temperature\",\"threshold\":35,\"operator\":\">\"},{\"situation\":\"Rainy\",\"factor\":\"rainfall\",\"threshold\":100,\"operator\":\">\"}]");
         ensurePlanExists("Pro",     60.0, 12000.0, "High", "Accident Cover|Hospital Cash ₹2000/day|Weather Payout|Income Protection|Life Cover ₹5L|Priority Claims|Dedicated Manager|Free trial 7 days", 
-            "[{\"situation\":\"Summer\",\"factor\":\"temperature\",\"threshold\":48,\"operator\":\">\"},{\"situation\":\"Cyclone\",\"factor\":\"wind_speed\",\"threshold\":80,\"operator\":\">\"}]");
+            "[{\"situation\":\"Summer\",\"factor\":\"temperature\",\"threshold\":35,\"operator\":\">\"},{\"situation\":\"Cyclone\",\"factor\":\"wind_speed\",\"threshold\":80,\"operator\":\">\"}]");
         ensurePlanExists("Max",     100.0, 25000.0, "High", "Accident Cover|Hospital Cash ₹3000/day|Weather Payout|Global Protection|Life Cover ₹10L|Priority Claims|Family Cover|Free trial 7 days", 
-            "[{\"situation\":\"Summer\",\"factor\":\"temperature\",\"threshold\":45,\"operator\":\">\"},{\"situation\":\"Rainy\",\"factor\":\"rainfall\",\"threshold\":80,\"operator\":\">\"}]");
+            "[{\"situation\":\"Summer\",\"factor\":\"temperature\",\"threshold\":35,\"operator\":\">\"},{\"situation\":\"Rainy\",\"factor\":\"rainfall\",\"threshold\":80,\"operator\":\">\"}]");
     }
 
     private void ensurePlanExists(String name, double premium, double coverage, String risk, String features, String triggers) {
-        if (planRepository.findAll().stream().noneMatch(p -> p.getName().equalsIgnoreCase(name))) {
+        Optional<Plan> existing = planRepository.findAll().stream()
+            .filter(p -> p.getName().equalsIgnoreCase(name))
+            .findFirst();
+            
+        if (existing.isPresent()) {
+            Plan p = existing.get();
+            p.setParametricTriggers(triggers);
+            planRepository.save(p);
+        } else {
             Plan p = new Plan(name, premium, coverage, risk, features, 7);
             p.setParametricTriggers(triggers);
             planRepository.save(p);

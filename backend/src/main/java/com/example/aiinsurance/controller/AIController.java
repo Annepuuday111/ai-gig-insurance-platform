@@ -130,21 +130,26 @@ public class AIController {
             @RequestHeader("Authorization") String authHeader) {
         User user = getUser(authHeader);
 
-        // Get coverage from latest subscription
-        double coverage = subscriptionRepository
-            .findTopByUserOrderByCreatedAtDesc(user)
-            .map(s -> s.getPlan().getCoverageAmount())
-            .orElse(6000.0);
-        String planName = subscriptionRepository
-            .findTopByUserOrderByCreatedAtDesc(user)
-            .map(s -> s.getPlan().getName())
-            .orElse("Smart");
+        // Get coverage and triggers from latest subscription
+        var latestSub = subscriptionRepository.findTopByUserOrderByCreatedAtDesc(user);
+        
+        double coverage = latestSub.map(s -> s.getPlan().getCoverageAmount()).orElse(6000.0);
+        String planName = latestSub.map(s -> s.getPlan().getName()).orElse("Smart");
+        
+        java.util.List<java.util.Map<String, Object>> triggers = java.util.List.of();
+        if (latestSub.isPresent() && latestSub.get().getPlan().getParametricTriggers() != null) {
+            try {
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                triggers = mapper.readValue(latestSub.get().getPlan().getParametricTriggers(), 
+                    new com.fasterxml.jackson.core.type.TypeReference<java.util.List<java.util.Map<String, Object>>>() {});
+            } catch (Exception ignored) {}
+        }
 
         Map<String, Object> result = aiService.checkParametric(
             user.getId(),
             user.getState()    != null ? user.getState()    : "Maharashtra",
             user.getDistrict() != null ? user.getDistrict() : "Mumbai",
-            planName, coverage);
+            planName, coverage, triggers);
         return ResponseEntity.ok(result);
     }
 

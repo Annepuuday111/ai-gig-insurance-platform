@@ -75,38 +75,51 @@ public class AutoClaimService {
 
             // ── 4. AI Parametric Trigger Check ────────────────────────────────
             try {
+                // Extract dynamic triggers from plan
+                List<Map<String, Object>> triggers = List.of();
+                try {
+                    String json = sub.getPlan().getParametricTriggers();
+                    if (json != null && !json.isBlank()) {
+                        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                        triggers = mapper.readValue(json, new com.fasterxml.jackson.core.type.TypeReference<List<Map<String, Object>>>() {});
+                    }
+                } catch (Exception e) {
+                    System.err.println("[AutoClaimService] Failed to parse triggers for plan " + sub.getPlan().getName());
+                }
+
                 Map<String, Object> aiResult = aiService.checkParametric(
                         user.getId(),
                         user.getState(),
                         user.getDistrict() != null ? user.getDistrict() : user.getState(),
                         sub.getPlan().getName(),
-                        sub.getPlan().getCoverageAmount()
+                        sub.getPlan().getCoverageAmount(),
+                        triggers
                 );
 
                 if (aiResult == null) continue;
 
-                boolean triggerMet = Boolean.TRUE.equals(aiResult.get("trigger_met"));
+                boolean triggerMet = Boolean.TRUE.equals(aiResult.get("auto_trigger"));
 
                 if (triggerMet) {
                     // Extract disaster type from AI response
                     String disasterType = "Natural Disaster";
                     String weatherDetails = "";
 
-                    Object detailsObj = aiResult.get("details");
-                    if (detailsObj instanceof Map) {
+                    Object paramCheckObj = aiResult.get("parametric_check");
+                    if (paramCheckObj instanceof Map) {
                         @SuppressWarnings("unchecked")
-                        Map<String, Object> details = (Map<String, Object>) detailsObj;
-                        if (details.containsKey("condition"))
-                            disasterType = details.get("condition").toString();
-                        if (details.containsKey("description"))
-                            weatherDetails = " — " + details.get("description").toString();
-                    }
-
-                    // Also check parametric_check field if present
-                    Object paramCheck = aiResult.get("parametric_check");
-                    if (paramCheck instanceof Map) {
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> pc = (Map<String, Object>) paramCheck;
+                        Map<String, Object> pc = (Map<String, Object>) paramCheckObj;
+                        
+                        Object reasons = pc.get("trigger_reasons");
+                        if (reasons instanceof List && !((List<?>)reasons).isEmpty()) {
+                            String firstReason = ((List<?>)reasons).get(0).toString();
+                            disasterType = firstReason;
+                            // If it's a Summer Alert, simplify the name for matching with plan triggers
+                            if (firstReason.toLowerCase().contains("summer") || firstReason.toLowerCase().contains("heat")) {
+                                disasterType = "Summer";
+                            }
+                        }
+                        
                         Object severity = pc.get("severity");
                         if (severity != null) weatherDetails += " [Severity: " + severity + "]";
                     }
@@ -134,11 +147,14 @@ public class AutoClaimService {
                     req.setCreatedAt(LocalDateTime.now());
                     claimRequestRepository.save(req);
 
-                    // ── 🛡️ AUTO-APPROVE CHECK ──
+                    // ── 🛡️ AUTO-APPROVE/REJECT CHECK ──
                     String triggerResult = claimService.evaluateTriggers(req, user);
                     if ("APPROVE".equals(triggerResult)) {
                         claimService.approveRequestInternal(req);
                         System.out.println("[AutoClaimService] ✅ Claim for " + user.getEmail() + " auto-approved based on plan triggers.");
+                    } else if ("REJECT".equals(triggerResult)) {
+                        claimService.rejectRequestInternal(req, "Weather thresholds for " + disasterType + " were not met at your location. AI auto-rejected.");
+                        System.out.println("[AutoClaimService] ❌ Claim for " + user.getEmail() + " auto-rejected based on plan triggers.");
                     } else {
                         // Notify user
                         sendNotification(user,
@@ -156,16 +172,43 @@ public class AutoClaimService {
                     }
 
                 } else {
-                    System.out.println("[AutoClaimService] No trigger for user " + user.getEmail()
-                            + " in " + user.getState());
+                    // System.out.println("[AutoClaimService] No trigger for user " + user.getEmail() + " in " + user.getState());
                 }
 
             } catch (Exception e) {
                 System.err.println("[AutoClaimService] Error checking user " + user.getId() + ": " + e.getMessage());
             }
         }
-
         System.out.println("[AutoClaimService] Monitoring cycle complete.");
+    }
+
+    /**
+     * Run every 30 minutes. 
+     * Scans PENDING claims and tries to auto-verify them using the AI trigger logic.
+     * This fulfills the 'AI check and verify from admin' requirement.
+     */
+    @Scheduled(fixedRate = 1_800_000)
+    @Transactional
+    public void processPendingClaims() {
+        System.out.println("[AutoClaimService] Running periodic pending claim verification...");
+        List<ClaimRequest> pendingClaims = claimRequestRepository.findByStatus(ClaimRequest.Status.PENDING);
+        
+        for (ClaimRequest req : pendingClaims) {
+            try {
+                User user = req.getUser();
+                String triggerResult = claimService.evaluateTriggers(req, user);
+                
+                if ("APPROVE".equals(triggerResult)) {
+                    claimService.approveRequestInternal(req);
+                    System.out.println("[AutoClaimService] Periodic Check: ✅ Auto-approved pending claim " + req.getId() + " for " + user.getEmail());
+                } else if ("REJECT".equals(triggerResult)) {
+                    claimService.rejectRequestInternal(req, "AI automated verification: Weather thresholds not met at this time.");
+                    System.out.println("[AutoClaimService] Periodic Check: ❌ Auto-rejected pending claim " + req.getId() + " for " + user.getEmail());
+                }
+            } catch (Exception e) {
+                System.err.println("[AutoClaimService] Error verifying pending claim " + req.getId() + ": " + e.getMessage());
+            }
+        }
     }
 
     private void sendNotification(User user, String title, String message, String type) {

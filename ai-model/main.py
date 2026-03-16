@@ -160,51 +160,114 @@ def mock_weather(state: str, district: str) -> dict:
     humidity  = round_val(rng.uniform(30, 95), 1)
     wind_kmh  = round_val(rng.uniform(5, 80), 1)
     aqi       = rng.randint(40, 400)
+    
+    # Simulate rainfall based on condition
+    rainfall = 0.0
+    if "Rain" in chosen_cond:
+        rainfall = round_val(rng.uniform(10, 150), 1)
+    elif "Thunderstorm" in chosen_cond or "Cyclone" in chosen_cond:
+        rainfall = round_val(rng.uniform(50, 250), 1)
 
     return {
         "location":    f"{district}, {state}",
         "condition":   chosen_cond,
         "temperature": temp_c,
+        "temp":        temp_c, # Alias for threshold matching
         "humidity":    humidity,
         "wind_kmh":    wind_kmh,
+        "wind_speed":  wind_kmh, # Alias for threshold matching
         "aqi":         aqi,
+        "rainfall":    rainfall,
         "risk_index":  round_val(chosen_risk, 3),
         "season":      season,
         "timestamp":   datetime.datetime.now().isoformat(),
     }
 
-def weather_triggers_parametric(weather: dict) -> dict:
+def evaluate_custom_triggers(weather: dict, triggers: List[Dict[str, Any]]) -> List[str]:
+    """Helper to evaluate list of JSON triggers from Admin."""
+    matches = []
+    # Mapping normalized factor names to weather keys
+    mapping = {
+        "temperature": "temperature", "temp": "temperature",
+        "rainfall": "rainfall", "rain": "rainfall",
+        "humidity": "humidity",
+        "wind_speed": "wind_kmh", "wind": "wind_kmh", "windspeed": "wind_kmh",
+        "aqi": "aqi",
+        "risk_index": "risk_index", "risk": "risk_index"
+    }
+    
+    if not triggers:
+        return []
+
+    for t in triggers:
+        factor = str(t.get("factor", "")).lower()
+        operator = str(t.get("operator", ""))
+        try:
+            threshold = float(t.get("threshold", 0))
+        except ValueError:
+            continue
+            
+        w_key = mapping.get(factor)
+        if w_key and w_key in weather:
+            val = float(weather[w_key])
+            is_match = False
+            if operator == ">" and val > threshold: is_match = True
+            elif operator == ">=" and val >= threshold: is_match = True
+            elif operator == "<" and val < threshold: is_match = True
+            elif operator == "<=" and val <= threshold: is_match = True
+            elif operator == "==" and val == threshold: is_match = True
+            
+            if is_match:
+                sit = t.get("situation", "Disaster")
+                matches.append(f"{sit} detected: {factor} is {val} (Threshold: {threshold})")
+                
+    return matches
+
+def weather_triggers_parametric(weather: dict, custom_triggers: Optional[List[Dict[str, Any]]] = None) -> dict:
     """
     Evaluate whether the current weather crosses parametric trigger thresholds.
     Returns auto_trigger=True + trigger reason if thresholds are exceeded.
     """
-    triggers = []
+    default_triggers = []
     ri = weather["risk_index"]
     cond = weather["condition"]
     aqi  = weather["aqi"]
     wind = weather["wind_kmh"]
+    temp = weather["temperature"]
 
+    # Evaluate hardcoded defaults
+    if temp >= 35:
+        default_triggers.append(f"Summer Heat Alert: {temp}°C ≥ 35°C threshold")
     if ri >= 0.85:
-        triggers.append(f"Severe weather: {cond} (risk index {ri:.2f} ≥ 0.85)")
+        default_triggers.append(f"Severe weather: {cond} (risk index {ri:.2f} ≥ 0.85)")
     if aqi >= 300:
-        triggers.append(f"Hazardous air quality: AQI {aqi} ≥ 300")
+        default_triggers.append(f"Hazardous air quality: AQI {aqi} ≥ 300")
     if "Cyclone" in cond or "Thunderstorm" in cond:
-        triggers.append(f"Extreme weather event: {cond}")
+        default_triggers.append(f"Extreme weather event: {cond}")
     if wind >= 70:
-        triggers.append(f"Dangerous wind speed: {wind} km/h ≥ 70")
+        default_triggers.append(f"Dangerous wind speed: {wind} km/h ≥ 70")
     if cond in ("Heavy Rain", "Thunderstorm", "Cyclone Warning"):
-        triggers.append(f"Income-disruption weather: {cond}")
+        default_triggers.append(f"Income-disruption weather: {cond}")
+
+    # Evaluate dynamic Admin triggers if provided
+    custom_matches = evaluate_custom_triggers(weather, custom_triggers) if custom_triggers else []
+    
+    all_triggered_reasons = default_triggers + custom_matches
+    auto_trigger = len(all_triggered_reasons) > 0
+
+    severity = "LOW"
+    if ri >= 0.90 or temp >= 45: severity = "CRITICAL"
+    elif ri >= 0.75 or temp >= 40: severity = "HIGH"
+    elif ri >= 0.50 or temp >= 35: severity = "MODERATE"
+    
+    if not default_triggers and custom_matches:
+        severity = "MODERATE"
 
     return {
-        "auto_trigger":    len(triggers) > 0,
-        "trigger_reasons": triggers,
-        "severity":        (
-            "CRITICAL" if ri >= 0.90 else
-            "HIGH"     if ri >= 0.75 else
-            "MODERATE" if ri >= 0.50 else
-            "LOW"
-        ),
-        "estimated_income_loss_pct": round_val(min(100.0, ri * 90), 1),
+        "auto_trigger":    auto_trigger,
+        "trigger_reasons": all_triggered_reasons,
+        "severity":        severity,
+        "estimated_income_loss_pct": round_val(min(100.0, ri * 90 if temp < 35 else max(ri * 90, (temp - 30) * 10)), 1),
     }
 
 def fraud_score(claim: dict) -> dict:
@@ -318,6 +381,7 @@ class ParametricRequest(BaseModel):
     district:   str
     plan_name:  str = "Smart"
     coverage:   float = 6000.0
+    triggers:   Optional[List[Dict[str, Any]]] = None
 
 # ─────────────────────────────────────────────
 # ROUTES
@@ -443,7 +507,7 @@ def parametric_check(req: ParametricRequest):
     If weather conditions exceed thresholds → auto-initiate claim.
     """
     weather    = mock_weather(req.state, req.district)
-    triggers   = weather_triggers_parametric(weather)
+    triggers   = weather_triggers_parametric(weather, req.triggers)
 
     payout_pct = 0
     if triggers["auto_trigger"]:

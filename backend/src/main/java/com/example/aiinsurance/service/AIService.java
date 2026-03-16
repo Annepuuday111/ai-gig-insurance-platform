@@ -6,6 +6,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.http.*;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * Service that communicates with the Python AI microservice (FastAPI on port 8000).
@@ -120,7 +121,7 @@ public class AIService {
      */
     @SuppressWarnings("unchecked")
     public Map<String, Object> checkParametric(Long userId, String state, String district,
-                                               String planName, double coverage) {
+                                               String planName, double coverage, List<Map<String, Object>> triggers) {
         try {
             Map<String, Object> body = new HashMap<>();
             body.put("user_id",   userId != null ? userId.intValue() : 0);
@@ -128,6 +129,7 @@ public class AIService {
             body.put("district",  district != null ? district : state);
             body.put("plan_name", planName != null ? planName : "Smart");
             body.put("coverage",  coverage);
+            body.put("triggers",  triggers); // Dynamic triggers from admin
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, jsonHeaders());
             ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
