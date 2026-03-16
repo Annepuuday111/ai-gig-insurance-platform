@@ -164,10 +164,16 @@ public class AdminController {
         if (answer == null || answer.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("error","answer required"));
         }
+        
+        // Use the new service method to create a NEW chat message from admin
+        com.example.aiinsurance.model.Query reply = queryService.createFromAdmin(q.getUser(), answer);
+        
+        // Also update the original query's answer field to mark it as answered (legacy support/ui badge)
         q.setAnswer(answer);
         q.setAnsweredAt(java.time.LocalDateTime.now());
         queryService.save(q);
-        return ResponseEntity.ok(q);
+        
+        return ResponseEntity.ok(reply);
     }
 
     // ------------ plan management ----------------

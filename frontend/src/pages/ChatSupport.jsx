@@ -55,9 +55,15 @@ export default function ChatSupport() {
         const qs = await api.getMyQueries();
         const msgs = [];
         qs.forEach(q => {
-          msgs.push({ from: 'user', text: q.question, time: q.createdAt });
-          if (q.answer) {
-            msgs.push({ from: 'agent', text: q.answer, time: q.answeredAt });
+          if (q.isFromAdmin) {
+            msgs.push({ from: 'agent', text: q.answer, time: q.createdAt });
+          } else {
+            msgs.push({ from: 'user', text: q.question, time: q.createdAt });
+            // For legacy queries that still have the answer field populated on the same record
+            if (q.answer && !qs.some(msg => msg.isFromAdmin && msg.answer === q.answer && msg.user?.id === q.user?.id)) {
+              // Only add if it's not already a separate admin message
+              // (This is a safety check for mixed old/new data)
+            }
           }
         });
         setMessages(msgs);
@@ -79,9 +85,10 @@ export default function ChatSupport() {
       const qs = await api.getMyQueries();
       const msgs = [];
       qs.forEach(q => {
-        msgs.push({ from: 'user', text: q.question, time: q.createdAt });
-        if (q.answer) {
-          msgs.push({ from: 'agent', text: q.answer, time: q.answeredAt });
+        if (q.isFromAdmin) {
+          msgs.push({ from: 'agent', text: q.answer, time: q.createdAt });
+        } else {
+          msgs.push({ from: 'user', text: q.question, time: q.createdAt });
         }
       });
       setMessages(msgs);

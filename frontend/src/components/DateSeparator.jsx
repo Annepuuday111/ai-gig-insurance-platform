@@ -19,7 +19,7 @@ export default function DateSeparator({ date }) {
     if (isToday) return 'Today';
     if (isYesterday) return 'Yesterday';
     
-    return d.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
   };
 
   return (

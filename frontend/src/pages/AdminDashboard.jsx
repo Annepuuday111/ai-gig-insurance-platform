@@ -360,6 +360,8 @@ export default function AdminDashboard() {
   const [msgType, setMsgType] = useState("success");
   const [loading, setLoading] = useState(true);
   const [newPlan, setNewPlan] = useState({ name: "", weeklyPremium: 0, coverageAmount: 0, trialDays: 7, riskLevel: "Moderate", features: "" });
+  const [selectedChatUser, setSelectedChatUser] = useState(null);
+  const [chatText, setChatText] = useState("");
 
   const carouselRef = useRef(null);
 
@@ -453,7 +455,15 @@ export default function AdminDashboard() {
   };
   const handleRejectClaimReq = async (id) => { if (!window.confirm("Reject this claim request?")) return; await adminRejectClaimRequest(id); loadClaimRequests(); showMsg("Claim request rejected", "error"); };
 
-  const handleReply = async (id, answer) => { await adminReplyQuery(id, { answer }); loadQueries(); showMsg("Reply sent!"); };
+  const handleReplyChat = async () => {
+    if (!selectedChatUser || !chatText.trim()) return;
+    const firstQuery = queries.find(q => q.user?.id === selectedChatUser.id);
+    if (!firstQuery) return;
+    await adminReplyQuery(firstQuery.id, { answer: chatText });
+    setChatText("");
+    loadQueries();
+    showMsg("Reply sent!");
+  };
 
   const handlePartnerDelete = async (id) => { if (!window.confirm("Delete this partner?")) return; await adminDeletePartner(id); loadPartners(); showMsg("Partner deleted!"); };
   const handlePaymentDelete = async (id) => { if (!window.confirm("Delete this payment record?")) return; await adminDeletePayment(id); loadPayments(); showMsg("Payment deleted!"); };
@@ -944,43 +954,231 @@ export default function AdminDashboard() {
   /* ══════════════════════════════════════
      SECTION: QUERIES
   ══════════════════════════════════════ */
-  const renderQueries = () => (
-    <div className="space-y-4">
-      {queries.length === 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center text-gray-300">No queries yet</div>
-      )}
-      {queries.map((q) => (
-        <div key={q.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition">
-          <div className="flex items-start justify-between gap-3 mb-3">
-            <div className="flex items-start gap-3">
-              <Avatar name={q.user?.email} />
+  const renderQueries = () => {
+    const usersWithQueries = Array.from(new Set(queries.map(q => q.user?.id)))
+      .map(id => {
+        const userQs = queries.filter(q => q.user?.id === id);
+        
+        // Consolidate all messages for this user into a single sorted timeline
+        const timeline = [];
+        userQs.forEach(q => {
+          if (q.isFromAdmin) {
+            timeline.push({ from: 'agent', text: q.answer, time: q.createdAt });
+          } else {
+            timeline.push({ from: 'user', text: q.question, time: q.createdAt });
+            // Legacy answer check - don't duplicate if a separate admin record exists for this answer
+            if (q.answer && !userQs.some(uq => uq.isFromAdmin && uq.answer === q.answer)) {
+              timeline.push({ from: 'agent', text: q.answer, time: q.answeredAt || q.createdAt });
+            }
+          }
+        });
+        
+        // Sort timeline to find the TRUE last message
+        timeline.sort((a,b) => new Date(a.time) - new Date(b.time));
+        const lastMsg = timeline[timeline.length - 1];
+        
+        // Unread = User questions that don't have an answer in the same record 
+        // AND there are no newer admin records
+        const unansweredQs = userQs.filter(q => !q.isFromAdmin && !q.answer);
+        const unreadCount = unansweredQs.length;
+        
+        const lastText = lastMsg.from === 'agent' 
+          ? `You: ${lastMsg.text}` 
+          : lastMsg.text;
+
+        return {
+          id,
+          user: userQs[0].user,
+          lastMessage: lastText,
+          time: lastMsg.time,
+          unreadCount
+        };
+      })
+      .sort((a, b) => new Date(b.time) - new Date(a.time));
+
+    const activeUser = selectedChatUser || usersWithQueries[0]?.user;
+    const activeMessages = activeUser ? queries.filter(q => q.user?.id === activeUser.id) : [];
+
+    return (
+      <div className="flex h-[calc(100vh-200px)] min-h-[500px] bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mt-2">
+        {/* User List Sidebar */}
+        <div className={`w-full sm:w-80 border-r border-gray-100 flex flex-col bg-gray-50/30 ${selectedChatUser ? "hidden sm:flex" : "flex"}`}>
+          <div className="p-4 border-b border-gray-100 bg-white">
+            <h3 className="font-bold text-gray-800 flex items-center gap-2">
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+              Active Support
+            </h3>
+          </div>
+          <div className="flex-1 overflow-y-auto no-scrollbar">
+            {usersWithQueries.map(item => (
+              <button
+                key={item.id}
+                onClick={() => setSelectedChatUser(item.user)}
+                className={`w-full flex items-center gap-3 px-4 py-4 transition-all border-b border-gray-50
+                  ${activeUser?.id === item.id ? "bg-white shadow-sm ring-1 ring-inset ring-green-100" : "hover:bg-gray-100/50"}
+                `}
+              >
+                <div className="relative">
+                  <Avatar name={item.user?.name || item.user?.email} />
+                  {item.hasUnanswered && (
+                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-500 border-2 border-white rounded-full"></span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0 text-left">
+                  <div className="flex items-center justify-between gap-1 leading-none mb-0.5">
+                    <p className="font-bold text-gray-800 text-sm truncate">{item.user?.name || "Anonymous"}</p>
+                    <span className={`text-[9px] font-bold uppercase shrink-0 ${item.unreadCount > 0 ? "text-green-500" : "text-gray-400"}`}>
+                      {new Date(item.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between gap-2">
+                    <p className={`text-xs truncate font-medium flex-1 ${item.unreadCount > 0 ? "text-gray-700 font-bold" : "text-gray-400"}`}>
+                      {item.lastMessage || "No message content"}
+                    </p>
+                    {item.unreadCount > 0 && (
+                      <span className="min-w-[18px] h-[18px] flex items-center justify-center bg-green-500 text-white text-[10px] font-black rounded-full px-1 shadow-sm animate-bounce">
+                        {item.unreadCount}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1 mt-1 opacity-60">
+                    <FaPhone className="text-[8px] text-green-600" />
+                    <span className="text-[9px] text-green-700 font-black">{item.user?.phone || "—"}</span>
+                  </div>
+                </div>
+                {/* Time removed from here as it's now in the name row */}
+              </button>
+            ))}
+            {usersWithQueries.length === 0 && (
+              <div className="p-12 text-center text-gray-300 text-sm italic">No active support chats</div>
+            )}
+          </div>
+        </div>
+
+        {/* Chat Area */}
+        <div className={`flex-1 flex flex-col bg-white ${!selectedChatUser ? "hidden sm:flex" : "flex"}`}>
+          {activeUser ? (
+            <>
+              {/* Chat Header */}
+              <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <button onClick={() => setSelectedChatUser(null)} className="sm:hidden text-gray-400 p-1 hover:text-gray-600">
+                    <FaChevronRight className="rotate-180" />
+                  </button>
+                  <Avatar name={activeUser.name || activeUser.email} />
+                  <div>
+                    <p className="font-bold text-gray-800 text-base leading-tight">{activeUser.name || "User"}</p>
+                    <div className="flex items-center gap-1.5 mt-1 bg-green-500 w-fit px-3 py-1 rounded-full border border-green-600 shadow-sm">
+                      <FaPhone className="text-[10px] text-white" />
+                      <p className="text-xs text-white font-black tracking-wider uppercase">{activeUser.phone || "No phone"}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                   {/* Chat Stats or Actions */}
+                </div>
+              </div>
+
+              {/* Messages Container */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50 bg-[radial-gradient(#e2e8f0_0.8px,transparent_0.8px)] [background-size:24px_24px]">
+                {/* Process messages into unified chat flow */}
+                {(() => {
+                  const unified = [];
+                  activeMessages.forEach(q => {
+                    if (q.isFromAdmin) {
+                      unified.push({ from: 'agent', text: q.answer, time: q.createdAt });
+                    } else {
+                      unified.push({ from: 'user', text: q.question, time: q.createdAt });
+                      // If it's a legacy record with an answer but no separate record exists
+                      if (q.answer && !activeMessages.some(am => am.isFromAdmin && am.answer === q.answer)) {
+                        unified.push({ from: 'agent', text: q.answer, time: q.answeredAt || q.createdAt });
+                      }
+                    }
+                  });
+                  unified.sort((a,b) => new Date(a.time) - new Date(b.time));
+
+                  return unified.map((m, i) => {
+                    const isAgent = m.from === 'agent';
+                    const currentDate = m.time ? new Date(m.time).toDateString() : null;
+                    const prevDate = i > 0 && unified[i-1].time ? new Date(unified[i-1].time).toDateString() : null;
+                    const showSeparator = currentDate && currentDate !== prevDate;
+                    
+                    const getFriendlyDate = (dateStr) => {
+                      const d = new Date(dateStr);
+                      const today = new Date();
+                      const yesterday = new Date();
+                      yesterday.setDate(today.getDate() - 1);
+                      if (d.toDateString() === today.toDateString()) return "Today";
+                      if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
+                      return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+                    };
+
+                    return (
+                      <React.Fragment key={i}>
+                        {showSeparator && (
+                          <div className="flex justify-center my-6 relative">
+                            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100"></div></div>
+                            <span className="relative px-4 py-1.5 bg-gray-50 border border-gray-100 rounded-full text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                              {getFriendlyDate(m.time)}
+                            </span>
+                          </div>
+                        )}
+                        <div className={`flex w-full ${isAgent ? "justify-start" : "justify-end"}`}>
+                          <div className={`max-w-[85%] sm:max-w-[70%] px-4 py-2.5 rounded-2xl shadow-sm text-sm font-medium leading-relaxed
+                            ${isAgent 
+                              ? "bg-white text-gray-700 border border-gray-100 rounded-bl-none" 
+                              : "bg-green-500 text-white rounded-br-none"}
+                          `}>
+                            <p>{m.text}</p>
+                            <div className={`text-[9px] mt-1.5 font-bold uppercase tracking-wider ${isAgent ? "text-gray-300" : "text-green-100"} text-right`}>
+                              {new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          </div>
+                        </div>
+                      </React.Fragment>
+                    );
+                  });
+                })()}
+              </div>
+
+              {/* Chat Input */}
+              <div className="p-4 border-t border-gray-100">
+                <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-2xl px-2 py-2 focus-within:ring-2 focus-within:ring-green-400 focus-within:bg-white transition-all">
+                  <textarea
+                    value={chatText}
+                    onChange={(e) => setChatText(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleReplyChat(); } }}
+                    placeholder="Type your reply here..."
+                    className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-2 px-3 resize-none max-h-32 text-gray-700"
+                    rows={1}
+                  />
+                  <button
+                    onClick={handleReplyChat}
+                    disabled={!chatText.trim()}
+                    className="w-10 h-10 bg-green-500 hover:bg-green-600 text-white rounded-xl flex items-center justify-center transition disabled:opacity-50 disabled:bg-gray-300 shadow-sm"
+                  >
+                    <FaReply />
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-12 text-gray-300 space-y-4">
+              <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center border-2 border-dashed border-gray-200">
+                <FaQuestionCircle className="text-3xl" />
+              </div>
               <div>
-                <p className="font-semibold text-gray-700 text-sm">{q.user?.email || "Anonymous User"}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{new Date(q.createdAt).toLocaleString()}</p>
+                <p className="font-bold text-gray-400">Select a worker to start chatting</p>
+                <p className="text-xs">Individual chat history will appear here</p>
               </div>
             </div>
-            {q.answer
-              ? <span className="shrink-0 inline-flex items-center gap-1 text-xs bg-green-50 text-green-600 border border-green-200 px-2.5 py-1 rounded-full font-medium"><FaCheckCircle /> Answered</span>
-              : <span className="shrink-0 inline-flex items-center gap-1 text-xs bg-amber-50 text-amber-600 border border-amber-200 px-2.5 py-1 rounded-full font-medium"><FaHourglassHalf /> Pending</span>
-            }
-          </div>
-          <div className="bg-gray-50 rounded-xl p-3.5 border border-gray-100 mb-3">
-            <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">Question</p>
-            <p className="text-gray-700 text-sm">{q.question}</p>
-          </div>
-          {q.answer ? (
-            <div className="bg-green-50 rounded-xl p-3.5 border border-green-100">
-              <p className="text-xs text-green-600 font-semibold uppercase tracking-wide mb-1 flex items-center gap-1"><FaReply /> Reply</p>
-              <p className="text-gray-700 text-sm">{q.answer}</p>
-              <p className="text-xs text-green-400 mt-1">{new Date(q.answeredAt).toLocaleString()}</p>
-            </div>
-          ) : (
-            <ReplyForm onReply={(ans) => handleReply(q.id, ans)} />
           )}
         </div>
-      ))}
-    </div>
-  );
+      </div>
+    );
+  };
 
   /* ══════════════════════════════════════
      SECTION: PLANS

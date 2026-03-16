@@ -24,6 +24,9 @@ public class Query {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(nullable = false)
+    private boolean isFromAdmin = false;
+
     @Column
     private LocalDateTime answeredAt;
 
@@ -55,4 +58,7 @@ public class Query {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getAnsweredAt() { return answeredAt; }
     public void setAnsweredAt(LocalDateTime answeredAt) { this.answeredAt = answeredAt; }
+
+    public boolean isFromAdmin() { return isFromAdmin; }
+    public void setFromAdmin(boolean fromAdmin) { isFromAdmin = fromAdmin; }
 }

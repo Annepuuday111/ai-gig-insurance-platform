@@ -17,6 +17,17 @@ public class QueryService {
 
     public Query create(User user, String question) {
         Query q = new Query(user, question);
+        q.setFromAdmin(false);
+        return queryRepository.save(q);
+    }
+
+    public Query createFromAdmin(User user, String answer) {
+        Query q = new Query();
+        q.setUser(user);
+        q.setQuestion(""); // Or "Response from Support"
+        q.setAnswer(answer);
+        q.setFromAdmin(true);
+        q.setAnsweredAt(java.time.LocalDateTime.now());
         return queryRepository.save(q);
     }
 
