@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import api from "../api";
 
 import {
@@ -17,6 +17,7 @@ const defaultTheme = { accent: "#16a34a", light: "#f0fdf4", gradient: "linear-gr
 
 export default function Sidebar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [theme, setTheme] = useState(defaultTheme);
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadChatCount, setUnreadChatCount] = useState(0);
@@ -61,12 +62,19 @@ export default function Sidebar() {
     }
     fetchNotifications();
     fetchChatUnread();
+    
+    const handleReadEvent = () => setUnreadChatCount(0);
+    window.addEventListener('chatRead', handleReadEvent);
+
     // Poll updates every 30 seconds
     const interval = setInterval(() => {
       fetchNotifications();
       fetchChatUnread();
     }, 30000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('chatRead', handleReadEvent);
+    };
   }, []);
 
   const logout = () => {
@@ -169,7 +177,11 @@ export default function Sidebar() {
             <NavLink to="/chat" className={({ isActive }) => isActive ? activeItem : menuItem}>
               <div className="flex items-center justify-between w-full">
                 <span className="flex items-center gap-3"><FaCommentDots size={18} /> Support Chat</span>
-                {unreadChatCount > 0 && <span className="bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">{unreadChatCount}</span>}
+                {(unreadChatCount > 0 && location.pathname !== '/chat') && (
+                  <span className="bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                    {unreadChatCount}
+                  </span>
+                )}
               </div>
             </NavLink>
           </div>

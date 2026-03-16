@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import React, { useEffect, useState } from "react";
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import api from "../api";
 import {
   FaHome,
@@ -15,6 +15,7 @@ const defaultTheme = { accent: "#16a34a", light: "#f0fdf4" };
 
 export default function BottomNav(){
   const navigate = useNavigate()
+  const location = useLocation()
   const [theme, setTheme] = useState(defaultTheme);
   const [unreadChatCount, setUnreadChatCount] = useState(0);
 
@@ -47,8 +48,15 @@ export default function BottomNav(){
     }
     fetchTheme();
     fetchChatUnread();
+    
+    const handleReadEvent = () => setUnreadChatCount(0);
+    window.addEventListener('chatRead', handleReadEvent);
+
     const interval = setInterval(fetchChatUnread, 30000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('chatRead', handleReadEvent);
+    };
   }, []);
 
   const logout = () => {
@@ -106,7 +114,7 @@ export default function BottomNav(){
         <NavLink to="/chat" className={navItemClass} style={{ position: 'relative' }}>
           <FaCommentDots className="w-5 h-5" />
           <span className="text-xs mt-1">Chat</span>
-          {unreadChatCount > 0 && (
+          {(unreadChatCount > 0 && location.pathname !== '/chat') && (
             <span style={{
               position: 'absolute', top: 6, right: '15%',
               background: '#ef4444', color: '#fff',

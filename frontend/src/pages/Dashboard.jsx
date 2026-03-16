@@ -134,7 +134,6 @@ export default function Dashboard() {
       }).catch(() => {});
     });
 
-    // Fetch partners
     getPartners().then(res => {
       if (!res.error && Array.isArray(res)) {
         setPartners(res);
@@ -150,6 +149,13 @@ export default function Dashboard() {
         setThemeDict(d);
       }
     }).catch(() => {});
+
+    const handleReadEvent = () => setUnreadChatCount(0);
+    window.addEventListener('chatRead', handleReadEvent);
+
+    return () => {
+      window.removeEventListener('chatRead', handleReadEvent);
+    };
   }, [navigate]);
 
   // Helper derived values from backend summary

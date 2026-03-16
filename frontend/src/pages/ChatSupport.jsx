@@ -41,6 +41,14 @@ export default function ChatSupport() {
         )
         .sort((a, b) => new Date(a.time) - new Date(b.time));
       setMessages(msgs);
+      
+      // If there are unread admin messages, mark them as read since the user is currently viewing the chat
+      if (qs.some(q => (q.isFromAdmin || q.fromAdmin) && !q.readByUser)) {
+        api.userMarkQueriesAsRead().then(() => {
+          // Notify other components to clear their counts instantly
+          window.dispatchEvent(new Event('chatRead'));
+        }).catch(() => {});
+      }
     } catch (e) {
       console.error(e);
     }
@@ -58,6 +66,7 @@ export default function ChatSupport() {
         
         // Mark messages as read
         await api.userMarkQueriesAsRead();
+        window.dispatchEvent(new Event('chatRead'));
 
         const partners = await api.getPartners();
         if (Array.isArray(partners)) {
