@@ -86,6 +86,7 @@ export default function Dashboard() {
     lastLogin: new Date().toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit', hour12: true }),
   });
   const [dashboardClaims, setDashboardClaims] = useState([]);
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -120,6 +121,16 @@ export default function Dashboard() {
     import("../api").then(api => {
       api.getMyClaimRequests().then(res => {
         if (res && Array.isArray(res)) setDashboardClaims(res);
+      }).catch(() => {});
+    });
+
+    // Fetch Chat Unread Count
+    import("../api").then(api => {
+      api.getMyQueries().then(res => {
+        if (Array.isArray(res)) {
+          const unread = res.filter(q => (q.isFromAdmin || q.fromAdmin) && !q.readByUser).length;
+          setUnreadChatCount(unread);
+        }
       }).catch(() => {});
     });
 
@@ -364,11 +375,22 @@ export default function Dashboard() {
               <span className="quick-action-text">File Claim</span>
             </button>
 
-            <button className="quick-action-btn" onClick={() => navigate("/chat")}>
+            <button className="quick-action-btn" onClick={() => navigate("/chat")} style={{ position: 'relative' }}>
               <div className="quick-action-icon">
                 <IconChat className="w-5 h-5" />
               </div>
               <span className="quick-action-text">Chat Support</span>
+              {unreadChatCount > 0 && (
+                <span style={{
+                  position: 'absolute', top: 8, right: 8,
+                  background: '#ef4444', color: '#fff',
+                  fontSize: 10, fontWeight: 800, padding: '2px 6px',
+                  borderRadius: 10, minWidth: 18, textAlign: 'center',
+                  boxShadow: '0 2px 8px rgba(239, 68, 68, 0.4)'
+                }}>
+                  {unreadChatCount}
+                </span>
+              )}
             </button>
 
             <button className="quick-action-btn" onClick={() => navigate("/notifications")}>

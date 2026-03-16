@@ -68,6 +68,16 @@ public class QueryService {
         }
     }
     
+    public void markAsReadForUser(User user) {
+        List<Query> queries = getForUser(user);
+        for (Query q : queries) {
+            if (!q.isReadByUser()) {
+                q.setReadByUser(true);
+                queryRepository.save(q);
+            }
+        }
+    }
+
     public Query save(Query q) {
         return queryRepository.save(q);
     }

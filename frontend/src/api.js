@@ -92,6 +92,9 @@ export async function getMyQueries() {
 export async function userClearChat() {
   return request('/api/queries/my/clear', { method: 'DELETE' });
 }
+export async function userMarkQueriesAsRead() {
+  return request('/api/queries/my/mark-read', { method: 'POST' });
+}
 
 // ── Admin endpoints ──────────────────────────────────────────────────────────
 export async function adminListUsers() {
@@ -244,7 +247,7 @@ export default {
   adminListUsers, adminDeleteUser, adminUpdateUser,
   adminListPlans, adminUpdatePlan, adminCreatePlan,
   adminListPayments, adminApprovePayment, adminRejectPayment, adminDeletePayment,
-  adminListQueries, adminReplyQuery, adminClearUserChat, userClearChat,
+  adminListQueries, adminReplyQuery, adminClearUserChat, userClearChat, userMarkQueriesAsRead,
   claimPayment,
   submitClaimRequest, getMyClaimRequests, claimRequestPayout,
   adminListClaimRequests, adminApproveClaimRequest, adminRejectClaimRequest,

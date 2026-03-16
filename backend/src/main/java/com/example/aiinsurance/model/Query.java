@@ -37,6 +37,9 @@ public class Query {
     @Column(nullable = false)
     private boolean clearedByAdmin = false;
 
+    @Column(nullable = false)
+    private boolean readByUser = false;
+
     @Column(columnDefinition = "TEXT")
     private String replyToMessage;
 
@@ -78,6 +81,9 @@ public class Query {
 
     public boolean isClearedByAdmin() { return clearedByAdmin; }
     public void setClearedByAdmin(boolean clearedByAdmin) { this.clearedByAdmin = clearedByAdmin; }
+
+    public boolean isReadByUser() { return readByUser; }
+    public void setReadByUser(boolean readByUser) { this.readByUser = readByUser; }
 
     public String getReplyToMessage() { return replyToMessage; }
     public void setReplyToMessage(String replyToMessage) { this.replyToMessage = replyToMessage; }

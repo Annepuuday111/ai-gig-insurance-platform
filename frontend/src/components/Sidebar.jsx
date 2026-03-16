@@ -19,6 +19,7 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const [theme, setTheme] = useState(defaultTheme);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
 
   useEffect(() => {
     const fetchTheme = async () => {
@@ -49,9 +50,22 @@ export default function Sidebar() {
         }
       } catch (e) { }
     }
+    const fetchChatUnread = async () => {
+      try {
+        const res = await api.getMyQueries();
+        if (Array.isArray(res)) {
+          const unread = res.filter(q => (q.isFromAdmin || q.fromAdmin) && !q.readByUser).length;
+          setUnreadChatCount(unread);
+        }
+      } catch (e) { }
+    }
     fetchNotifications();
-    // Poll notifications every 30 seconds
-    const interval = setInterval(fetchNotifications, 30000);
+    fetchChatUnread();
+    // Poll updates every 30 seconds
+    const interval = setInterval(() => {
+      fetchNotifications();
+      fetchChatUnread();
+    }, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -153,7 +167,10 @@ export default function Sidebar() {
           <h3 className="px-4 mb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Support</h3>
           <div className="space-y-1">
             <NavLink to="/chat" className={({ isActive }) => isActive ? activeItem : menuItem}>
-              <FaCommentDots size={18} /> Support Chat
+              <div className="flex items-center justify-between w-full">
+                <span className="flex items-center gap-3"><FaCommentDots size={18} /> Support Chat</span>
+                {unreadChatCount > 0 && <span className="bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">{unreadChatCount}</span>}
+              </div>
             </NavLink>
           </div>
         </div>

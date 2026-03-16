@@ -16,6 +16,7 @@ const defaultTheme = { accent: "#16a34a", light: "#f0fdf4" };
 export default function BottomNav(){
   const navigate = useNavigate()
   const [theme, setTheme] = useState(defaultTheme);
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
 
   useEffect(() => {
     const fetchTheme = async () => {
@@ -35,7 +36,19 @@ export default function BottomNav(){
         }
       } catch (err) { }
     };
+    const fetchChatUnread = async () => {
+      try {
+        const res = await api.getMyQueries();
+        if (Array.isArray(res)) {
+          const unread = res.filter(q => (q.isFromAdmin || q.fromAdmin) && !q.readByUser).length;
+          setUnreadChatCount(unread);
+        }
+      } catch (e) { }
+    }
     fetchTheme();
+    fetchChatUnread();
+    const interval = setInterval(fetchChatUnread, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const logout = () => {
@@ -90,9 +103,21 @@ export default function BottomNav(){
           <span className="text-xs mt-1">Profile</span>
         </NavLink>
 
-        <NavLink to="/chat" className={navItemClass}>
+        <NavLink to="/chat" className={navItemClass} style={{ position: 'relative' }}>
           <FaCommentDots className="w-5 h-5" />
           <span className="text-xs mt-1">Chat</span>
+          {unreadChatCount > 0 && (
+            <span style={{
+              position: 'absolute', top: 6, right: '15%',
+              background: '#ef4444', color: '#fff',
+              fontSize: 9, fontWeight: 800, padding: '1px 5px',
+              borderRadius: 10, minWidth: 16, textAlign: 'center',
+              boxShadow: '0 2px 6px rgba(239, 68, 68, 0.4)',
+              zIndex: 10
+            }}>
+              {unreadChatCount}
+            </span>
+          )}
         </NavLink>
 
         <button

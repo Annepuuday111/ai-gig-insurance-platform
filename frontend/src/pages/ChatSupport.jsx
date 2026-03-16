@@ -55,6 +55,9 @@ export default function ChatSupport() {
       try {
         const u = await api.getCurrentUser();
         setUser(u);
+        
+        // Mark messages as read
+        await api.userMarkQueriesAsRead();
 
         const partners = await api.getPartners();
         if (Array.isArray(partners)) {

@@ -74,4 +74,14 @@ public class QueryController {
         queryService.clearForUser(userOpt.get());
         return ResponseEntity.ok(Map.of("message", "Chat cleared"));
     }
+
+    @PostMapping("/my/mark-read")
+    public ResponseEntity<?> markRead(@RequestHeader("Authorization") String authHeader) {
+        Optional<User> userOpt = getCurrentUser(authHeader);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        }
+        queryService.markAsReadForUser(userOpt.get());
+        return ResponseEntity.ok(Map.of("message", "Messages marked as read"));
+    }
 }
