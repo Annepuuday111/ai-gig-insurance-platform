@@ -81,8 +81,8 @@ public class ClaimController {
             return ResponseEntity.status(403).body(Map.of("error", "Access denied"));
         }
 
-        if (p.getStatus() != Payment.Status.APPROVED) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Payment is not approved yet"));
+        if (p.getStatus() != Payment.Status.APPROVED && p.getStatus() != Payment.Status.SUCCESS) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Payment is not approved/verified yet"));
         }
 
         if (p.isClaimed()) {

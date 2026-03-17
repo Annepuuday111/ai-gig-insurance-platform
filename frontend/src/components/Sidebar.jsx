@@ -10,7 +10,9 @@ import {
   FaUser,
   FaSignOutAlt,
   FaCommentDots,
-  FaBell
+  FaBell,
+  FaBrain,
+  FaFileAlt
 } from "react-icons/fa";
 
 const defaultTheme = { accent: "#16a34a", light: "#f0fdf4", gradient: "linear-gradient(135deg,#16a34a,#4ade80)" };
@@ -62,7 +64,7 @@ export default function Sidebar() {
     }
     fetchNotifications();
     fetchChatUnread();
-    
+
     const handleReadEvent = () => setUnreadChatCount(0);
     window.addEventListener('chatRead', handleReadEvent);
 
@@ -142,7 +144,10 @@ export default function Sidebar() {
           <h3 className="px-4 mb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Analytics</h3>
           <div className="space-y-1">
             <NavLink to="/reports" className={({ isActive }) => isActive ? activeItem : menuItem}>
-              <FaChartBar size={18} /> Reports & Insights
+              <FaFileAlt size={18} /> User Reports
+            </NavLink>
+            <NavLink to="/insights" className={({ isActive }) => isActive ? activeItem : menuItem}>
+              <FaBrain size={18} /> Latest News
             </NavLink>
           </div>
         </div>

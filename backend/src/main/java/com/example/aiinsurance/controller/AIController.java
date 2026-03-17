@@ -2,7 +2,6 @@ package com.example.aiinsurance.controller;
 
 import com.example.aiinsurance.model.User;
 import com.example.aiinsurance.repository.ClaimRequestRepository;
-import com.example.aiinsurance.repository.PaymentRepository;
 import com.example.aiinsurance.repository.SubscriptionRepository;
 import com.example.aiinsurance.security.JwtUtil;
 import com.example.aiinsurance.service.AIService;

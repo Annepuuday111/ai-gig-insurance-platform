@@ -1749,6 +1749,7 @@ export default function AdminDashboard() {
                 <thead>
                   <tr className="text-gray-400 text-xs uppercase tracking-wide border-b border-gray-100 bg-gray-50/50">
                     <th className="px-5 py-3 text-left font-semibold">Location</th>
+                    <th className="px-5 py-3 text-left font-semibold">📅 Date</th>
                     <th className="px-5 py-3 text-left font-semibold">👥 Users</th>
                     <th className="px-5 py-3 text-left font-semibold">🌡️ Temp °C</th>
                     <th className="px-5 py-3 text-left font-semibold">💨 Wind km/h</th>
@@ -1771,6 +1772,11 @@ export default function AdminDashboard() {
                             <span className="font-bold text-gray-800 text-xs">{loc.district !== "—" ? loc.district : loc.state}</span>
                             <span className="text-gray-400 text-[10px] uppercase tracking-wider">{loc.state}</span>
                           </div>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <span className="text-[10px] text-gray-500 font-medium whitespace-nowrap">
+                            {loc.timestamp ? new Date(loc.timestamp).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"}
+                          </span>
                         </td>
                         <td className="px-5 py-3.5">
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold">

@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import api from '../api';
 import {
   getPaymentHistory, claimPayment,
-  getMyClaimRequests, submitClaimRequest, claimRequestPayout
+  getMyClaimRequests, submitClaimRequest, claimRequestPayout,
+  checkParametric, detectFraud
 } from "../api";
 import {
   FaFileAlt, FaCloudRain, FaShieldAlt, FaHistory,
@@ -197,6 +198,8 @@ const BADGES = {
   PENDING: <span className="badge b-pending"><FaHourglassHalf size={7} /> Pending</span>,
   APPROVED: <span className="badge b-approved"><FaCheckCircle size={7} /> Approved</span>,
   REJECTED: <span className="badge b-rejected"><FaTimesCircle size={7} /> Rejected</span>,
+  SUCCESS: <span className="badge b-approved"><FaCheckCircle size={7} /> Active</span>,
+  CLAIMED: <span className="badge b-claimed">Claimed</span>,
 };
 
 export default function Claims() {
@@ -227,20 +230,27 @@ export default function Claims() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [pRes, rRes, paramRes] = await Promise.all([
+      const [pRes, rRes, paramRes] = await Promise.allSettled([
         getPaymentHistory(),
         getMyClaimRequests(),
         checkParametric()
       ]);
 
-      if (pRes && Array.isArray(pRes))
-        setPayments(pRes.filter(p =>
-          ["APPROVED", "REJECTED", "SUCCESS", "CLAIMED"].includes(p.status)
+      if (pRes.status === "fulfilled" && Array.isArray(pRes.value)) {
+        setPayments(pRes.value.filter(p =>
+          ["PENDING", "APPROVED", "REJECTED", "SUCCESS", "CLAIMED"].includes(p.status)
         ));
-      if (rRes && Array.isArray(rRes)) setRequests(rRes);
-      if (paramRes && !paramRes.error) setParametric(paramRes);
+      }
+      
+      if (rRes.status === "fulfilled" && Array.isArray(rRes.value)) {
+        setRequests(rRes.value);
+      }
 
-    } catch (e) { console.error(e); }
+      if (paramRes.status === "fulfilled" && paramRes.value && !paramRes.value.error) {
+        setParametric(paramRes.value);
+      }
+
+    } catch (e) { console.error("Error in loadData:", e); }
     setLoading(false);
   };
 
@@ -327,38 +337,6 @@ export default function Claims() {
   return (
     <div className="cl-wrap">
       <style>{STYLES}</style>
-
-      {/* ── AI Parametric Alert ── */}
-      {!claimedThisWeek && parametric?.parametric_check?.auto_trigger && (
-        <div style={{
-          background: "linear-gradient(135deg, #7c3aed, #a855f7)", color: "#fff",
-          borderRadius: 20, padding: "20px 24px", marginBottom: 28,
-          display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap",
-          boxShadow: "0 12px 32px rgba(124,58,237,0.3)", animation: "slideUp 0.4s ease"
-        }}>
-          <div style={{ fontSize: 40 }}>🌩️</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, fontFamily: "Sora" }}>AI Parametric Alert</h3>
-              <span style={{ background: "#ef4444", fontSize: 10, fontWeight: 900, padding: "2px 8px", borderRadius: 20 }}>URGENT</span>
-            </div>
-            <p style={{ margin: 0, fontSize: 13, opacity: 0.9 }}>
-              Extreme weather detected in <strong>{parametric.district}</strong>.
-              Parametric trigger: <strong>{parametric.parametric_check.severity} RISK</strong>.
-              You are eligible for an immediate AI-verified claim.
-            </p>
-          </div>
-          <button
-            onClick={handleAutoFile}
-            style={{
-              background: "#fff", color: "#7c3aed", border: "none", padding: "12px 24px",
-              borderRadius: 14, fontWeight: 800, fontSize: 13, cursor: "pointer",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
-            }}>
-            🤖 Auto-Submit AI Claim
-          </button>
-        </div>
-      )}
 
       {/* ── Header ── */}
       <div className="cl-header">
@@ -558,7 +536,7 @@ export default function Claims() {
                 {payments.map((p, i) => {
                   const isClaimed = p.status === 'CLAIMED' || p.isClaimed;
                   const isExpired = p.subStatus === 'EXPIRED' && !isClaimed;
-                  const canClaim = p.status === 'APPROVED' && !isClaimed && !claimedThisWeek;
+                  const canClaim = (p.status === 'APPROVED' || p.status === 'SUCCESS') && !isClaimed && !claimedThisWeek;
 
                   return (
                     <div key={p.id} className="cl-card" style={{ animationDelay: `${i * 0.05}s` }}>
@@ -617,14 +595,14 @@ export default function Claims() {
                           >
                             Claim
                           </button>
-                        ) : p.status === 'APPROVED' && claimedThisWeek ? (
+                        ) : (p.status === 'APPROVED' || p.status === 'SUCCESS') && claimedThisWeek ? (
                           <span className="lock-label">
                             <FaLock size={9} /> Opens {nextWeekLabel}
                           </span>
                         ) : isExpired ? (
                           <span style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", fontStyle: "italic" }}>Policy Expired</span>
                         ) : (
-                          BADGES[p.status] || null
+                          BADGES[p.status] || <span className="badge" style={{ background: "#f1f5f9", color: "#64748b" }}>{p.status}</span>
                         )}
                       </div>
                     </div>

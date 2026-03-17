@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 
 import DashboardCard from "../components/DashboardCard";
 import NotificationCard from "../components/NotificationCard";
-import ClaimCard from "../components/ClaimCard";
 import { IconBell, IconChat, IconCard, IconShield, IconMoney } from "../components/Icons";
 import { getCurrentUser, getDashboardSummary, getPartners, getMyNotifications } from "../api";
 
@@ -527,23 +526,37 @@ export default function Dashboard() {
                     {dashboardClaims.length === 0 ? (
                       <p className="text-sm text-slate-400 text-center py-6">No recent claims</p>
                     ) : (
-                      dashboardClaims.slice(0, 3).map((claim, index) => (
-                        <div key={index} className="flex justify-between items-center p-3 rounded-md hover:bg-slate-50 border border-slate-100 mb-2">
-                          <div>
-                            <div className="text-sm font-bold text-slate-800">{claim.situation} Claim</div>
-                            <div className="text-xs text-slate-500 font-medium mt-1">₹{claim.amount}</div>
+                      dashboardClaims.slice(0, 5).map((claim, index) => {
+                        const isClaimed = claim.claimed || claim.isClaimed;
+                        return (
+                          <div key={index} className="flex justify-between items-center p-3 rounded-md hover:bg-slate-50 border border-slate-100 mb-2">
+                            <div>
+                              <div className="text-sm font-bold text-slate-800">{claim.situation?.replace('AI-AUTO: ', '') || 'Insurance'} Claim</div>
+                              <div className="text-xs text-slate-500 font-medium mt-1">₹{claim.amount}</div>
+                            </div>
+                            <div className={`text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded ${
+                              isClaimed ? 'bg-slate-100 text-slate-400' :
+                              claim.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
+                              claim.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
+                              'bg-amber-100 text-amber-700'
+                            }`}>
+                              {isClaimed ? 'CLAIMED' : claim.status}
+                            </div>
                           </div>
-                          <div className={`text-xs font-bold px-2 py-1 rounded-md ${
-                            claim.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
-                            claim.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
-                            'bg-amber-100 text-amber-700'
-                          }`}>
-                            {claim.status}
-                          </div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
+                  {dashboardClaims.length > 0 && (
+                    <div className="mt-4 text-center">
+                      <button 
+                        onClick={() => navigate("/claims")}
+                        className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition"
+                      >
+                        View Full History →
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

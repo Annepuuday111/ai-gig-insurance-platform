@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { loginUser } from "../api";
 import { IconPhone, IconLock } from "../components/Icons";
@@ -341,6 +341,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const validate = () => {
     if (loginMode === "credentials") {
@@ -366,15 +367,14 @@ export default function Login() {
         setError(res.error);
       } else if (res?.token) {
         localStorage.setItem("token", res.token);
+        const from = location.state?.from?.pathname || (res.isAdmin ? "/admin" : "/dashboard");
         if (res.isAdmin) {
-          // admin login
           localStorage.setItem("isAdmin", "true");
-          navigate("/admin");
         } else {
           localStorage.setItem("userId", res.id);
           localStorage.setItem("userName", res.name || "");
-          navigate("/dashboard");
         }
+        navigate(from, { replace: true });
       } else {
         // unexpected response
         setError("Login failed: no token received.");

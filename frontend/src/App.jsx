@@ -13,9 +13,11 @@ import Notifications from "./pages/Notifications";
 import ChatSupport from "./pages/ChatSupport";
 import Profile from "./pages/Profile";
 import Reports from "./pages/Reports";
+import Insights from "./pages/Insights";
 
 import AdminDashboard from "./pages/AdminDashboard";
 import MainLayout from "./layouts/MainLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
   return (
@@ -28,9 +30,14 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
 
-        {/* Dashboard Layout */}
-        <Route element={<MainLayout />}>
-
+        {/* Protected Dashboard Layout */}
+        <Route
+          element={
+            <ProtectedRoute>
+              <MainLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/plans" element={<Plans />} />
           <Route path="/payment" element={<Payment />} />
@@ -38,12 +45,19 @@ export default function App() {
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/chat" element={<ChatSupport />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/insights" element={<Insights />} />
           <Route path="/profile" element={<Profile />} />
-
         </Route>
 
-        {/* Admin area (separate layout) */}
-        <Route path="/admin" element={<AdminDashboard />} />
+        {/* Protected Admin area (separate layout) */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute adminOnly={true}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
