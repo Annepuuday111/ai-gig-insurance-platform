@@ -23,6 +23,7 @@ com/example/aiinsurance/service/ClaimService.class
 com/example/aiinsurance/model/Notification.class
 com/example/aiinsurance/controller/PartnerController.class
 com/example/aiinsurance/controller/AuthController.class
+com/example/aiinsurance/service/EmailService.class
 com/example/aiinsurance/service/AdminService.class
 com/example/aiinsurance/model/Partner.class
 com/example/aiinsurance/model/Payment$Method.class

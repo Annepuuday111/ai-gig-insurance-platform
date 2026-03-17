@@ -27,6 +27,7 @@
 /Users/annepuudaykumar/Desktop/ai-gig-insurance-platform/backend/src/main/java/com/example/aiinsurance/controller/AIController.java
 /Users/annepuudaykumar/Desktop/ai-gig-insurance-platform/backend/src/main/java/com/example/aiinsurance/service/PlanService.java
 /Users/annepuudaykumar/Desktop/ai-gig-insurance-platform/backend/src/main/java/com/example/aiinsurance/model/User.java
+/Users/annepuudaykumar/Desktop/ai-gig-insurance-platform/backend/src/main/java/com/example/aiinsurance/service/EmailService.java
 /Users/annepuudaykumar/Desktop/ai-gig-insurance-platform/backend/src/main/java/com/example/aiinsurance/repository/PlanRepository.java
 /Users/annepuudaykumar/Desktop/ai-gig-insurance-platform/backend/src/main/java/com/example/aiinsurance/controller/AuthController.java
 /Users/annepuudaykumar/Desktop/ai-gig-insurance-platform/backend/src/main/java/com/example/aiinsurance/service/ClaimService.java

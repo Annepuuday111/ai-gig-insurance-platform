@@ -15,10 +15,17 @@ async function request(path, opts = {}) {
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
-export async function registerUser({ name, email, phone, password, platform }) {
+export async function sendRegisterOtp({ email, phone }) {
+  return request('/api/auth/register-init', {
+    method: 'POST',
+    body: JSON.stringify({ email, phone }),
+  });
+}
+
+export async function registerUser({ name, email, phone, password, platform, otp }) {
   return request('/api/auth/register', {
     method: 'POST',
-    body: JSON.stringify({ name, email, phone, password, platform }),
+    body: JSON.stringify({ name, email, phone, password, platform, otp }),
   });
 }
 
@@ -33,6 +40,13 @@ export async function loginUser({ identifier, password }) {
   return request('/api/auth/login', {
     method: 'POST',
     body: JSON.stringify({ identifier, password }),
+  });
+}
+
+export async function verifyOtp({ identifier, otp }) {
+  return request('/api/auth/verify-otp', {
+    method: 'POST',
+    body: JSON.stringify({ identifier, otp }),
   });
 }
 
@@ -238,7 +252,7 @@ export async function adminGetWeatherReport() {
 }
 
 export default {
-  registerUser, loginUser, getCurrentUser, updateUser,
+  registerUser, loginUser, verifyOtp, getCurrentUser, updateUser,
   getPlans, getPlanById,
   buyPlan, getMySubscriptions, getPaymentHistory,
   getDashboardSummary,

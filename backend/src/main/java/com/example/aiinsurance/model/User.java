@@ -47,6 +47,12 @@ public class User {
     @Column(nullable = false)
     private Double walletBalance = 0.0;
 
+    @Column(name = "otp")
+    private String otp;
+
+    @Column(name = "otp_expiry")
+    private LocalDateTime otpExpiry;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
@@ -142,4 +148,10 @@ public class User {
 
     public Double getWalletBalance() { return walletBalance; }
     public void setWalletBalance(Double walletBalance) { this.walletBalance = walletBalance; }
+
+    public String getOtp() { return otp; }
+    public void setOtp(String otp) { this.otp = otp; }
+
+    public LocalDateTime getOtpExpiry() { return otpExpiry; }
+    public void setOtpExpiry(LocalDateTime otpExpiry) { this.otpExpiry = otpExpiry; }
 }

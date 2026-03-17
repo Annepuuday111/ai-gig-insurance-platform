@@ -4,6 +4,7 @@ import com.example.aiinsurance.model.Admin;
 import com.example.aiinsurance.model.User;
 import com.example.aiinsurance.service.UserService;
 import com.example.aiinsurance.service.AdminService;
+import com.example.aiinsurance.service.EmailService;
 import com.example.aiinsurance.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -12,11 +13,14 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "http://localhost:5174")
 public class AuthController {
+
+    private final Map<String, String> registrationOtps = new ConcurrentHashMap<>();
 
     @Autowired
     private UserService userService;
@@ -25,34 +29,73 @@ public class AuthController {
     private AdminService adminService;
 
     @Autowired
+    private EmailService emailService;
+
+    @Autowired
     private JwtUtil jwtUtil;
 
     // needed for encoding a new password during profile updates
     @Autowired
     private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
+    @PostMapping("/register-init")
+    public ResponseEntity<?> registerInit(@RequestBody Map<String, String> request) {
+        try {
+            String email = request.get("email");
+            if (email == null || email.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Email is required"));
+            }
+            email = email.toLowerCase().trim();
+
+            if (userService.findByEmail(email).isPresent()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Email already exists"));
+            }
+            if (request.containsKey("phone") && userService.existsByPhone(request.get("phone"))) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Phone number already exists"));
+            }
+
+            String otp = emailService.generateOtp();
+            registrationOtps.put(email, otp);
+
+            System.out.println("\n---------------------------------------------------------");
+            System.out.println("REGISTRATION OTP GENERATED FOR " + email + ": " + otp);
+            System.out.println("---------------------------------------------------------\n");
+
+            try {
+                emailService.sendOtpEmail(email, otp);
+            } catch (Exception e) {
+                System.err.println("Warning: Failed to send REGISTRATION OTP email: " + e.getMessage());
+                System.err.println("The system will continue using the console-logged OTP.");
+            }
+
+            return ResponseEntity.ok(Map.of("message", "OTP sent to " + email));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Map<String, String> request) {
         try {
             String name = request.get("name");
-            String email = request.get("email");
+            String email = request.get("email").toLowerCase().trim();
             String phone = request.get("phone");
             String password = request.get("password");
             String platform = request.get("platform");
+            String otp = request.get("otp");
+
+            String storedOtp = registrationOtps.get(email);
+            if (storedOtp == null || !storedOtp.equals(otp)) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Invalid or expired OTP"));
+            }
 
             User user = new User(name, email, phone, password, platform);
             User savedUser = userService.registerUser(user);
-
-            // generate token same as login
-            String token = jwtUtil.generateToken(savedUser.getEmail());
+            registrationOtps.remove(email);
 
             Map<String, Object> response = new HashMap<>();
-            response.put("message", "User registered successfully");
-            response.put("token", token);
-            response.put("id", savedUser.getId());
-            response.put("name", savedUser.getName());
+            response.put("message", "User registered successfully. Please login with your registered email: " + savedUser.getEmail());
             response.put("email", savedUser.getEmail());
-            response.put("walletBalance", savedUser.getWalletBalance());
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -103,9 +146,10 @@ public class AuthController {
                 }
             }
 
-            Optional<User> userOpt = userService.findByEmail(identifier);
+            String normalizedId = identifier != null ? identifier.toLowerCase().trim() : "";
+            Optional<User> userOpt = userService.findByEmail(normalizedId);
             if (userOpt.isEmpty()) {
-                userOpt = userService.findByPhone(identifier);
+                userOpt = userService.findByPhone(normalizedId);
             }
 
             if (userOpt.isEmpty() || !userService.validatePassword(password, userOpt.get().getPassword())) {
@@ -113,6 +157,66 @@ public class AuthController {
             }
 
             User user = userOpt.get();
+            
+            // Generate and send OTP
+            String otp = emailService.generateOtp();
+            user.setOtp(otp);
+            user.setOtpExpiry(java.time.LocalDateTime.now().plusMinutes(5));
+            userService.updateUser(user);
+
+            // Print OTP to console for local testing purposes in case email configuration (like App Password) is missing
+            System.out.println("\n---------------------------------------------------------");
+            System.out.println("OTP GENERATED FOR " + user.getEmail() + ": " + otp);
+            System.out.println("---------------------------------------------------------\n");
+
+            try {
+                emailService.sendOtpEmail(user.getEmail(), otp);
+            } catch (Exception e) {
+                System.err.println("Warning: Failed to send OTP email: " + e.getMessage());
+                System.err.println("The system will continue using the console-logged OTP.");
+            }
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "OTP sent to your registered email");
+            response.put("requiresOtp", true);
+            response.put("email", user.getEmail()); // return email for verification step
+            response.put("phone", user.getPhone());
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<?> verifyOtp(@RequestBody Map<String, String> request) {
+        try {
+            String identifier = request.get("identifier");
+            String otp = request.get("otp");
+
+            Optional<User> userOpt = userService.findByEmail(identifier);
+            if (userOpt.isEmpty()) {
+                userOpt = userService.findByPhone(identifier);
+            }
+
+            if (userOpt.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "User not found"));
+            }
+
+            User user = userOpt.get();
+            if (user.getOtp() == null || !user.getOtp().equals(otp)) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Invalid OTP"));
+            }
+
+            if (user.getOtpExpiry() == null || user.getOtpExpiry().isBefore(java.time.LocalDateTime.now())) {
+                return ResponseEntity.badRequest().body(Map.of("error", "OTP has expired"));
+            }
+
+            // Clear OTP after successful verification
+            user.setOtp(null);
+            user.setOtpExpiry(null);
+            userService.updateUser(user);
+
             String token = jwtUtil.generateToken(user.getEmail());
 
             Map<String, Object> response = new HashMap<>();
@@ -121,6 +225,7 @@ public class AuthController {
             response.put("name", user.getName());
             response.put("isAdmin", false);
             response.put("walletBalance", user.getWalletBalance());
+            response.put("createdAt", user.getCreatedAt() != null ? user.getCreatedAt().toString() : null);
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -156,6 +261,7 @@ public class AuthController {
             response.put("district", user.getDistrict());
             response.put("mandal", user.getMandal());
             response.put("walletBalance", user.getWalletBalance());
+            response.put("createdAt", user.getCreatedAt() != null ? user.getCreatedAt().toString() : null);
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -232,6 +338,7 @@ public class AuthController {
             res.put("district", updated.getDistrict());
             res.put("mandal", updated.getMandal());
             res.put("walletBalance", updated.getWalletBalance());
+            res.put("createdAt", updated.getCreatedAt() != null ? updated.getCreatedAt().toString() : null);
             return ResponseEntity.ok(res);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

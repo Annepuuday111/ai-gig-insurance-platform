@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { loginUser } from "../api";
+import { loginUser, verifyOtp } from "../api";
 import { IconPhone, IconLock } from "../components/Icons";
 import bannerSmall from "../../../assets/Background.png";
 import bannerLarge from "../../../assets/PlainBackground.png";
@@ -40,22 +40,6 @@ function FacebookIcon() {
     <svg width="19" height="19" viewBox="0 0 24 24" fill="#1877F2">
       <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
     </svg>
-  );
-}
-
-function InstagramIcon() {
-  return (
-    <span style={{
-      width: 19, height: 19, borderRadius: 5, display: "inline-flex",
-      alignItems: "center", justifyContent: "center", flexShrink: 0,
-      background: "radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%)",
-    }}>
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="6" stroke="#fff" strokeWidth="2.5"/>
-        <circle cx="18" cy="6" r="1.8" fill="#fff"/>
-        <rect x="2" y="2" width="20" height="20" rx="5" stroke="#fff" strokeWidth="2.2" fill="none"/>
-      </svg>
-    </span>
   );
 }
 
@@ -193,7 +177,6 @@ function SocialButtons() {
       <div style={{ display: "flex", gap: 10 }}>
         <button className="social-btn" type="button" title="Google"><GoogleIcon /></button>
         <button className="social-btn" type="button" title="Facebook"><FacebookIcon /></button>
-        <button className="social-btn" type="button" title="Instagram"><InstagramIcon /></button>
       </div>
     </div>
   );
@@ -224,13 +207,46 @@ function LogoScroller() {
   );
 }
 
-function FormBody({ form, setForm, loading, error, submit, loginMode, setLoginMode }) {
+function FormBody({ form, setForm, loading, error, submit, submitOtp, loginMode, setLoginMode }) {
   const [showPw, setShowPw] = useState(false);
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
-  const onKey = (e) => { if (e.key === "Enter") submit(); };
+  const onKey = (e) => { if (e.key === "Enter") { form.requiresOtp ? submitOtp() : submit(); } };
+
+  if (form.requiresOtp) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ position: "relative" }}>
+          <FieldIcon><IconLock /></FieldIcon>
+          <input className="login-input-single" placeholder="Enter 6-digit OTP" type="text" value={form.otp} onChange={set("otp")} onKeyDown={onKey} maxLength={6} />
+        </div>
+        <p style={{ fontSize: 12, color: "#64748b", textAlign: "center" }}>
+          OTP sent to {form.email || form.phone}
+        </p>
+        {error && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#fef2f2", border: "1.5px solid #fecaca", borderRadius: 12, padding: "10px 14px", color: "#dc2626", fontSize: 13, fontWeight: 500 }}>
+            <span>⚠️</span> {error}
+          </div>
+        )}
+        <button className="login-btn" onClick={submitOtp} disabled={loading}>
+          {loading ? "Verifying..." : "Verify OTP →"}
+        </button>
+        <button type="button" onClick={submit} disabled={loading} style={{ border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", fontSize: 13, cursor: "pointer", fontWeight: 600, padding: "8px", borderRadius: "10px" }}>
+          Resend OTP
+        </button>
+        <button type="button" onClick={() => setForm(f => ({ ...f, requiresOtp: false, otp: "" }))} style={{ border: "none", background: "none", color: "#64748b", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>
+          ← Back to Login
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {location.state?.message && (
+        <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#15803d", padding: "10px 14px", borderRadius: 12, fontSize: 13, fontWeight: 600 }}>
+          ✅ {location.state.message}
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 4, background: "#f1f5f9", borderRadius: 12, padding: 4 }}>
         <button type="button" className={`tab-btn ${loginMode === "credentials" ? "active" : "inactive"}`} onClick={() => setLoginMode("credentials")}>
@@ -336,12 +352,21 @@ function FormBody({ form, setForm, loading, error, submit, loginMode, setLoginMo
 }
 
 export default function Login() {
-  const [form, setForm] = useState({ email: "", phone: "", password: "" });
+  const [form, setForm] = useState({ email: "", phone: "", password: "", otp: "", requiresOtp: false });
   const [loginMode, setLoginMode] = useState("credentials");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  React.useEffect(() => {
+    if (location.state?.email) {
+      setForm(f => ({ ...f, email: location.state.email }));
+    }
+    if (location.state?.message) {
+      setError(null); // Clear errors if we have a success message
+    }
+  }, [location.state]);
 
   const validate = () => {
     if (loginMode === "credentials") {
@@ -363,7 +388,40 @@ export default function Login() {
       const identifier = loginMode === "credentials" ? form.email.trim().toLowerCase() : form.phone.trim();
       const res = await loginUser({ identifier, password: form.password });
       if (res?.error) {
-        // backend sent an error message in payload
+        setError(res.error);
+      } else if (res?.requiresOtp) {
+        setForm(f => ({ ...f, requiresOtp: true }));
+      } else if (res?.token) {
+        localStorage.setItem("token", res.token);
+        const from = location.state?.from?.pathname || (res.isAdmin ? "/admin" : "/dashboard");
+        if (res.isAdmin) {
+          localStorage.setItem("isAdmin", "true");
+        } else {
+          localStorage.setItem("userId", res.id);
+          localStorage.setItem("userName", res.name || "");
+        }
+        navigate(from, { replace: true });
+      } else {
+        setError("Login failed: no token received.");
+      }
+    } catch (e) {
+      setError(e.message || "Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submitOtp = async () => {
+    if (!form.otp || form.otp.length < 6) {
+      setError("Please enter the 6-digit OTP.");
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    try {
+      const identifier = loginMode === "credentials" ? form.email.trim().toLowerCase() : form.phone.trim();
+      const res = await verifyOtp({ identifier, otp: form.otp });
+      if (res?.error) {
         setError(res.error);
       } else if (res?.token) {
         localStorage.setItem("token", res.token);
@@ -376,17 +434,16 @@ export default function Login() {
         }
         navigate(from, { replace: true });
       } else {
-        // unexpected response
-        setError("Login failed: no token received.");
+        setError("Verification failed.");
       }
     } catch (e) {
-      setError(e.message || "Network error. Please try again.");
+      setError(e.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }
   };
 
-  const formProps = { form, setForm, loading, error, submit, loginMode, setLoginMode };
+  const formProps = { form, setForm, loading, error, submit, submitOtp, loginMode, setLoginMode };
 
   return (
     <div className="login-root" style={{ minHeight: "100vh", background: "#f8fafc" }}>

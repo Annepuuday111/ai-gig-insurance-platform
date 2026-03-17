@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { registerUser, getPartners } from "../api";
+import { registerUser, sendRegisterOtp, getPartners } from "../api";
 import { IconUser, IconPhone, IconLock } from "../components/Icons";
 import bannerSmall from "../../../assets/Background.png";
 import bannerLarge from "../../../assets/PlainBackground.png";
@@ -241,11 +241,39 @@ function pwStrength(pw) {
   return { score, ...map[score] };
 }
 
-function FormBody({ form, setForm, loading, error, submit, partners }) {
+function FormBody({ form, setForm, loading, error, submit, submitOtp, partners }) {
   const [showPw, setShowPw] = useState(false);
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const togglePlatform = (p) => setForm((f) => ({ ...f, platform: f.platform === p ? "" : p }));
   const strength = pwStrength(form.password);
+
+  if (form.requiresOtp) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ position: "relative" }}>
+          <FieldIcon><IconLock /></FieldIcon>
+          <input className="reg-input" placeholder="Enter 6-digit OTP" type="text" value={form.otp} onChange={set("otp")} maxLength={6} />
+        </div>
+        <p style={{ fontSize: 12, color: "#64748b", textAlign: "center" }}>
+          OTP sent to {form.email}
+        </p>
+        {error && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#fef2f2", border: "1.5px solid #fecaca", borderRadius: 12, padding: "10px 14px", color: "#dc2626", fontSize: 13, fontWeight: 500 }}>
+            <span>⚠️</span> {error}
+          </div>
+        )}
+        <button className="reg-btn" onClick={submitOtp} disabled={loading}>
+          {loading ? "Verifying..." : "Verify & Complete Registration →"}
+        </button>
+        <button type="button" onClick={submit} disabled={loading} style={{ border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", fontSize: 13, cursor: "pointer", fontWeight: 600, padding: "8px", borderRadius: "10px" }}>
+          Resend OTP
+        </button>
+        <button type="button" onClick={() => setForm(f => ({ ...f, requiresOtp: false, otp: "" }))} style={{ border: "none", background: "none", color: "#64748b", fontSize: 13, cursor: "pointer", fontWeight: 600 }}>
+          ← Back
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -258,6 +286,7 @@ function FormBody({ form, setForm, loading, error, submit, partners }) {
       <div style={{ position: "relative" }}>
         <FieldIcon><IconMail /></FieldIcon>
         <input className="reg-input" placeholder="Email Address" type="email" value={form.email} onChange={set("email")} />
+        <p style={{ fontSize: 10, color: "#94a3b8", marginTop: 4, marginLeft: 4 }}>Note: We will send an OTP to this email for secure login.</p>
       </div>
 
       <div style={{ position: "relative" }}>
@@ -358,7 +387,7 @@ function FormBody({ form, setForm, loading, error, submit, partners }) {
 }
 
 export default function Register() {
-  const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", platform: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", platform: "", otp: "", requiresOtp: false });
   const [partners, setPartners] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -387,18 +416,12 @@ export default function Register() {
     setError(null);
     setLoading(true);
     try {
-      const res = await registerUser({
-        name:     form.name.trim(),
-        email:    form.email.trim().toLowerCase(),
-        phone:    form.phone.trim(),
-        password: form.password,
-        platform: form.platform,
+      const res = await sendRegisterOtp({
+        email: form.email.trim().toLowerCase(),
+        phone: form.phone.trim(),
       });
-      if (res?.token) {
-        localStorage.setItem("token",    res.token);
-        localStorage.setItem("userId",   res.id);
-        localStorage.setItem("userName", form.name.trim());
-        navigate("/dashboard");
+      if (res?.message && !res.error) {
+        setForm(f => ({ ...f, requiresOtp: true }));
       } else {
         setError(res?.error || "Unexpected response from server.");
       }
@@ -409,7 +432,35 @@ export default function Register() {
     }
   };
 
-  const formProps = { form, setForm, loading, error, submit, partners };
+  const submitOtp = async () => {
+    if (!form.otp || form.otp.length < 6) {
+      setError("Please enter the 6-digit OTP.");
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await registerUser({
+        name:     form.name.trim(),
+        email:    form.email.trim().toLowerCase(),
+        phone:    form.phone.trim(),
+        password: form.password,
+        platform: form.platform,
+        otp:      form.otp,
+      });
+      if (res?.message && !res.error) {
+        navigate("/login", { state: { message: res.message, email: form.email.trim().toLowerCase() } });
+      } else {
+        setError(res?.error || "Unexpected response from server.");
+      }
+    } catch (e) {
+      setError(e.message || "Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formProps = { form, setForm, loading, error, submit, submitOtp, partners };
 
   return (
     <div className="reg-root" style={{ minHeight: "100vh", background: "#f8fafc" }}>
