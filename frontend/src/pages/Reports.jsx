@@ -124,11 +124,38 @@ export default function Reports() {
     coverage: "₹1,50,000"
   };
 
-  const activityVisuals = {
-    weeklyHours: [38, 42, 35, 45, 40, 39, 41],
-    totalHoursWorked: 486,
-    leaveTaken: 4,
+  const getActivityData = () => {
+    if (!user) {
+      return { weeklyHours: [38, 42, 35, 45, 40, 39, 41], totalHoursWorked: 486, leaveTaken: 4 };
+    }
+    const joinTime = new Date(user.createdAt || new Date()).getTime();
+    const now = new Date().getTime();
+    const diffMs = Math.max(0, now - joinTime);
+    const diffDays = Math.max(1, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+    const activeWeeks = Math.ceil(diffDays / 7);
+    
+    const simulatedHours = diffDays * 6; // roughly 6 hours per day on app
+    const simulatedLeaves = Math.floor(diffDays / 15); // 1 leave every 15 days
+    
+    const weeksToShow = Math.min(activeWeeks, 7);
+    const weeklyHours = [];
+    const seed = user.id || 1;
+    for (let i = 0; i < weeksToShow; i++) {
+        let hours = 30 + ((seed * 7 + i * 13) % 20); // deterministic between 30-50
+        if (i === weeksToShow - 1 && diffDays % 7 !== 0) {
+            hours = Math.max(1, Math.floor(hours * ((diffDays % 7) / 7)));
+        }
+        weeklyHours.push(hours);
+    }
+    
+    return {
+      weeklyHours: weeklyHours.length > 0 ? weeklyHours : [0],
+      totalHoursWorked: simulatedHours,
+      leaveTaken: simulatedLeaves
+    };
   };
+
+  const activityVisuals = getActivityData();
 
   const investmentMock = {
     weekly: [1200, 1500, 1100, 1800, 2100, 1900, 2400],

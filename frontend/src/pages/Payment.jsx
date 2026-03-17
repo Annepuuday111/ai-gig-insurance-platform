@@ -135,6 +135,13 @@ export default function Payment() {
           }
         }
         
+        // ── Check if location details are present ──
+        if (u && (!u.state || (!u.district && !u.mandal && !u.city))) {
+          setHasPlanAlert(true);
+          setError("⚠️ Please update your location details (State and District/City) in your profile to purchase a plan. Location is required for AI weather tracking.");
+          return;
+        }
+
         // ── Check if they already have a plan ──
         const summary = await getDashboardSummary();
         if (summary && !summary.error) {

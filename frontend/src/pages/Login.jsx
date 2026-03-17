@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { loginUser, verifyOtp } from "../api";
+import { loginUser, verifyOtp, socialLogin } from "../api";
+import { auth, provider } from "../firebase";
+import { signInWithPopup } from "firebase/auth";
 import { IconPhone, IconLock } from "../components/Icons";
 import bannerSmall from "../../../assets/Background.png";
 import bannerLarge from "../../../assets/PlainBackground.png";
@@ -35,13 +37,6 @@ function GoogleIcon() {
   );
 }
 
-function FacebookIcon() {
-  return (
-    <svg width="19" height="19" viewBox="0 0 24 24" fill="#1877F2">
-      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-    </svg>
-  );
-}
 
 const STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
@@ -166,7 +161,43 @@ function FieldIcon({ children }) {
   );
 }
 
-function SocialButtons() {
+function SocialButtons({ loading, setLoading, setError, navigate, location }) {
+  const handleSocialLogin = async (authProvider) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await signInWithPopup(auth, authProvider);
+      const user = result.user;
+      
+      const res = await socialLogin({
+        email: user.email,
+        name: user.displayName,
+      });
+
+      if (res?.error) {
+        setError(res.error);
+      } else if (res?.token) {
+        localStorage.setItem("token", res.token);
+        const from = location.state?.from?.pathname || (res.isAdmin ? "/admin" : "/dashboard");
+        if (res.isAdmin) {
+          localStorage.setItem("isAdmin", "true");
+        } else {
+          localStorage.setItem("userId", res.id);
+          localStorage.setItem("userName", res.name || "");
+        }
+        navigate(from, { replace: true });
+      } else {
+        setError("Login failed: no token received.");
+      }
+    } catch (error) {
+      if (error.code !== "auth/popup-closed-by-user") {
+        setError(error.message || "Failed to login with social account.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -175,8 +206,11 @@ function SocialButtons() {
         <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
       </div>
       <div style={{ display: "flex", gap: 10 }}>
-        <button className="social-btn" type="button" title="Google"><GoogleIcon /></button>
-        <button className="social-btn" type="button" title="Facebook"><FacebookIcon /></button>
+        <button className="social-btn" type="button" title="Continue with Google" onClick={() => handleSocialLogin(provider)} disabled={loading}
+          style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "11px 0", borderRadius: 12, border: "1.5px solid #e2e8f0", background: "#fff", cursor: "pointer", transition: "border-color 0.2s, box-shadow 0.2s, transform 0.18s, background 0.2s", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+          <GoogleIcon />
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#334155" }}>Continue with Google</span>
+        </button>
       </div>
     </div>
   );
@@ -207,7 +241,7 @@ function LogoScroller() {
   );
 }
 
-function FormBody({ form, setForm, loading, error, submit, submitOtp, loginMode, setLoginMode }) {
+function FormBody({ form, setForm, loading, error, submit, submitOtp, loginMode, setLoginMode, navigate, location, setLoading, setError }) {
   const [showPw, setShowPw] = useState(false);
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const onKey = (e) => { if (e.key === "Enter") { form.requiresOtp ? submitOtp() : submit(); } };
@@ -327,7 +361,7 @@ function FormBody({ form, setForm, loading, error, submit, submitOtp, loginMode,
         ) : "Login →"}
       </button>
 
-      <SocialButtons />
+      <SocialButtons loading={loading} setLoading={setLoading} setError={setError} navigate={navigate} location={location} />
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 2 }}>
         <Link to="/forgot" style={{ fontSize: 13, color: "#94a3b8", textDecoration: "none" }}
@@ -443,7 +477,7 @@ export default function Login() {
     }
   };
 
-  const formProps = { form, setForm, loading, error, submit, submitOtp, loginMode, setLoginMode };
+  const formProps = { form, setForm, loading, setLoading, error, setError, submit, submitOtp, loginMode, setLoginMode, navigate, location };
 
   return (
     <div className="login-root" style={{ minHeight: "100vh", background: "#f8fafc" }}>

@@ -502,6 +502,7 @@ export default function Plans() {
   const [aiDash, setAiDash] = useState(null);
   const [recommendation, setRecommendation] = useState(null);
   const [hasActivePlan, setHasActivePlan] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -530,6 +531,7 @@ export default function Plans() {
         // Match Sidebar's theme logic
         if (userRes.status === "fulfilled") {
           const u = userRes.value;
+          setCurrentUser(u);
           if (u && u.platform) {
             const partners = await getPartners();
             if (Array.isArray(partners)) {
@@ -553,7 +555,17 @@ export default function Plans() {
     loadData();
   }, []);
 
+  const hasMissingLocation = (user) => {
+    if (!user) return false;
+    return (!user.state || (!user.district && !user.mandal && !user.city));
+  };
+
   const handleBuy = (plan, price) => {
+    if (hasMissingLocation(currentUser)) {
+      alert("⚠️ Action Blocked\n\nPlease update your location details (State and District/City) in your profile first. Geographic data is required to activate AI weather tracking for this plan.");
+      navigate("/profile");
+      return;
+    }
     if (hasActivePlan) {
       alert("You already have an active or pending insurance plan for this week.");
       return;
@@ -562,6 +574,11 @@ export default function Plans() {
   };
   
   const handleTrial = (plan, price) => {
+    if (hasMissingLocation(currentUser)) {
+       alert("⚠️ Action Blocked\n\nPlease update your location details (State and District/City) in your profile first. Geographic data is required to activate AI weather tracking for this plan.");
+       navigate("/profile");
+       return;
+    }
     if (hasActivePlan) {
       alert("You already have an active or pending insurance plan for this week.");
       return;

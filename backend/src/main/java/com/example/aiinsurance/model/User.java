@@ -23,8 +23,6 @@ public class User {
     @Column(unique = true)
     private String email;
 
-    @NotBlank
-    @Size(max = 15)
     private String phone;
 
     @NotBlank

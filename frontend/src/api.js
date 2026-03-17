@@ -43,6 +43,13 @@ export async function loginUser({ identifier, password }) {
   });
 }
 
+export async function socialLogin({ email, name }) {
+  return request('/api/auth/social', {
+    method: 'POST',
+    body: JSON.stringify({ email, name }),
+  });
+}
+
 export async function verifyOtp({ identifier, otp }) {
   return request('/api/auth/verify-otp', {
     method: 'POST',
@@ -252,7 +259,7 @@ export async function adminGetWeatherReport() {
 }
 
 export default {
-  registerUser, loginUser, verifyOtp, getCurrentUser, updateUser,
+  registerUser, loginUser, socialLogin, verifyOtp, getCurrentUser, updateUser,
   getPlans, getPlanById,
   buyPlan, getMySubscriptions, getPaymentHistory,
   getDashboardSummary,

@@ -188,6 +188,59 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/social")
+    public ResponseEntity<?> socialLogin(@RequestBody Map<String, String> request) {
+        try {
+            String email = request.get("email");
+            String name = request.get("name");
+
+            if (email == null || email.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Email is required from social provider"));
+            }
+
+            email = email.toLowerCase().trim();
+
+            Optional<com.example.aiinsurance.model.Admin> adminOpt = adminService.findByEmail(email);
+            if (adminOpt.isPresent()) {
+                String token = jwtUtil.generateToken(email, true);
+                Map<String, Object> response = new HashMap<>();
+                response.put("token", token);
+                response.put("isAdmin", true);
+                response.put("email", email);
+                return ResponseEntity.ok(response);
+            }
+
+            Optional<User> userOpt = userService.findByEmail(email);
+            User user;
+            if (userOpt.isEmpty()) {
+                user = new User(
+                        name != null && !name.trim().isEmpty() ? name : email.split("@")[0],
+                        email,
+                        "SOCIAL_" + email.hashCode(), // unique placeholder — no phone from social login
+                        passwordEncoder.encode(java.util.UUID.randomUUID().toString()),
+                        "WEB"
+                );
+                user = userService.registerUser(user);
+            } else {
+                user = userOpt.get();
+            }
+
+            String token = jwtUtil.generateToken(user.getEmail());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", token);
+            response.put("id", user.getId());
+            response.put("name", user.getName());
+            response.put("isAdmin", false);
+            response.put("walletBalance", user.getWalletBalance());
+            response.put("createdAt", user.getCreatedAt() != null ? user.getCreatedAt().toString() : null);
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PostMapping("/verify-otp")
     public ResponseEntity<?> verifyOtp(@RequestBody Map<String, String> request) {
         try {
