@@ -27,7 +27,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "http://localhost:5174")
+@CrossOrigin(origins = "*")
 public class AdminController {
 
     @Autowired
@@ -439,6 +439,7 @@ public class AdminController {
                     credit.put("status", "CREDIT");
                     credit.put("upiId", upiId);
                     credit.put("method", method);
+                    credit.put("gatewayReference", p.getGatewayReference());
                     credit.put("cycleStatus", cycleStatus);
                     transactions.add(credit);
                 }

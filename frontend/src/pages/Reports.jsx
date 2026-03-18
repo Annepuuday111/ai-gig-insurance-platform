@@ -361,7 +361,7 @@ export default function Reports() {
                             if (!p) return null;
                             const pDate = p.date || p.createdAt;
                             const displayDate = pDate ? new Date(pDate).toLocaleDateString("en-IN", { day: '2-digit', month: 'short' }) : "Recently";
-                            const displayRef = p.txnReference || p.id?.toString().slice(-8).toUpperCase() || "PAY-REF";
+                            const displayRef = p.reference || p.id?.toString().slice(-8).toUpperCase() || "PAY-REF";
                             const displayAmt = p.amount !== undefined ? `₹${p.amount}` : "₹0";
                             
                             return (

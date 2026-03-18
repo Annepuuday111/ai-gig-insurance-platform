@@ -82,6 +82,7 @@ public class SubscriptionService {
         // Build response
         Map<String, Object> resp = new LinkedHashMap<>();
         resp.put("subscriptionId", saved.getId());
+        resp.put("paymentId",      payment.getId());
         resp.put("plan",           plan.getName());
         resp.put("status",         saved.getStatus().name());
         resp.put("startDate",      saved.getStartDate().toString());

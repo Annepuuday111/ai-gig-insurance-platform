@@ -135,11 +135,18 @@ export default function Payment() {
           }
         }
         
-        // ── Check if location details are present ──
-        if (u && (!u.state || (!u.district && !u.mandal && !u.city))) {
-          setHasPlanAlert(true);
-          setError("⚠️ Please update your location details (State and District/City) in your profile to purchase a plan. Location is required for AI weather tracking.");
-          return;
+        // ── Check if profile is complete (Phone, Platform, Location) ──
+        if (u) {
+          const missingFields = [];
+          if (!u.phone) missingFields.push("Phone Number");
+          if (!u.platform) missingFields.push("Service Platform");
+          if (!u.state || (!u.district && !u.mandal)) missingFields.push("Location (State/District)");
+
+          if (missingFields.length > 0) {
+            setHasPlanAlert(true);
+            setError(`⚠️ Profile Incomplete: Please update your ${missingFields.join(", ")} in your profile to purchase a plan. These details are required for identity verification and coverage.`);
+            return;
+          }
         }
 
         // ── Check if they already have a plan ──
@@ -164,9 +171,9 @@ export default function Payment() {
 
   /* ── simulate card / UPI validation ──────────────────────────────────────── */
   function validate() {
-    if (method === "UPI" && !upiId.includes("@")) {
-      setError("Please enter a valid UPI ID (e.g. yourname@upi)");
-      return false;
+    if (method === "UPI") {
+      if (!upiId.trim()) { setError("Please enter the Transaction ID / UTR number from your payment app."); return false; }
+      if (upiId.length < 8) { setError("Please enter a valid Transaction ID."); return false; }
     }
     if (method === "CARD") {
       if (cardNum.replace(/\s/g, "").length < 16) { setError("Enter a valid 16-digit card number"); return false; }
@@ -180,33 +187,85 @@ export default function Payment() {
     return true;
   }
 
+  useEffect(() => {
+    // ── Load Razorpay Script ──
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    document.body.appendChild(script);
+    return () => { document.body.removeChild(script); };
+  }, []);
+
   async function handlePay() {
     setError("");
-    if (method !== "FREE_TRIAL" && !validate()) return;
-
     setProcessing(true);
     try {
-      // For demo mode (FREE_TRIAL or simulated), we generate a fake txnRef
-      const txnReference = method === "FREE_TRIAL"
-        ? null
-        : `TXN-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+      // 1. Create Order on Backend
+      const api = await import("../api");
+      const order = await api.createRazorpayOrder(price);
+      const keyData = await api.getRazorpayKey();
 
-      const res = await buyPlan({
-        planId,
-        method,
-        upiId: method === "UPI" ? upiId : null,
-        txnReference,
-      });
-
-      if (res?.subscriptionId) {
-        setResult(res);
-        setSuccess(true);
-      } else {
-        setError(res?.error || "Payment failed. Please try again.");
+      if (order?.error || keyData?.error) {
+        setError(order?.error || keyData?.error);
+        setProcessing(false);
+        return;
       }
-    } catch {
-      setError("Network error. Please try again.");
-    } finally {
+
+      // 2. Open Razorpay Checkout
+      const options = {
+        key: keyData.key, 
+        amount: order.amount * 100,
+        currency: "INR",
+        name: "Gig Insurance Platform",
+        description: `Premium for ${plan} Plan`,
+        order_id: order.id,
+        handler: async function (response) {
+          // 3. Verify Payment on Backend
+          try {
+            // First, create the pending subscription record if not already there
+            const subRes = await buyPlan({
+              planId,
+              method: "RAZORPAY",
+              txnReference: response.razorpay_payment_id
+            });
+
+            const verifyRes = await import("../api").then(api => api.verifyRazorpayPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              paymentId: subRes.paymentId || subRes.id
+            }));
+
+            if (verifyRes.success) {
+              setResult({ status: "ACTIVE", plan, amountPaid: price, nextPaymentDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) });
+              setSuccess(true);
+            } else {
+              setError("Payment verification failed: " + verifyRes.message);
+            }
+          } catch (e) {
+            setError("Error processing verification. Please check your reports.");
+          } finally {
+            setProcessing(false);
+          }
+        },
+        prefill: {
+          name: localStorage.getItem("userName") || "",
+          email: "",
+          contact: ""
+        },
+        theme: { color: theme.accent },
+        modal: {
+          ondismiss: function() {
+            setProcessing(false);
+          }
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+
+    } catch (err) {
+      setError("Failed to initialize payment gateway. Please try again.");
       setProcessing(false);
     }
   }
@@ -386,27 +445,54 @@ export default function Payment() {
               </div>
             )}
 
-            {/* UPI input */}
-            {method === "UPI" && (
-              <div style={{ marginTop: 20 }}>
-                <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", display: "block", marginBottom: 6 }}>
-                  UPI ID
-                </label>
-                <input
-                  className="pay-input"
-                  placeholder="yourname@upi"
-                  value={upiId}
-                  onChange={e => { setUpiId(e.target.value); setError(""); }}
-                />
-                <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 6 }}>
-                  e.g. mobile@paytm, name@gpay, number@ybl
+                <div style={{ textAlign: "center", padding: "20px 0" }}>
+                  <div style={{ marginBottom: 24 }}>
+                    <div style={{ fontSize: 44, marginBottom: 12 }}>💳</div>
+                    <h3 style={{ fontFamily: "Sora,sans-serif", fontSize: 20, fontWeight: 800, color: "#0f172a", margin: "0 0 8px" }}>
+                      Safe & Secure Payment
+                    </h3>
+                    <p style={{ fontSize: 14, color: "#64748b", maxWidth: 300, margin: "0 auto" }}>
+                      Pay via Razorpay for instant activation. Supports UPI, Cards, and Netbanking.
+                    </p>
+                  </div>
+
+                  {processing ? (
+                    <div style={{ padding: "24px", background: "#f8fafc", borderRadius: "20px", border: "2px dashed #e2e8f0" }}>
+                      <div style={{ width: 40, height: 40, margin: "0 auto 12px", border: `4px solid ${theme.light}`, borderTopColor: theme.accent, borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+                      <div style={{ fontWeight: 800, color: theme.accent, fontSize: 16 }}>
+                        Awaiting Gateway Response...
+                      </div>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={handlePay}
+                      style={{
+                        width: "100%", maxWidth: 320, padding: "16px", background: theme.gradient,
+                        color: "#fff", border: "none", borderRadius: "14px", fontWeight: 800,
+                        fontSize: 18, cursor: "pointer", boxShadow: "0 10px 25px rgba(22,163,74,0.3)",
+                        transition: "transform 0.2s"
+                      }}
+                      onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"}
+                      onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}
+                    >
+                      🚀 Pay ₹{price} Now
+                    </button>
+                  )}
+                  
+                  <div style={{ marginTop: 24, display: "flex", justifyContent: "center", gap: 16 }}>
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/Razorpay_logo.svg" alt="Razorpay" style={{ height: 20, opacity: 0.6 }} />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg" alt="UPI" style={{ height: 16, opacity: 0.6 }} />
+                  </div>
                 </div>
-              </div>
-            )}
 
             {/* Card inputs */}
             {method === "CARD" && (
               <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 12 }}>
+                <div style={{ background: "#fff4f4", padding: "12px", borderRadius: "12px", border: "1px solid #fee2e2", marginBottom: "10px" }}>
+                  <p style={{ fontSize: "12px", color: "#b91c1c", fontWeight: 600 }}>
+                    ⚠️ Card payments are temporarily disabled. Please use UPI for real-time activation.
+                  </p>
+                </div>
                 <div>
                   <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", display: "block", marginBottom: 6 }}>Card Number</label>
                   <input className="pay-input" placeholder="1234 5678 9012 3456" value={cardNum}
@@ -435,6 +521,11 @@ export default function Payment() {
             {/* Wallet selector */}
             {method === "WALLET" && (
               <div style={{ marginTop: 20 }}>
+                <div style={{ background: "#fff4f4", padding: "12px", borderRadius: "12px", border: "1px solid #fee2e2", marginBottom: "10px" }}>
+                  <p style={{ fontSize: "12px", color: "#b91c1c", fontWeight: 600 }}>
+                    ⚠️ Wallet payments are temporarily disabled. Please use UPI for real-time activation.
+                  </p>
+                </div>
                 <label style={{ fontSize: 13, fontWeight: 700, color: "#374151", display: "block", marginBottom: 6 }}>Select Wallet</label>
                 <select
                   className="pay-input"
@@ -461,24 +552,22 @@ export default function Payment() {
             )}
 
             {/* PAY button */}
-            <button
-              className="pay-btn-main"
-              style={{ background: hasPlanAlert ? "#e2e8f0" : theme.gradient, color: hasPlanAlert ? "#94a3b8" : "#fff", marginTop: 24 }}
-              onClick={handlePay}
-              disabled={processing || hasPlanAlert}
-            >
-              {processing ? (
-                <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
-                  <span style={{ width: 18, height: 18, border: "3px solid rgba(255,255,255,0.35)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.7s linear infinite", display: "inline-block" }} />
-                  Processing...
-                </span>
-              ) : hasPlanAlert ? (
-                "Plan Already Active"
-              ) : mode === "trial"
-                ? `🎁 Activate Free Trial — ₹0 Today`
-                : `Pay ₹${price} Securely`
-              }
-            </button>
+            {!processing && (
+              <button
+                className="pay-btn-main"
+                style={{ background: hasPlanAlert ? "#e2e8f0" : theme.gradient, color: hasPlanAlert ? "#94a3b8" : "#fff", marginTop: 24 }}
+                onClick={handlePay}
+                disabled={processing || hasPlanAlert}
+              >
+                {hasPlanAlert ? (
+                  "Plan Already Active"
+                ) : mode === "trial"
+                  ? `🎁 Activate Free Trial — ₹0 Today`
+                  : `Proceed to Scan & Detect`
+                }
+              </button>
+            )}
+
 
             <p style={{ textAlign: "center", fontSize: 12, color: "#94a3b8", marginTop: 12 }}>
               🔒 256-bit SSL encrypted &nbsp;|&nbsp; Your data is never stored

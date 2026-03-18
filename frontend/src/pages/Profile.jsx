@@ -433,9 +433,30 @@ export default function Profile() {
                     <input className="prof-input" placeholder="Phone Number" type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
                   </div>
 
-                  <div style={{ position: "relative" }}>
-                    <FieldIcon><IconBriefcase /></FieldIcon>
-                    <input className="prof-input" value={form.platform || "No Platform Assigned"} disabled />
+                  <div style={{ position: "relative", gridColumn: "1 / -1" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 10, background: theme.light, display: "flex", alignItems: "center", justifyContent: "center", color: theme.accent }}>
+                        <IconBriefcase />
+                      </div>
+                      <div>
+                        <h3 style={{ fontFamily: "Sora,sans-serif", fontSize: 16, fontWeight: 700, color: "#0f172a", margin: 0 }}>Service Platform</h3>
+                        <p style={{ fontSize: 12, color: "#94a3b8", margin: 0 }}>{user.platform ? "Select your primary gig platform" : "Please select your platform to enable relevant insurance coverage"}</p>
+                      </div>
+                    </div>
+                    <div className="edit-grid" style={{ gridTemplateColumns: "1fr" }}>
+                      <div style={{ position: "relative" }}>
+                        <FieldIcon><IconBriefcase /></FieldIcon>
+                        <select
+                          className="prof-input"
+                          value={form.platform}
+                          onChange={(e) => setForm((f) => ({ ...f, platform: e.target.value }))}
+                          style={{ appearance: "auto", cursor: "pointer" }}
+                        >
+                          <option value="">Select Platform</option>
+                          {partners.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                        </select>
+                      </div>
+                    </div>
                   </div>
                 </div>
 

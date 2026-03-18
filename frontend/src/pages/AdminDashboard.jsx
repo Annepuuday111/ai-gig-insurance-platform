@@ -1002,7 +1002,7 @@ export default function AdminDashboard() {
                   <th className="px-5 sm:px-6 py-3 text-left font-semibold">User</th>
                   <th className="px-5 sm:px-6 py-3 text-left font-semibold">Amount Paid</th>
                   <th className="px-5 sm:px-6 py-3 text-left font-semibold">Coverage</th>
-                  <th className="px-5 sm:px-6 py-3 text-left font-semibold">UPI ID</th>
+                  <th className="px-5 sm:px-6 py-3 text-left font-semibold">Transaction Reference (UTR)</th>
                   <th className="px-5 sm:px-6 py-3 text-left font-semibold">Payment Date</th>
                   <th className="px-5 sm:px-6 py-3 text-left font-semibold">Status</th>
                   <th className="px-5 sm:px-6 py-3 text-center font-semibold">Action</th>
@@ -1015,13 +1015,13 @@ export default function AdminDashboard() {
                     <td className="px-5 sm:px-6 py-3.5">
                       <div className="flex items-center gap-2.5">
                         <Avatar name={p.user?.email} />
-                        <span className="font-medium text-gray-700 truncate max-w-[160px]">{p.user?.email}</span>
+                        <span className="font-medium text-gray-700 truncate max-w-[160px] text-xs">{p.user?.email}</span>
                       </div>
                     </td>
                     <td className="px-5 sm:px-6 py-3.5 font-semibold text-gray-700">₹{p.amount}</td>
                     <td className="px-5 sm:px-6 py-3.5 font-bold text-indigo-600">₹{p.subscription?.plan?.coverageAmount || 0}</td>
                     <td className="px-5 sm:px-6 py-3.5">
-                      <span className="text-xs font-bold text-indigo-500">{p.upiId || "N/A"}</span>
+                      <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-md border border-amber-100">{p.gatewayReference || "No Ref"}</span>
                     </td>
                     <td className="px-5 sm:px-6 py-3.5">
                       <span className="text-[10px] text-gray-400 font-medium italic">{p.createdAt ? new Date(p.createdAt).toLocaleString() : "N/A"}</span>
@@ -2057,7 +2057,7 @@ export default function AdminDashboard() {
                     <th className="px-5 py-3 text-right font-semibold">Premium</th>
                     <th className="px-5 py-3 text-right font-semibold">Coverage</th>
                     <th className="px-5 py-3 text-right font-semibold">Net Balance</th>
-                    <th className="px-5 py-3 text-left font-semibold">Payment / UPI</th>
+                    <th className="px-5 py-3 text-left font-semibold">Payment / Reference</th>
                     <th className="px-5 py-3 text-left font-semibold">Cycle Status</th>
                     <th className="px-5 py-3 text-left font-semibold">Date</th>
                   </tr>
@@ -2113,9 +2113,9 @@ export default function AdminDashboard() {
                         <td className="px-5 py-3.5">
                           <div className="flex flex-col">
                             <span className="text-gray-700 font-semibold text-xs">{method}</span>
-                            {method === "UPI" && (
-                              <span className="text-gray-500 text-[10px] truncate max-w-[120px]">{upiId}</span>
-                            )}
+                            <span className="text-indigo-500 font-bold text-[10px] bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 mt-0.5">
+                              {txn.gatewayReference || "No Ref"}
+                            </span>
                           </div>
                         </td>
                         <td className="px-5 py-3.5">

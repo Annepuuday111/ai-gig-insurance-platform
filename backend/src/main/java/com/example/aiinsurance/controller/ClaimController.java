@@ -24,7 +24,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/payments")
-@CrossOrigin(origins = "http://localhost:5174")
+@CrossOrigin(origins = "*")
 @Transactional
 public class ClaimController {
 

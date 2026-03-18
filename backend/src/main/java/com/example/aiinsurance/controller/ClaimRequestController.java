@@ -20,7 +20,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/claims/requests")
-@CrossOrigin(origins = "http://localhost:5174")
+@CrossOrigin(origins = "*")
 @Transactional
 public class ClaimRequestController {
 

@@ -280,6 +280,51 @@ export default function Dashboard() {
       {/* ── DASHBOARD CONTENT ── */}
       <div style={{ maxWidth: 1200, margin: "-32px auto 48px", padding: "0 16px", position: "relative", zIndex: 10 }}>
 
+        {/* ── PROFILE INCOMPLETE WARNING ── */}
+        {(!user.platform || !user.phone) && (
+          <div className="dash-section" style={{ marginBottom: 32 }}>
+            <div style={{
+              background: "linear-gradient(135deg, #fff2f2, #fff)",
+              borderRadius: 20, border: "2px dashed #fca5a5",
+              padding: "24px 28px", display: "flex", alignItems: "center",
+              justifyContent: "space-between", flexWrap: "wrap", gap: 20,
+              boxShadow: "0 10px 25px rgba(239, 68, 68, 0.08)"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+                <div style={{
+                  width: 52, height: 52, borderRadius: 16, background: "#fee2e2",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 24, flexShrink: 0
+                }}>
+                  ⚠️
+                </div>
+                <div>
+                  <h3 style={{ fontFamily: "Sora,sans-serif", fontSize: 18, fontWeight: 800, color: "#1e293b", margin: "0 0 4px" }}>
+                    Incomplete Profile Detected
+                  </h3>
+                  <p style={{ fontSize: 13, color: "#64748b", margin: 0, fontWeight: 500 }}>
+                    Please update your <strong>{!user.platform && "Service Platform"}{!user.platform && !user.phone && " and "}{!user.phone && "Phone Number"}</strong> in your profile. 
+                    These details are required to unlock insurance coverage and payments.
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => navigate("/profile")}
+                style={{
+                  background: "#dc2626", color: "#fff", border: "none", borderRadius: 12,
+                  padding: "12px 24px", fontFamily: "Sora,sans-serif", fontWeight: 700,
+                  fontSize: 14, cursor: "pointer", transition: "all 0.2s ease",
+                  boxShadow: "0 4px 12px rgba(220, 38, 38, 0.2)"
+                }}
+                onMouseOver={e => e.currentTarget.style.transform = "translateY(-2px)"}
+                onMouseOut={e => e.currentTarget.style.transform = "translateY(0)"}
+              >
+                Complete Profile →
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Plan Overview Cards */}
         <div className="dash-section" style={{ marginBottom: 32 }}>
           {loadingSum ? (

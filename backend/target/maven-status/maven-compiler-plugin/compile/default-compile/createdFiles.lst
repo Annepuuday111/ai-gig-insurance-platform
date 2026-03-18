@@ -10,6 +10,7 @@ com/example/aiinsurance/controller/SubscriptionController.class
 com/example/aiinsurance/AdminInitializer.class
 com/example/aiinsurance/service/MyUserDetailsService.class
 com/example/aiinsurance/repository/PartnerRepository.class
+com/example/aiinsurance/controller/PaymentGatewayController.class
 com/example/aiinsurance/model/ClaimRequest.class
 com/example/aiinsurance/repository/AdminRepository.class
 com/example/aiinsurance/security/SecurityConfig.class
@@ -26,6 +27,7 @@ com/example/aiinsurance/controller/AuthController.class
 com/example/aiinsurance/service/EmailService.class
 com/example/aiinsurance/service/AdminService.class
 com/example/aiinsurance/model/Partner.class
+com/example/aiinsurance/service/RazorpayService.class
 com/example/aiinsurance/model/Payment$Method.class
 com/example/aiinsurance/repository/UserRepository.class
 com/example/aiinsurance/security/JwtAuthenticationFilter.class

@@ -100,6 +100,17 @@ export async function getDashboardSummary() {
   return request('/api/subscriptions/dashboard', { method: 'GET' });
 }
 
+// ── Razorpay ──────────────────────────────────────────────────────────────────
+export async function getRazorpayKey() {
+  return request('/api/payments/razorpay/key', { method: 'GET' });
+}
+export async function createRazorpayOrder(amount) {
+  return request('/api/payments/razorpay/order', { method: 'POST', body: JSON.stringify({ amount }) });
+}
+export async function verifyRazorpayPayment(data) {
+  return request('/api/payments/razorpay/verify', { method: 'POST', body: JSON.stringify(data) });
+}
+
 // ── User queries / chat support ─────────────────────────────────────────────────
 export async function postQuery(question) {
   return request('/api/queries', { method: 'POST', body: JSON.stringify({ question }) });
