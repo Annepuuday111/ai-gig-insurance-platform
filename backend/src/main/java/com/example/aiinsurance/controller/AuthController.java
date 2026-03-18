@@ -1,6 +1,5 @@
 package com.example.aiinsurance.controller;
 
-import com.example.aiinsurance.model.Admin;
 import com.example.aiinsurance.model.User;
 import com.example.aiinsurance.service.UserService;
 import com.example.aiinsurance.service.AdminService;
@@ -132,7 +131,7 @@ public class AuthController {
                         // check password against legacy record
                         if (adminService.authenticate(local, password)) {
                             // update the admin record to new email
-                            Admin updated = adminService.changeCredentials(legacyOpt.get().getId(), normalized, null);
+                            adminService.changeCredentials(legacyOpt.get().getId(), normalized, null);
                             String token = jwtUtil.generateToken(normalized, true);
                             Map<String, Object> response = new HashMap<>();
                             response.put("token", token);
