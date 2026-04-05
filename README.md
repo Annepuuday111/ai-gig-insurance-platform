@@ -290,10 +290,7 @@ If successfully orchestrated by the automation script, you can visit the active 
 
 <div align="center">
   <h2>👨‍💻 Lead Developer & Designer</h2>
-  <p><i>Engineered and designed with precision for the Indian gig-economy context to solve real-world disruptions.</i></p>
-  
-  <br/>
-  
+  <p><i>Passionate about designing and building full-stack applications and websites, focusing on creating efficient, scalable, and user-friendly digital solutions that solve real-world problems.</i></p>
   <h2><b>Annepu Uday Kumar</b></h2>
   <p>📞 <b>Direct Contact:</b> +91 7075285071</p>
   
