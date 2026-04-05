@@ -373,18 +373,47 @@ export default function Dashboard() {
             <div className="dash-card" style={{ background: "#fff", borderRadius: 16, overflow: "hidden", boxShadow: "0 8px 32px rgba(15,23,42,0.08)" }}>
               <div style={{ padding: "20px 24px" }}>
                 <h3 style={{ fontFamily: "Sora,sans-serif", fontSize: 18, fontWeight: 700, color: "#0f172a", marginBottom: 16 }}>💳 Recent Payments</h3>
-                {summary.recentPayments.map((p, i) => (
-                  <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #f1f5f9", fontSize: 14 }}>
-                    <div>
-                      <span style={{ fontWeight: 700, color: "#0f172a" }}>{p.plan} Plan</span>
-                      <span style={{ color: "#94a3b8", marginLeft: 8, fontSize: 12 }}>{p.method.replace("_"," ")} · {new Date(p.date).toLocaleDateString("en-IN")}</span>
+                {summary.recentPayments.map((p, i) => {
+                  const MINFO = {
+                    UPI:        { icon: "📱", label: "UPI",        clr: "#7c3aed", bg: "#f5f3ff" },
+                    CARD:       { icon: "💳", label: "Card",       clr: "#1d4ed8", bg: "#eff6ff" },
+                    WALLET:     { icon: "👜", label: "Wallet",     clr: "#b45309", bg: "#fffbeb" },
+                    FREE_TRIAL: { icon: "🎁", label: "Free Trial", clr: "#15803d", bg: "#f0fdf4" },
+                  };
+                  const mi = MINFO[p.method] || { icon: "💰", label: (p.method||"").replace(/_/g," "), clr: "#64748b", bg: "#f8fafc" };
+                  const isPending = p.status === "PENDING";
+                  const isActive  = p.status === "APPROVED" || p.status === "SUCCESS";
+                  return (
+                    <div key={i} style={{ padding: "12px 0", borderBottom: "1px solid #f1f5f9" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+                            <span style={{ fontWeight: 700, color: "#0f172a", fontSize: 14 }}>{p.plan} Plan</span>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: mi.bg, color: mi.clr, padding: "2px 8px", borderRadius: 20, fontSize: 10, fontWeight: 700 }}>
+                              {mi.icon} {mi.label}
+                            </span>
+                          </div>
+                          <span style={{ color: "#94a3b8", fontSize: 12 }}>
+                            {new Date(p.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                            {p.reference && ` · Ref: ${p.reference}`}
+                          </span>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
+                          <span style={{ fontWeight: 800, color: "#0f172a", fontSize: 15 }}>
+                            {p.amount === 0 ? "Free" : `₹${p.amount}`}
+                          </span>
+                          <span style={{
+                            padding: "3px 8px", borderRadius: 8, fontSize: 11, fontWeight: 700,
+                            background: isActive ? "#dcfce7" : isPending ? "#fef3c7" : "#fee2e2",
+                            color:      isActive ? "#16a34a" : isPending ? "#92400e" : "#dc2626",
+                          }}>
+                            {isPending ? "⏳ Pending" : isActive ? "✅ Active" : p.status}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ fontWeight: 700, color: "#0f172a" }}>{p.amount === 0 ? "Free" : `₹${p.amount}`}</span>
-                      <span style={{ padding: "3px 8px", borderRadius: 8, fontSize: 11, fontWeight: 700, background: p.status === "SUCCESS" ? "#dcfce7" : "#fee2e2", color: p.status === "SUCCESS" ? "#16a34a" : "#dc2626" }}>{p.status}</span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>

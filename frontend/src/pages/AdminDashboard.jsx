@@ -976,16 +976,39 @@ export default function AdminDashboard() {
      SECTION: APPROVALS
   ══════════════════════════════════════ */
   const renderApprovals = () => {
-    const pending = payments.filter(p => p.status === "PENDING");
+    const pending  = payments.filter(p => p.status === "PENDING");
     const approved = payments.filter(p => p.status === "APPROVED");
     const rejected = payments.filter(p => p.status === "REJECTED");
+    const pendingUPI = pending.filter(p => p.method === "UPI" || p.method === "upi");
+
+    const methodColors = {
+      UPI:        { bg: "bg-purple-50 border-purple-200", text: "text-purple-700", label: "📱 UPI" },
+      CARD:       { bg: "bg-blue-50 border-blue-200",   text: "text-blue-700",   label: "💳 Card" },
+      WALLET:     { bg: "bg-yellow-50 border-yellow-200", text: "text-yellow-700", label: "👜 Wallet" },
+      FREE_TRIAL: { bg: "bg-green-50 border-green-200", text: "text-green-700",  label: "🎁 Free Trial" },
+    };
+    const getMethodStyle = (m) => methodColors[m?.toUpperCase()] || { bg: "bg-gray-50 border-gray-200", text: "text-gray-600", label: m || "—" };
+
     return (
       <div className="space-y-5">
+
+        {/* ── UPI Pending Banner ── */}
+        {pendingUPI.length > 0 && (
+          <div className="bg-gradient-to-r from-purple-50 to-purple-100 border-2 border-purple-200 rounded-2xl p-4 flex items-center gap-4">
+            <div className="w-10 h-10 bg-purple-200 rounded-xl flex items-center justify-center text-xl shrink-0">📱</div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-purple-800 text-sm">⚡ {pendingUPI.length} UPI Payment{pendingUPI.length > 1 ? 's' : ''} Awaiting Verification</p>
+              <p className="text-xs text-purple-600 mt-0.5">Review the UTR reference numbers below, verify in your UPI app, then click <strong>Approve</strong> to credit the premium to the admin wallet and activate the user's plan.</p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Stats ── */}
         <div className="grid grid-cols-3 gap-3 sm:gap-4">
           {[
-            { label: "Pending", count: pending.length, bg: "bg-amber-50", border: "border-amber-100", icon: <FaHourglassHalf className="text-amber-400" />, num: "text-amber-600", lbl: "text-amber-500" },
-            { label: "Approved", count: approved.length, bg: "bg-green-50", border: "border-green-100", icon: <FaCheckCircle className="text-green-500" />, num: "text-green-600", lbl: "text-green-500" },
-            { label: "Rejected", count: rejected.length, bg: "bg-red-50", border: "border-red-100", icon: <FaTimesCircle className="text-red-400" />, num: "text-red-500", lbl: "text-red-400" },
+            { label: "Pending",  count: pending.length,  bg: "bg-amber-50",  border: "border-amber-100",  icon: <FaHourglassHalf className="text-amber-400" />, num: "text-amber-600",  lbl: "text-amber-500" },
+            { label: "Approved", count: approved.length, bg: "bg-green-50",  border: "border-green-100",  icon: <FaCheckCircle className="text-green-500" />,   num: "text-green-600",  lbl: "text-green-500" },
+            { label: "Rejected", count: rejected.length, bg: "bg-red-50",    border: "border-red-100",    icon: <FaTimesCircle className="text-red-400" />,      num: "text-red-500",   lbl: "text-red-400" },
           ].map(({ label, count, bg, border, icon, num, lbl }) => (
             <div key={label} className={`${bg} border ${border} rounded-2xl p-4 sm:p-5 flex flex-col justify-center`}>
               <div className="flex items-center gap-2 mb-1">{icon}<p className={`text-xs font-semibold ${lbl} uppercase tracking-wide`}>{label}</p></div>
@@ -993,67 +1016,121 @@ export default function AdminDashboard() {
             </div>
           ))}
         </div>
+
+        {/* ── Main Table ── */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[540px]">
+            <table className="w-full text-sm min-w-[700px]">
               <thead>
                 <tr className="text-gray-400 text-xs uppercase tracking-wide border-b border-gray-100 bg-gray-50/50">
-                  <th className="px-4 py-3 text-left font-semibold w-12">#</th>
-                  <th className="px-5 sm:px-6 py-3 text-left font-semibold">User</th>
-                  <th className="px-5 sm:px-6 py-3 text-left font-semibold">Amount Paid</th>
-                  <th className="px-5 sm:px-6 py-3 text-left font-semibold">Coverage</th>
-                  <th className="px-5 sm:px-6 py-3 text-left font-semibold">Transaction Reference (UTR)</th>
-                  <th className="px-5 sm:px-6 py-3 text-left font-semibold">Payment Date</th>
-                  <th className="px-5 sm:px-6 py-3 text-left font-semibold">Status</th>
-                  <th className="px-5 sm:px-6 py-3 text-center font-semibold">Action</th>
+                  <th className="px-4 py-3 text-left font-semibold w-10">#</th>
+                  <th className="px-4 py-3 text-left font-semibold">User</th>
+                  <th className="px-4 py-3 text-left font-semibold">Method</th>
+                  <th className="px-4 py-3 text-left font-semibold">Amount</th>
+                  <th className="px-4 py-3 text-left font-semibold">Coverage</th>
+                  <th className="px-4 py-3 text-left font-semibold">UTR / Reference</th>
+                  <th className="px-4 py-3 text-left font-semibold">UPI ID</th>
+                  <th className="px-4 py-3 text-left font-semibold">Date</th>
+                  <th className="px-4 py-3 text-left font-semibold">Status</th>
+                  <th className="px-4 py-3 text-center font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {payments.map((p, idx) => (
-                  <tr key={p.id} className="hover:bg-gray-50/60 transition">
-                    <td className="px-4 py-3.5 text-gray-300 text-xs font-bold">{idx + 1}</td>
-                    <td className="px-5 sm:px-6 py-3.5">
-                      <div className="flex items-center gap-2.5">
-                        <Avatar name={p.user?.email} />
-                        <span className="font-medium text-gray-700 truncate max-w-[160px] text-xs">{p.user?.email}</span>
-                      </div>
-                    </td>
-                    <td className="px-5 sm:px-6 py-3.5 font-semibold text-gray-700">₹{p.amount}</td>
-                    <td className="px-5 sm:px-6 py-3.5 font-bold text-indigo-600">₹{p.subscription?.plan?.coverageAmount || 0}</td>
-                    <td className="px-5 sm:px-6 py-3.5">
-                      <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-md border border-amber-100">{p.gatewayReference || "No Ref"}</span>
-                    </td>
-                    <td className="px-5 sm:px-6 py-3.5">
-                      <span className="text-[10px] text-gray-400 font-medium italic">{p.createdAt ? new Date(p.createdAt).toLocaleString() : "N/A"}</span>
-                    </td>
-                    <td className="px-5 sm:px-6 py-3.5"><StatusBadge status={p.status} /></td>
-                    <td className="px-5 sm:px-6 py-3.5 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        {p.status === "PENDING" ? (
-                          <>
-                            <button onClick={() => handleApprove(p.id)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 text-xs rounded-lg font-medium transition border border-green-200">
-                              <FaCheckCircle className="text-[10px]" /> Approve
-                            </button>
-                            <button onClick={() => handleReject(p.id)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-400 hover:bg-red-100 text-xs rounded-lg font-medium transition border border-red-200">
-                              <FaTimesCircle className="text-[10px]" /> Reject
-                            </button>
-                          </>
+                {payments.map((p, idx) => {
+                  const ms = getMethodStyle(p.method);
+                  const isUpiPending = p.status === "PENDING" && (p.method === "UPI" || p.method === "upi");
+                  return (
+                    <tr key={p.id} className={`transition ${isUpiPending ? "bg-purple-50/30 hover:bg-purple-50/60" : "hover:bg-gray-50/60"}`}>
+                      <td className="px-4 py-3.5 text-gray-300 text-xs font-bold">{idx + 1}</td>
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-2">
+                          <Avatar name={p.user?.name || p.user?.email} />
+                          <div className="min-w-0">
+                            <p className="font-semibold text-gray-700 text-xs leading-tight truncate max-w-[110px]">{p.user?.name || "—"}</p>
+                            <p className="text-[10px] text-gray-400 truncate max-w-[110px]">{p.user?.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${ms.bg} ${ms.text}`}>
+                          {ms.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5 font-bold text-gray-800">₹{p.amount}</td>
+                      <td className="px-4 py-3.5 font-bold text-indigo-600">₹{p.subscription?.plan?.coverageAmount || 0}</td>
+                      <td className="px-4 py-3.5">
+                        {p.gatewayReference ? (
+                          <div className="flex flex-col gap-0.5">
+                            <span className={`text-xs font-bold px-2 py-1 rounded-md border font-mono tracking-wider ${isUpiPending ? "text-purple-700 bg-purple-50 border-purple-200" : "text-amber-600 bg-amber-50 border-amber-100"}`}>
+                              {p.gatewayReference}
+                            </span>
+                            {isUpiPending && <span className="text-[9px] text-purple-500 font-semibold">✓ Verify this UTR in your UPI app</span>}
+                          </div>
                         ) : (
-                          <span className="text-[10px] uppercase font-bold text-gray-400 flex items-center gap-1 tracking-wider opacity-60">
-                            <FaLock className="text-[8px]" /> Locked
-                          </span>
+                          <span className="text-[10px] text-gray-300 italic">No Reference</span>
                         )}
-                        <button onClick={() => handlePaymentDelete(p.id)} className="w-8 h-8 flex items-center justify-center bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition border border-red-100" title="Delete record">
-                          <FaTrashAlt className="text-xs" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {payments.length === 0 && <tr><td colSpan={8} className="px-6 py-12 text-center text-gray-300">No records found</td></tr>}
+                      </td>
+                      <td className="px-4 py-3.5">
+                        {p.upiId ? (
+                          <span className="text-[10px] font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5 font-mono">{p.upiId}</span>
+                        ) : (
+                          <span className="text-[10px] text-gray-300">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <span className="text-[10px] text-gray-400">{p.createdAt ? new Date(p.createdAt).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "N/A"}</span>
+                      </td>
+                      <td className="px-4 py-3.5"><StatusBadge status={p.status} /></td>
+                      <td className="px-4 py-3.5 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          {p.status === "PENDING" ? (
+                            <>
+                              <button
+                                onClick={() => handleApprove(p.id)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-green-500 hover:bg-green-600 text-white text-[10px] rounded-lg font-bold transition shadow-sm"
+                              >
+                                <FaCheckCircle className="text-[9px]" /> Approve
+                              </button>
+                              <button
+                                onClick={() => handleReject(p.id)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-red-50 text-red-400 hover:bg-red-100 text-[10px] rounded-lg font-medium transition border border-red-200"
+                              >
+                                <FaTimesCircle className="text-[9px]" /> Reject
+                              </button>
+                            </>
+                          ) : (
+                            <span className="text-[10px] uppercase font-bold text-gray-300 flex items-center gap-1">
+                              <FaLock className="text-[8px]" />
+                            </span>
+                          )}
+                          <button
+                            onClick={() => handlePaymentDelete(p.id)}
+                            className="w-7 h-7 flex items-center justify-center bg-red-50 text-red-400 hover:bg-red-100 rounded-lg transition border border-red-100"
+                            title="Delete"
+                          >
+                            <FaTrashAlt className="text-[9px]" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {payments.length === 0 && (
+                  <tr><td colSpan={10} className="px-6 py-12 text-center text-gray-300">No payment records found</td></tr>
+                )}
               </tbody>
             </table>
           </div>
+        </div>
+
+        {/* ── How to verify UPI guide ── */}
+        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5">
+          <h4 className="font-bold text-blue-800 text-sm mb-3 flex items-center gap-2">📱 How to Verify UPI Payments</h4>
+          <ol className="space-y-2 text-xs text-blue-700">
+            <li className="flex gap-2"><span className="font-black bg-blue-200 text-blue-800 w-5 h-5 rounded-full flex items-center justify-center shrink-0">1</span> <span>User pays via PhonePe / Google Pay / Paytm and submits their UTR number above.</span></li>
+            <li className="flex gap-2"><span className="font-black bg-blue-200 text-blue-800 w-5 h-5 rounded-full flex items-center justify-center shrink-0">2</span> <span>Open your UPI app → check the UTR/Transaction ID in your payment history to confirm receipt.</span></li>
+            <li className="flex gap-2"><span className="font-black bg-blue-200 text-blue-800 w-5 h-5 rounded-full flex items-center justify-center shrink-0">3</span> <span>Click <strong>Approve</strong> — this automatically credits the premium to the Admin Wallet &amp; activates the user's insurance plan.</span></li>
+          </ol>
         </div>
       </div>
     );
@@ -1549,73 +1626,107 @@ export default function AdminDashboard() {
   /* ══════════════════════════════════════
      SECTION: PAYMENTS
   ══════════════════════════════════════ */
-  const renderPayments = () => (
+  const renderPayments = () => {
+    const methodColors = {
+      UPI:        { bg: "bg-purple-50 border-purple-200", text: "text-purple-700", label: "📱 UPI" },
+      CARD:       { bg: "bg-blue-50 border-blue-200",    text: "text-blue-700",   label: "💳 Card" },
+      WALLET:     { bg: "bg-yellow-50 border-yellow-200",text: "text-yellow-700", label: "👜 Wallet" },
+      FREE_TRIAL: { bg: "bg-green-50 border-green-200",  text: "text-green-700",  label: "🎁 Free Trial" },
+    };
+    const getMethodStyle = (m) => methodColors[m?.toUpperCase()] || { bg: "bg-gray-50 border-gray-200", text: "text-gray-600", label: m || "—" };
+    return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="px-5 sm:px-6 py-4 border-b border-gray-100 bg-gray-50/50">
         <p className="text-sm text-gray-500"><span className="font-semibold text-gray-700">{payments.length}</span> total payment records</p>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm min-w-[520px]">
+        <table className="w-full text-sm min-w-[700px]">
           <thead>
             <tr className="text-gray-400 text-xs uppercase tracking-wide border-b border-gray-100 bg-gray-50/50">
-              <th className="px-4 py-3 text-left font-semibold w-12">#</th>
-              <th className="px-5 sm:px-6 py-3 text-left font-semibold">User</th>
-              <th className="px-5 sm:px-6 py-3 text-left font-semibold">Amount Paid</th>
-              <th className="px-5 sm:px-6 py-3 text-left font-semibold">Coverage</th>
-              <th className="px-5 sm:px-6 py-3 text-left font-semibold">UPI ID</th>
-              <th className="px-5 sm:px-6 py-3 text-left font-semibold">Payment Date</th>
-              <th className="px-5 sm:px-6 py-3 text-left font-semibold">Status</th>
-              <th className="px-5 sm:px-6 py-3 text-center font-semibold">Action</th>
+              <th className="px-4 py-3 text-left font-semibold w-10">#</th>
+              <th className="px-4 py-3 text-left font-semibold">User</th>
+              <th className="px-4 py-3 text-left font-semibold">Method</th>
+              <th className="px-4 py-3 text-left font-semibold">Amount</th>
+              <th className="px-4 py-3 text-left font-semibold">Coverage</th>
+              <th className="px-4 py-3 text-left font-semibold">UTR / Reference</th>
+              <th className="px-4 py-3 text-left font-semibold">UPI ID</th>
+              <th className="px-4 py-3 text-left font-semibold">Date</th>
+              <th className="px-4 py-3 text-left font-semibold">Status</th>
+              <th className="px-4 py-3 text-center font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {payments.map((p, idx) => (
-              <tr key={p.id} className="hover:bg-gray-50/60 transition">
-                <td className="px-4 py-3.5 text-gray-300 text-xs font-bold">{idx + 1}</td>
-                <td className="px-5 sm:px-6 py-3.5">
-                  <div className="flex items-center gap-2.5">
-                    <Avatar name={p.user?.email} />
-                    <span className="font-medium text-gray-700 truncate max-w-[150px]">{p.user?.email}</span>
-                  </div>
-                </td>
-                <td className="px-5 sm:px-6 py-3.5 font-semibold text-gray-700">₹{p.amount}</td>
-                <td className="px-5 sm:px-6 py-3.5 font-bold text-indigo-600">₹{p.subscription?.plan?.coverageAmount || 0}</td>
-                <td className="px-5 sm:px-6 py-3.5">
-                  <span className="text-xs font-bold text-indigo-500">{p.upiId || "N/A"}</span>
-                </td>
-                <td className="px-5 sm:px-6 py-3.5">
-                  <span className="text-[10px] text-gray-400 font-medium italic">{p.createdAt ? new Date(p.createdAt).toLocaleString() : "N/A"}</span>
-                </td>
-                <td className="px-5 sm:px-6 py-3.5"><StatusBadge status={p.status} /></td>
-                <td className="px-5 sm:px-6 py-3.5 text-center">
-                  <div className="flex items-center justify-center gap-2">
-                    {p.status === "PENDING" ? (
-                      <>
-                        <button onClick={() => handleApprove(p.id)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 text-xs rounded-lg font-medium transition border border-green-200">
-                          <FaCheckCircle className="text-[10px]" /> Approve
-                        </button>
-                        <button onClick={() => handleReject(p.id)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-400 hover:bg-red-100 text-xs rounded-lg font-medium transition border border-red-200">
-                          <FaTimesCircle className="text-[10px]" /> Reject
-                        </button>
-                      </>
-                    ) : (
-                      <span className="text-[10px] uppercase font-bold text-gray-400 flex items-center gap-1 tracking-wider opacity-60">
-                        <FaLock className="text-[8px]" /> Locked
+            {payments.map((p, idx) => {
+              const ms = getMethodStyle(p.method);
+              const isUpiPending = p.status === "PENDING" && (p.method === "UPI" || p.method === "upi");
+              return (
+                <tr key={p.id} className={`transition ${isUpiPending ? "bg-purple-50/30 hover:bg-purple-50/60" : "hover:bg-gray-50/60"}`}>
+                  <td className="px-4 py-3.5 text-gray-300 text-xs font-bold">{idx + 1}</td>
+                  <td className="px-4 py-3.5">
+                    <div className="flex items-center gap-2">
+                      <Avatar name={p.user?.name || p.user?.email} />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-gray-700 text-xs leading-tight truncate max-w-[110px]">{p.user?.name || "—"}</p>
+                        <p className="text-[10px] text-gray-400 truncate max-w-[110px]">{p.user?.email}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3.5">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${ms.bg} ${ms.text}`}>
+                      {ms.label}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3.5 font-bold text-gray-800">₹{p.amount}</td>
+                  <td className="px-4 py-3.5 font-bold text-indigo-600">₹{p.subscription?.plan?.coverageAmount || 0}</td>
+                  <td className="px-4 py-3.5">
+                    {p.gatewayReference ? (
+                      <span className={`text-xs font-bold px-2 py-1 rounded-md border font-mono tracking-wider ${isUpiPending ? "text-purple-700 bg-purple-50 border-purple-200" : "text-amber-600 bg-amber-50 border-amber-100"}`}>
+                        {p.gatewayReference}
                       </span>
+                    ) : (
+                      <span className="text-[10px] text-gray-300 italic">No Reference</span>
                     )}
-                    <button onClick={() => handlePaymentDelete(p.id)} className="w-8 h-8 flex items-center justify-center bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition border border-red-100" title="Delete record">
-                      <FaTrashAlt className="text-xs" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {payments.length === 0 && <tr><td colSpan={7} className="px-6 py-12 text-center text-gray-300">No payment records</td></tr>}
+                  </td>
+                  <td className="px-4 py-3.5">
+                    {p.upiId ? (
+                      <span className="text-[10px] font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5 font-mono">{p.upiId}</span>
+                    ) : (
+                      <span className="text-[10px] text-gray-300">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3.5">
+                    <span className="text-[10px] text-gray-400">{p.createdAt ? new Date(p.createdAt).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "N/A"}</span>
+                  </td>
+                  <td className="px-4 py-3.5"><StatusBadge status={p.status} /></td>
+                  <td className="px-4 py-3.5 text-center">
+                    <div className="flex items-center justify-center gap-1.5">
+                      {p.status === "PENDING" ? (
+                        <>
+                          <button onClick={() => handleApprove(p.id)} className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-green-500 hover:bg-green-600 text-white text-[10px] rounded-lg font-bold transition shadow-sm">
+                            <FaCheckCircle className="text-[9px]" /> Approve
+                          </button>
+                          <button onClick={() => handleReject(p.id)} className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-red-50 text-red-400 hover:bg-red-100 text-[10px] rounded-lg font-medium transition border border-red-200">
+                            <FaTimesCircle className="text-[9px]" /> Reject
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-[10px] uppercase font-bold text-gray-300"><FaLock className="text-[8px]" /></span>
+                      )}
+                      <button onClick={() => handlePaymentDelete(p.id)} className="w-7 h-7 flex items-center justify-center bg-red-50 text-red-400 hover:bg-red-100 rounded-lg transition border border-red-100" title="Delete">
+                        <FaTrashAlt className="text-[9px]" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+            {payments.length === 0 && <tr><td colSpan={10} className="px-6 py-12 text-center text-gray-300">No payment records</td></tr>}
           </tbody>
         </table>
       </div>
     </div>
-  );
+    );
+  };
 
   /* ══════════════════════════════════════
      SECTION: PARTNERS

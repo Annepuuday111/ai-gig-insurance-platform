@@ -18,6 +18,7 @@ public class SubscriptionService {
     @Autowired private PlanRepository          planRepository;
     @Autowired private ClaimRequestRepository   claimRequestRepository;
     @Autowired private AdminRepository          adminRepository;
+    @Autowired private NotificationRepository   notificationRepository;
 
 
     /**
@@ -60,7 +61,7 @@ public class SubscriptionService {
             sub.setTrialEndDate(LocalDateTime.now().plusDays(plan.getTrialDays()));
             sub.setNextPaymentDate(LocalDateTime.now().plusDays(plan.getTrialDays()));
         } else {
-            sub.setStatus(Subscription.Status.PENDING);
+            sub.setStatus(Subscription.Status.ACTIVE);
             sub.setNextPaymentDate(LocalDateTime.now().plusDays(7));
         }
         sub.setEndDate(LocalDateTime.now().plusDays(7));
@@ -72,12 +73,41 @@ public class SubscriptionService {
         payment.setSubscription(saved);
         payment.setAmount(isTrial ? 0.0 : plan.getWeeklyPremium());
         payment.setMethod(Payment.Method.valueOf(isTrial ? "FREE_TRIAL" : method.toUpperCase()));
-        payment.setStatus(isTrial ? Payment.Status.SUCCESS : Payment.Status.PENDING);
+        payment.setStatus(Payment.Status.SUCCESS);
         payment.setGatewayReference(txnReference);
         payment.setUpiId(upiId);
         paymentRepository.save(payment);
 
-        // Wallet credit is now handled in AdminController.approvePayment upon approval
+        // ── Auto-Credit admin wallet (Insurance Fund) ──────────────────
+        if (!isTrial) {
+            List<Admin> admins = adminRepository.findAll();
+            if (!admins.isEmpty()) {
+                Admin admin = admins.get(0);
+                admin.setWalletBalance(admin.getWalletBalance() + payment.getAmount());
+                adminRepository.save(admin);
+            }
+        }
+
+        // ── Send user notification about payment status ──────────────────────
+        try {
+            Notification notif = new Notification();
+            notif.setUser(user);
+            if (isTrial) {
+                notif.setTitle("🎁 Free Trial Activated!");
+                notif.setMessage("Your " + plan.getTrialDays() + "-day free trial for " + plan.getName() +
+                        " plan is now active. Enjoy full coverage at ₹0!");
+                notif.setType("SUCCESS");
+            } else {
+                String methodLabel = payment.getMethod().name();
+                notif.setTitle("✅ Insurance Active!");
+                notif.setMessage("Your " + methodLabel + " payment of ₹" + payment.getAmount() +
+                        " for " + plan.getName() + " was successful. Your plan is now ACTIVE.");
+                notif.setType("SUCCESS");
+            }
+            notificationRepository.save(notif);
+        } catch (Exception e) {
+            System.err.println("Warning: Could not send payment notification: " + e.getMessage());
+        }
 
         // Build response
         Map<String, Object> resp = new LinkedHashMap<>();

@@ -345,46 +345,72 @@ export default function Reports() {
 
       {/* ══════════════ PAYMENTS TAB ══════════════ */}
       {tab === "payments" && (
-        <div className="ai-card ai-fade" style={{ padding: 28 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }} className="ai-fade">
+
+          {/* Auto-approved: No pending notices needed */}          <div className="ai-card" style={{ padding: 28 }}>
             <SectionHeader title="Premium Payment History" badge={(Array.isArray(payments) ? payments.length : 0) + " Transactions"} />
             <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                    <thead>
-                        <tr style={{ borderBottom: "2px solid #f1f5f9" }}>
-                            {["Date", "Reference / ID", "Method", "Status", "Amount"].map(h => (
-                                <th key={h} style={{ textAlign: "left", padding: "12px 16px", fontSize: 11, color: "#94a3b8", fontWeight: 700, textTransform: "uppercase" }}>{h}</th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {Array.isArray(payments) && payments.length > 0 ? payments.map((p, i) => {
-                            if (!p) return null;
-                            const pDate = p.date || p.createdAt;
-                            const displayDate = pDate ? new Date(pDate).toLocaleDateString("en-IN", { day: '2-digit', month: 'short' }) : "Recently";
-                            const displayRef = p.reference || p.id?.toString().slice(-8).toUpperCase() || "PAY-REF";
-                            const displayAmt = p.amount !== undefined ? `₹${p.amount}` : "₹0";
-                            
-                            return (
-                                <tr key={i} style={{ borderBottom: "1.5px solid #f8fafc" }}>
-                                    <td style={{ padding: "16px", fontSize: 13, fontWeight: 700 }}>{displayDate}</td>
-                                    <td style={{ padding: "16px", fontSize: 13, color: "#64748b", fontFamily: "monospace" }}>{displayRef}</td>
-                                    <td style={{ padding: "16px", fontSize: 13 }}>{p.method?.replace("_"," ") || "UPI"}</td>
-                                    <td style={{ padding: "16px" }}>
-                                        <span style={{ 
-                                            padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 800,
-                                            background: p.status === "SUCCESS" || p.status === "PAID" ? "#dcfce7" : "#fee2e2",
-                                            color: p.status === "SUCCESS" || p.status === "PAID" ? "#166534" : "#991b1b"
-                                        }}>{p.status || "PENDING"}</span>
-                                    </td>
-                                    <td style={{ padding: "16px", fontSize: 14, fontWeight: 800 }}>{displayAmt}</td>
-                                </tr>
-                            );
-                        }) : (
-                            <tr><td colSpan="5" style={{ textAlign: "center", padding: 32, color: "#94a3b8" }}>No payment records found.</td></tr>
-                        )}
-                    </tbody>
-                </table>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ borderBottom: "2px solid #f1f5f9" }}>
+                    {["Date", "Method", "UTR / Reference", "Status", "Amount"].map(h => (
+                      <th key={h} style={{ textAlign: "left", padding: "12px 16px", fontSize: 11, color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array.isArray(payments) && payments.length > 0 ? payments.map((p, i) => {
+                    if (!p) return null;
+                    const pDate = p.date || p.createdAt;
+                    const displayDate = pDate ? new Date(pDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "Recently";
+                    const displayRef  = p.reference || p.upiId || p.id?.toString().slice(-8).toUpperCase() || "PAY-REF";
+                    const displayAmt  = p.amount !== undefined ? `₹${p.amount}` : "₹0";
+                    const isPending   = p.status === "PENDING";
+                    const isActive    = p.status === "APPROVED" || p.status === "SUCCESS";
+
+                    const MINFO = {
+                      UPI:        { icon: "📱", label: "UPI",        clr: "#7c3aed", bg: "#f5f3ff" },
+                      CARD:       { icon: "💳", label: "Card",       clr: "#1d4ed8", bg: "#eff6ff" },
+                      WALLET:     { icon: "👜", label: "Wallet",     clr: "#b45309", bg: "#fffbeb" },
+                      FREE_TRIAL: { icon: "🎁", label: "Free Trial", clr: "#15803d", bg: "#f0fdf4" },
+                    };
+                    const mi = MINFO[p.method] || { icon: "💰", label: (p.method||"").replace(/_/g," "), clr: "#64748b", bg: "#f8fafc" };
+
+                    return (
+                      <tr key={i} style={{ borderBottom: "1.5px solid #f8fafc", background: isPending ? "#faf5ff" : "" }}>
+                        <td style={{ padding: "14px 16px", fontSize: 13, fontWeight: 700 }}>{displayDate}</td>
+                        <td style={{ padding: "14px 16px" }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: mi.bg, color: mi.clr, padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700 }}>
+                            {mi.icon} {mi.label}
+                          </span>
+                        </td>
+                        <td style={{ padding: "14px 16px" }}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                            <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 700, color: "#374151", letterSpacing: "0.05em" }}>{displayRef}</span>
+                            {isPending && p.method === "UPI" && (
+                              <span style={{ fontSize: 10, color: "#7c3aed", fontWeight: 600 }}>✓ Submitted for verification</span>
+                            )}
+                          </div>
+                        </td>
+                        <td style={{ padding: "14px 16px" }}>
+                          <span style={{
+                            padding: "4px 10px", borderRadius: 8, fontSize: 11, fontWeight: 800,
+                            background: isActive ? "#dcfce7" : isPending ? "#fef3c7" : "#fee2e2",
+                            color:      isActive ? "#166534" : isPending ? "#92400e" : "#991b1b",
+                          }}>
+                            {isPending ? "⏳ Pending" : isActive ? "✓ Active" : p.status || "PENDING"}
+                          </span>
+                        </td>
+                        <td style={{ padding: "14px 16px", fontSize: 14, fontWeight: 800, color: isActive ? "#16a34a" : "#0f172a" }}>{displayAmt}</td>
+                      </tr>
+                    );
+                  }) : (
+                    <tr><td colSpan="5" style={{ textAlign: "center", padding: 32, color: "#94a3b8" }}>No payment records found.</td></tr>
+                  )}
+                </tbody>
+              </table>
             </div>
+          </div>
         </div>
       )}
 
