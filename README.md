@@ -285,3 +285,38 @@ If successfully orchestrated by the automation script, you can visit the active 
 - **AI Fraud Visualizer (Swagger):** ➔ `http://localhost:8000/docs`
 
 > 🛑 **How to Stop?** To shut down the entire GigShield platform, simply press **`Ctrl+C`** exclusively within the terminal running the script. It will intercept the shutdown signal and gracefully terminate all three processes (Java, Python, Node) simultaneously without leaving hanging ports!
+
+---
+
+<div align="center">
+  <h2>👨‍💻 Lead Developer & Designer</h2>
+  <p><i>Engineered and designed with precision for the Indian gig-economy context to solve real-world disruptions.</i></p>
+</div>
+
+<table align="center" style="border: none;">
+  <tr>
+    <td align="center" width="250" style="border: none;">
+      <img src="assets/profile.png" alt="Annepu Uday Kumar - Developer" width="220" style="border-radius: 15px; box-shadow: 0px 8px 15px rgba(0,0,0,0.15);" />
+    </td>
+    <td style="border: none; padding-left: 20px;">
+      <h3 style="margin-top: 0;"><b>Annepu Uday Kumar</b></h3>
+      <p style="margin-bottom: 15px;">📞 <b>Direct Contact:</b> +91 7075285071</p>
+      
+      <!-- Contact Badges -->
+      <a href="mailto:annepuuday111@gmail.com">
+        <img src="https://img.shields.io/badge/Email-annepuuday111%40gmail.com-D14836?style=for-the-badge&logo=gmail&logoColor=white" alt="Email" />
+      </a><br/>
+      <a href="https://www.linkedin.com/in/annepuudaykumar/">
+        <img src="https://img.shields.io/badge/LinkedIn-Connect_Now-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn" />
+      </a><br/>
+      <a href="https://github.com/Annepuuday111">
+        <img src="https://img.shields.io/badge/GitHub-Follow_Me-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub" />
+      </a><br/>
+      <a href="http://annepuudaykumar.netlify.app/">
+        <img src="https://img.shields.io/badge/Portfolio-View_Work-38B2AC?style=for-the-badge&logo=netlify&logoColor=white" alt="Portfolio" />
+      </a>
+    </td>
+  </tr>
+</table>
+
+---
