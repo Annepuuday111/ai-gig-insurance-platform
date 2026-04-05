@@ -294,9 +294,6 @@ If successfully orchestrated by the automation script, you can visit the active 
 <p align="center">
   <table align="center" width="800">
     <tr>
-      <td align="center" width="250">
-        <img src="assets/profile.png" width="200" alt="Annepu Uday Kumar" style="border-radius: 12px;"/>
-      </td>
       <td align="left" width="550" style="padding-left: 20px;">
         <h2>Annepu Uday Kumar</h2>
         <p>📞 <b>Direct Contact:</b> +91 7075285071</p>
