@@ -19,17 +19,65 @@ It uses **AI-driven parametric models** to automatically monitor weather pattern
 
 ---
 
+## 📸 Platform Previews (Output)
+
+Here is exactly what the integrated outputs look like for the administrators and the delivery workers utilizing the platform:
+
+<div align="center">
+  <b>1. 🌍 Public Landing Page</b><br>
+  <i>(Public-facing portal highlighting all supported gig-delivery platforms like Zomato, Swiggy, and Amazon)</i><br>
+  <img src="assets/landing_page.png" alt="Platform Landing Page Output" width="850" style="border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 10px; margin-bottom: 25px; box-shadow: 0px 10px 15px rgba(0,0,0,0.1);"/>
+  <br><br>
+
+  <b>2. 👑 Comprehensive Admin Panel</b><br>
+  <i>(Monitors real-time macro metrics, active AI-fraud flagged lists, and global wallet funds)</i><br>
+  <img src="assets/admin_dashboard.png" alt="Admin Dashboard Output" width="850" style="border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 10px; margin-bottom: 25px; box-shadow: 0px 10px 15px rgba(0,0,0,0.1);"/>
+  <br><br>
+
+  <b>3. 🛵 Delivery Worker Hub (e.g. Zomato Theming)</b><br>
+  <i>(Live wallet balances, active policy coverages, and algorithmic risk assessments dynamically displayed)</i><br>
+  <img src="assets/user_dashboard.png" alt="User Dashboard Output" width="850" style="border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 10px; margin-bottom: 25px; box-shadow: 0px 10px 15px rgba(0,0,0,0.1);"/>
+  <br><br>
+
+  <b>4. ⚡ Instant Platform Registration</b><br>
+  <i>(Frictionless onboarding capturing precise district coordinates to feed directly into the Python AI pricing models)</i><br>
+  <img src="assets/register.png" alt="Sign Up Form Output" width="850" style="border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 10px; margin-bottom: 25px; box-shadow: 0px 10px 15px rgba(0,0,0,0.1);"/>
+  <br><br>
+
+  <b>5. 🔐 Secure OTP Login Interface</b><br>
+  <i>(SMTP-powered dual-factor barrier protecting sensitive financial wallet disbursements)</i><br>
+  <img src="assets/login.png" alt="Login Form Output" width="850" style="border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 10px; margin-bottom: 10px; box-shadow: 0px 10px 15px rgba(0,0,0,0.1);"/>
+</div>
+
+---
+
 ## 🛠️ Tools & Technologies Used
 
-We assembled this application with enterprise-grade scaling and fault-tolerance in mind.
+We assembled this application using a modern, multi-layered stack designed for enterprise-grade scaling, fault-tolerance, and financial security.
 
-| Component | Technology / Tool utilized | Core Responsibility |
-| :--- | :--- | :--- |
-| 🟨 **Backend API** | <span style="color:#007396"><b>Java 17, Spring Boot 3</b></span> | High-performance RESTful API orchestrating all primary computational logic and UI connections. |
-| 🛡️ **Security Gateway** | <span style="color:#6cb52d"><b>Spring Security, JWT</b></span> | Stateless, highly-secure encrypted token infrastructure bypassing classic session hijack risks. |
-| 💾 **Data Persistence** | <span style="color:#00758F"><b>MySQL 8, Hibernate (JPA)</b></span> | Relational DB maintaining strict transactional integrity for all payment ledgers. |
-| 🐍 **AI & Fraud Engine** | <span style="color:#3776AB"><b>Python 3.11, FastAPI, Scikit-learn</b></span> | Machine learning cluster executing advanced anomaly detection and pricing algorithms based on GPS/weather behavior. |
-| ☁️ **Environmental Data** | <span style="color:#f26522"><b>OpenWeatherMap API</b></span> | Real-time meteorological data collection triggering automated claims when bounds are breached. |
+### 💻 Frontend (User Interface)
+* **React.js (via Vite):** The primary structural dashboard built for immense blazing-fast speeds and reusable component modularity.
+* **Tailwind CSS:** Utilized for creating vivid, platform-adaptive theming (e.g., dynamically swapping UI colors to red for Zomato workers, and orange for Swiggy).
+* **Framer Motion:** Delivers smooth, satisfying micro-interaction animations such as wallet credits rolling in and live claim status transitions.
+
+### 🟨 Backend (Core API Layer)
+* **Java 17 & Spring Boot 3:** The heavy-lifting RESTful engine orchestrating the entire financial logic ecosystem and routing models.
+* **Spring Scheduler:** Handles autonomous 24/7 background cron-jobs like the `AutoClaimService` which polls algorithms every hour automatically.
+* **Spring Security & JWT:** Stateless security infrastructure barricading sensitive endpoints alongside JSON Web Tokens to bypass classical session vulnerabilities.
+
+### 💾 Database & Persistence
+* **MySQL 8.0:** The absolute source of truth. Maintains strict ACID-compliant transactional integrity specifically over high-risk financial payment ledgers.
+* **Hibernate (JPA):** The internal Object-Relational Mapping (ORM) layer effortlessly linking database schema structures directly into Java Entities.
+
+### 🐍 AI & Fraud Detection Engine
+* **Python 3.11:** The computational core of our intelligent modeling boundaries.
+* **FastAPI:** A high-octane API router deployed strictly to allow the Java backend to exchange data with the Python layer securely and instantly.
+* **Scikit-learn / Pandas:** Responsible for executing robust Machine Learning algorithms and risk engines to produce a highly accurate 0-100 `Fraud Score`.
+
+### ☁️ Integrations, SMTP & Payments
+* **OpenWeatherMap API:** The critical environmental data stream. Constantly polled to measure atmospheric triggers like local district rainfall depth or maximum severe heat thresholds.
+* **JavaMailSender (SMTP Integration):** Secures the environment by dispatching instantaneous Two-Factor One-Time Password (OTP) verification emails directly to workers.
+* **Razorpay Simulator API:** The mocked payment architecture processing high-speed premium deduction debits and instantaneous wallet indemnification credits.
 
 ---
 
@@ -149,6 +197,8 @@ ai-gig-insurance-platform/
 
 ### 📍 Where exactly do I go to change things?
 * **To change Database Credentials:** ➔ Go straight to `backend/src/main/resources/application.properties` and replace the username/password.
+* **To configure Email/SMTP (for OTPs):** ➔ Open `backend/src/main/resources/application.properties` and update the `spring.mail.*` attributes with your Gmail App Password.
+* **To configure Payments (Razorpay):** ➔ Open `backend/src/main/resources/application.properties` and paste your Razorpay `key_id` and `secret`.
 * **To add/modify a Model (like adding a 'License Plate' to User):** ➔ Change `backend/src/main/java/com/example/aiinsurance/model/User.java`.
 * **To modify the auto-claim scheduler frequency:** ➔ Adjust the `@Scheduled` tag inside `backend/src/main/java/com/example/aiinsurance/service/AutoClaimService.java`.
 * **To tighten or loosen CORS Security:** ➔ Go to `backend/src/main/java/com/example/aiinsurance/security/SecurityConfig.java`.
@@ -165,8 +215,8 @@ Before setting up, ensure your workstation holds the fundamental interpreters.
 - [Python 3.11+](https://www.python.org/downloads/) installed.
 - [MySQL Server 8.0+](https://dev.mysql.com/downloads/) installed and operating on port `3306`.
 
-### 🗄️ Step 2. Database Provisioning & Authentication Fixes
-**Important Variables to change:** You must allocate the proper structural DB prior to booting the program. 
+### 🗄️ Step 2. Database, SMTP, & Payment Configuration
+**Important Variables to change:** You must allocate the proper structural DB and supply API keys prior to booting the program. 
 
 Open your local MySQL CLI (or client like DBeaver/Workbench):
 ```sql
@@ -174,12 +224,25 @@ CREATE DATABASE gigshield;
 ```
 
 **Navigate to:** `GigShield/backend/src/main/resources/application.properties`
-Modify the connection details rigorously mapping your personal local DB parameters:
+Modify the configuration rigorously mapping your personal local DB parameters, Email server, and Payment sandbox keys:
 ```properties
-## !! CHANGE THESE STRINGS !! ##
+## !! 1. CHANGE THESE DATABASE STRINGS !! ##
 spring.datasource.url=jdbc:mysql://localhost:3306/gigshield
 spring.datasource.username=YOUR_ACTUAL_MYSQL_USERNAME_HERE
 spring.datasource.password=YOUR_ACTUAL_MYSQL_PASSWORD_HERE
+
+## !! 2. CHANGE THESE SMTP (EMAIL) STRINGS !! ##
+# (Required if you want the OTP Registration and push notification emails to work)
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=YOUR_GMAIL_ADDRESS@gmail.com
+# Use a 16-digit Google App Password, NOT your regular password!
+spring.mail.password=YOUR_GMAIL_APP_PASSWORD
+
+## !! 3. CHANGE THESE PAYMENT STRINGS !! ##
+# (Required for simulated Razorpay claim money transfers)
+razorpay.api.key=YOUR_RAZORPAY_TEST_KEY_ID
+razorpay.api.secret=YOUR_RAZORPAY_TEST_SECRET
 ```
 
 ### 🚀 Step 3. The Ultimate One-Click Startup (`start.sh` / `start.bat`)
