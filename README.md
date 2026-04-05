@@ -288,35 +288,35 @@ If successfully orchestrated by the automation script, you can visit the active 
 
 ---
 
-<div align="center">
-  <h2>👨‍💻 Lead Developer & Designer</h2>
-  <p><i>Engineered and designed with precision for the Indian gig-economy context to solve real-world disruptions.</i></p>
-</div>
+<h2 align="center">👨‍💻 Lead Developer & Designer</h2>
+<p align="center"><i>Engineered and designed with precision for the Indian gig-economy context to solve real-world disruptions.</i></p>
 
-<table align="center" style="border: none;">
-  <tr>
-    <td align="center" width="250" style="border: none;">
-      <img src="assets/profile.png" alt="Annepu Uday Kumar - Developer" width="220" style="border-radius: 15px; box-shadow: 0px 8px 15px rgba(0,0,0,0.15);" />
-    </td>
-    <td style="border: none; padding-left: 20px;">
-      <h3 style="margin-top: 0;"><b>Annepu Uday Kumar</b></h3>
-      <p style="margin-bottom: 15px;">📞 <b>Direct Contact:</b> +91 7075285071</p>
-      
-      <!-- Contact Badges -->
-      <a href="mailto:annepuuday111@gmail.com">
-        <img src="https://img.shields.io/badge/Email-annepuuday111%40gmail.com-D14836?style=for-the-badge&logo=gmail&logoColor=white" alt="Email" />
-      </a><br/>
-      <a href="https://www.linkedin.com/in/annepuudaykumar/">
-        <img src="https://img.shields.io/badge/LinkedIn-Connect_Now-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn" />
-      </a><br/>
-      <a href="https://github.com/Annepuuday111">
-        <img src="https://img.shields.io/badge/GitHub-Follow_Me-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub" />
-      </a><br/>
-      <a href="http://annepuudaykumar.netlify.app/">
-        <img src="https://img.shields.io/badge/Portfolio-View_Work-38B2AC?style=for-the-badge&logo=netlify&logoColor=white" alt="Portfolio" />
-      </a>
-    </td>
-  </tr>
-</table>
+<p align="center">
+  <table align="center" width="800">
+    <tr>
+      <td align="center" width="250">
+        <img src="assets/profile.png" width="200" alt="Annepu Uday Kumar" style="border-radius: 12px;"/>
+      </td>
+      <td align="left" width="550" style="padding-left: 20px;">
+        <h2>Annepu Uday Kumar</h2>
+        <p>📞 <b>Direct Contact:</b> +91 7075285071</p>
+        <br/>
+        <a href="mailto:annepuuday111@gmail.com">
+          <img src="https://img.shields.io/badge/Email-annepuuday111%40gmail.com-D14836?style=for-the-badge&logo=gmail&logoColor=white" alt="Email" />
+        </a>
+        <br/><br/>
+        <a href="http://annepuudaykumar.netlify.app/">
+          <img src="https://img.shields.io/badge/Portfolio-Visit_Website-38B2AC?style=for-the-badge&logo=netlify&logoColor=white" alt="Portfolio" />
+        </a> 
+        <a href="https://www.linkedin.com/in/annepuudaykumar/">
+          <img src="https://img.shields.io/badge/LinkedIn-Connect-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn" />
+        </a>
+        <a href="https://github.com/Annepuuday111">
+          <img src="https://img.shields.io/badge/GitHub-Follow-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub" />
+        </a>
+      </td>
+    </tr>
+  </table>
+</p>
 
 ---
