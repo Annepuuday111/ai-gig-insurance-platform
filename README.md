@@ -288,32 +288,31 @@ If successfully orchestrated by the automation script, you can visit the active 
 
 ---
 
-<h2 align="center">👨‍💻 Lead Developer & Designer</h2>
-<p align="center"><i>Engineered and designed with precision for the Indian gig-economy context to solve real-world disruptions.</i></p>
-
-<p align="center">
-  <table align="center" width="800">
-    <tr>
-      <td align="left" width="550" style="padding-left: 20px;">
-        <h2>Annepu Uday Kumar</h2>
-        <p>📞 <b>Direct Contact:</b> +91 7075285071</p>
-        <br/>
-        <a href="mailto:annepuuday111@gmail.com">
-          <img src="https://img.shields.io/badge/Email-annepuuday111%40gmail.com-D14836?style=for-the-badge&logo=gmail&logoColor=white" alt="Email" />
-        </a>
-        <br/><br/>
-        <a href="http://annepuudaykumar.netlify.app/">
-          <img src="https://img.shields.io/badge/Portfolio-Visit_Website-38B2AC?style=for-the-badge&logo=netlify&logoColor=white" alt="Portfolio" />
-        </a> 
-        <a href="https://www.linkedin.com/in/annepuudaykumar/">
-          <img src="https://img.shields.io/badge/LinkedIn-Connect-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn" />
-        </a>
-        <a href="https://github.com/Annepuuday111">
-          <img src="https://img.shields.io/badge/GitHub-Follow-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub" />
-        </a>
-      </td>
-    </tr>
-  </table>
-</p>
+<div align="center">
+  <h2>👨‍💻 Lead Developer & Designer</h2>
+  <p><i>Engineered and designed with precision for the Indian gig-economy context to solve real-world disruptions.</i></p>
+  
+  <br/>
+  
+  <h2><b>Annepu Uday Kumar</b></h2>
+  <p>📞 <b>Direct Contact:</b> +91 7075285071</p>
+  
+  <br/>
+  
+  <!-- Symmetric Contact Badges -->
+  <a href="mailto:annepuuday111@gmail.com">
+    <img src="https://img.shields.io/badge/Email-annepuuday111%40gmail.com-D14836?style=for-the-badge&logo=gmail&logoColor=white" alt="Email" />
+  </a>
+  <a href="http://annepuudaykumar.netlify.app/">
+    <img src="https://img.shields.io/badge/Portfolio-Visit_Website-38B2AC?style=for-the-badge&logo=netlify&logoColor=white" alt="Portfolio" />
+  </a> 
+  <a href="https://www.linkedin.com/in/annepuudaykumar/">
+    <img src="https://img.shields.io/badge/LinkedIn-Connect-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn" />
+  </a>
+  <a href="https://github.com/Annepuuday111">
+    <img src="https://img.shields.io/badge/GitHub-Follow-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub" />
+  </a>
+  <br/><br/>
+</div>
 
 ---
